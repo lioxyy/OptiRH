@@ -1,0 +1,19 @@
+{
+  "name": "optirh",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["electron", "renderer"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:electron\"",
+    "dev:renderer": "npm run dev --workspace=renderer",
+    "dev:electron": "npm run dev --workspace=electron",
+    "build": "npm run build --workspace=renderer && npm run build --workspace=electron",
+    "package": "npm run build && electron-builder"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.4.5"
+  }
+}
