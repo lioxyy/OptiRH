@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth-context'
 import { NotificationBell } from './notification-bell'
 
@@ -24,7 +24,7 @@ export function DashboardLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
 
-  if (!user) return null
+  if (!user) return <Navigate to="/login" replace />
 
   const visibleItems = navItems.filter((item) => item.roles.includes(user.role))
 
