@@ -1,0 +1,43 @@
+import type { PrismaClient } from '@prisma/client'
+
+export type NotificationType =
+  | 'CONTRACT_EXPIRY'
+  | 'LEAVE_PENDING'
+  | 'LEAVE_APPROVED'
+  | 'LEAVE_REJECTED'
+  | 'PAYROLL_GENERATED'
+
+export async function createNotification(
+  tx: PrismaClient | Parameters<Parameters<PrismaClient['$transaction']>[0]>[0],
+  recipientId: number,
+  type: NotificationType,
+  message: string,
+  targetModel: string,
+  targetId: number,
+) {
+  const now = new Date()
+
+  const existing = await (tx as any).notification.findFirst({
+    where: {
+      recipient_id: recipientId,
+      type,
+      target_model: targetModel,
+      target_id: targetId,
+      created_at: {
+        gte: new Date(now.getFullYear(), now.getMonth(), 1),
+        lt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+      },
+    },
+  })
+  if (existing) return existing
+
+  return (tx as any).notification.create({
+    data: {
+      recipient_id: recipientId,
+      type,
+      message,
+      target_model: targetModel,
+      target_id: targetId,
+    },
+  })
+}
