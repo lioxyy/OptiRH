@@ -1,5 +1,11 @@
 import { useAuth } from '../../context/auth-context'
-import { Card, CardContent } from '../../components/ui/card'
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/card'
 import {
   Users,
   Briefcase,
@@ -10,65 +16,72 @@ import {
   ListChecks,
   CalendarCheck,
   FileText,
+  TrendingUp,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 
 interface KpiCard {
   title: string
   value: string
-  icon: LucideIcon
+  icon: typeof TrendingUp
+  trend?: string
+  trendUp?: boolean
+  footer: string
 }
 
 export function OverviewPage() {
   const { user } = useAuth()
 
-  let kpiCards: KpiCard[] = []
+  let cards: KpiCard[] = []
 
   if (user?.role === 'Admin') {
-    kpiCards = [
-      { title: 'Total Employees', value: '—', icon: Users },
-      { title: 'Open Positions', value: '—', icon: Briefcase },
-      { title: 'Monthly Payroll', value: '—', icon: DollarSign },
-      { title: 'Leave Rate', value: '—', icon: Activity },
+    cards = [
+      { title: 'Total Employees', value: '—', icon: Users, trend: '+0%', trendUp: true, footer: 'Active workforce' },
+      { title: 'Open Positions', value: '—', icon: Briefcase, trend: '—', footer: 'Pending requisitions' },
+      { title: 'Monthly Payroll', value: '—', icon: DollarSign, trend: '—', footer: 'Current month' },
+      { title: 'Leave Rate', value: '—', icon: Activity, trend: '—', footer: 'Last 30 days' },
     ]
   } else if (user?.role === 'Agent') {
-    kpiCards = [
-      { title: 'Team Size', value: '—', icon: UserCheck },
-      { title: 'Pending Leaves', value: '—', icon: CalendarClock },
-      { title: 'Active Tasks', value: '—', icon: ListChecks },
-      { title: 'Upcoming Interviews', value: '—', icon: CalendarCheck },
+    cards = [
+      { title: 'Team Size', value: '—', icon: UserCheck, trend: '—', footer: 'Department headcount' },
+      { title: 'Pending Leaves', value: '—', icon: CalendarClock, trend: '—', footer: 'Awaiting approval' },
+      { title: 'Active Tasks', value: '—', icon: ListChecks, trend: '—', footer: 'In progress' },
+      { title: 'Upcoming Interviews', value: '—', icon: CalendarCheck, trend: '—', footer: 'Scheduled' },
     ]
   } else {
-    kpiCards = [
-      { title: 'Current Contract', value: '—', icon: FileText },
-      { title: 'Leave Balance', value: '—', icon: CalendarClock },
-      { title: 'Assigned Tasks', value: '—', icon: ListChecks },
+    cards = [
+      { title: 'Current Contract', value: '—', icon: FileText, trend: '—', footer: 'Active' },
+      { title: 'Leave Balance', value: '—', icon: CalendarClock, trend: '—', footer: 'Remaining days' },
+      { title: 'Assigned Tasks', value: '—', icon: ListChecks, trend: '—', footer: 'My tasks' },
     ]
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Overview</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpiCards.map((card) => {
-          const Icon = card.icon
-          return (
-            <Card key={card.title}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">{card.title}</p>
-                    <p className="text-3xl font-bold">{card.value}</p>
-                  </div>
-                  <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      {cards.map((card) => {
+        const Icon = card.icon
+        return (
+          <Card key={card.title} className="shadow-xs bg-gradient-to-t from-primary/5 to-card dark:bg-card">
+            <CardHeader className="relative">
+              <CardDescription>{card.title}</CardDescription>
+              <CardTitle className="text-2xl font-semibold tabular-nums">
+                {card.value}
+              </CardTitle>
+              <div className="absolute right-4 top-4 rounded-lg bg-primary/10 p-2 text-primary">
+                <Icon className="h-5 w-5" />
+              </div>
+            </CardHeader>
+            <CardFooter className="flex-col items-start gap-1 text-sm">
+              <div className="line-clamp-1 flex gap-2 font-medium">
+                {card.trend && card.trend !== '—' && (
+                  <TrendingUp className={`size-4 ${card.trendUp ? '' : 'text-destructive'}`} />
+                )}
+                {card.trend}
+              </div>
+              <div className="text-muted-foreground">{card.footer}</div>
+            </CardFooter>
+          </Card>
+        )
+      })}
     </div>
   )
 }
