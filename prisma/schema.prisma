@@ -6,3 +6,243 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
+model Department {
+  id_dept     Int        @id @default(autoincrement())
+  name        String
+  description String?
+  manager_id  Int?
+
+  manager     Employee?  @relation("DeptManager", fields: [manager_id], references: [id_emp])
+  employees   Employee[] @relation("DeptEmployees")
+}
+
+model Employee {
+  id_emp          Int      @id @default(autoincrement())
+  name            String
+  email           String   @unique
+  password_hash   String
+  phone           String?
+  gender          String?
+  date_birth      DateTime
+  address         String?
+  date_employment DateTime
+  role            String
+  id_dept         Int
+  supervisor_id   Int?
+
+  department      Department       @relation("DeptEmployees", fields: [id_dept], references: [id_dept])
+  supervisor      Employee?        @relation("Supervision", fields: [supervisor_id], references: [id_emp])
+  subordinates    Employee[]       @relation("Supervision")
+  managed_dept    Department?      @relation("DeptManager")
+
+  contracts       Contract[]
+  absences_logged Absence[]        @relation("AbsenceEmployee")
+  absences_recorded Absence[]      @relation("AbsenceRecorder")
+  conges          Conge[]          @relation("CongeEmployee")
+  conges_approved Conge[]          @relation("CongeApprover")
+  conge_balances  CongeBalance[]
+  tasks_assigned  Task[]           @relation("TaskAssignee")
+  tasks_created   Task[]           @relation("TaskCreator")
+  evaluations_given     Evaluation[] @relation("Evaluator")
+  evaluations_received  Evaluation[] @relation("EvaluateeEmp")
+  salaires        Salaire[]
+  formations_instructed Formation[]
+  participations  ParticipationFormation[]
+  candidates_managed Candidat[]
+  interviews_conducted Entretien[]
+  notifications   Notification[]
+  audit_logs      AuditLog[]
+}
+
+model Candidat {
+  id_cand         Int      @id @default(autoincrement())
+  name            String
+  email           String   @unique
+  date_birth      DateTime?
+  address         String?
+  date_candidature DateTime @default(now())
+  cv_doc_path     String?
+  post_applied    String?
+  id_dept         Int?
+  status          String   @default("Pending")
+  agent_in_charge Int?
+
+  agent           Employee?    @relation(fields: [agent_in_charge], references: [id_emp])
+  entretiens      Entretien[]
+  evaluations     Evaluation[] @relation("EvaluateeCand")
+}
+
+model Entretien {
+  id_entretien Int      @id @default(autoincrement())
+  date_heure   DateTime
+  status       String   @default("Scheduled")
+  result_notes String?
+  id_cand      Int
+  id_agent     Int
+
+  candidat     Candidat @relation(fields: [id_cand], references: [id_cand])
+  agent        Employee @relation(fields: [id_agent], references: [id_emp])
+}
+
+model Contract {
+  id_contract  Int      @id @default(autoincrement())
+  type         String
+  status       String   @default("Active")
+  date_deb     DateTime
+  date_fin     DateTime?
+  salaire_base Float
+  id_emp       Int
+
+  employee     Employee  @relation(fields: [id_emp], references: [id_emp])
+  salaires     Salaire[]
+}
+
+model LeaveType {
+  id_type      Int      @id @default(autoincrement())
+  name         String   @unique
+  default_days Int
+
+  conges       Conge[]
+  absences     Absence[]
+  balances     CongeBalance[]
+}
+
+model Conge {
+  id_conge   Int      @id @default(autoincrement())
+  id_type    Int
+  date_deb   DateTime
+  date_fin   DateTime
+  status     String   @default("Pending")
+  approved_by Int?
+  id_emp     Int
+
+  leave_type  LeaveType @relation(fields: [id_type], references: [id_type])
+  approver    Employee? @relation("CongeApprover", fields: [approved_by], references: [id_emp])
+  employee    Employee  @relation("CongeEmployee", fields: [id_emp], references: [id_emp])
+  absences    Absence[]
+}
+
+model CongeBalance {
+  id_balance   Int @id @default(autoincrement())
+  id_emp       Int
+  id_type      Int
+  year         Int
+  allocated    Int @default(0)
+  consumed     Int @default(0)
+  carried_over Int @default(0)
+
+  employee   Employee  @relation(fields: [id_emp], references: [id_emp])
+  leave_type LeaveType @relation(fields: [id_type], references: [id_type])
+
+  @@unique([id_emp, id_type, year])
+}
+
+model Absence {
+  id_absence       Int      @id @default(autoincrement())
+  date_absence     DateTime
+  id_type          Int?
+  is_justified     Boolean  @default(false)
+  justification_doc String?
+  id_emp           Int
+  recorded_by      Int
+  conge_id         Int?
+
+  employee    Employee   @relation("AbsenceEmployee", fields: [id_emp], references: [id_emp])
+  recorder    Employee   @relation("AbsenceRecorder", fields: [recorded_by], references: [id_emp])
+  leave_type  LeaveType? @relation(fields: [id_type], references: [id_type])
+  conge       Conge?     @relation(fields: [conge_id], references: [id_conge])
+}
+
+model Evaluation {
+  id_eval           Int      @id @default(autoincrement())
+  date_eval         DateTime @default(now())
+  score             Int
+  bonus_amount      Float    @default(0)
+  comments          String?
+  type_eval         String
+  evaluator_id      Int
+  evaluatee_emp_id  Int?
+  evaluatee_cand_id Int?
+
+  evaluator     Employee  @relation("Evaluator", fields: [evaluator_id], references: [id_emp])
+  evaluatee_emp Employee? @relation("EvaluateeEmp", fields: [evaluatee_emp_id], references: [id_emp])
+  evaluatee_cand Candidat? @relation("EvaluateeCand", fields: [evaluatee_cand_id], references: [id_cand])
+}
+
+model Task {
+  id_task     Int      @id @default(autoincrement())
+  name        String
+  description String?
+  priority    String   @default("Medium")
+  date_deb    DateTime
+  date_fin    DateTime
+  status      String   @default("To Do")
+  assigned_by Int
+  assigned_to Int
+
+  creator  Employee @relation("TaskCreator", fields: [assigned_by], references: [id_emp])
+  assignee Employee @relation("TaskAssignee", fields: [assigned_to], references: [id_emp])
+}
+
+model Formation {
+  id_formation  Int      @id @default(autoincrement())
+  name          String
+  description   String?
+  location      String?
+  date_deb      DateTime
+  duration_days Int
+  instructor_id Int
+
+  instructor     Employee               @relation(fields: [instructor_id], references: [id_emp])
+  participations ParticipationFormation[]
+}
+
+model ParticipationFormation {
+  id_emp       Int
+  id_formation Int
+
+  employee  Employee  @relation(fields: [id_emp], references: [id_emp])
+  formation Formation @relation(fields: [id_formation], references: [id_formation])
+
+  @@id([id_emp, id_formation])
+}
+
+model Salaire {
+  id_salaire         Int    @id @default(autoincrement())
+  month_year         String
+  bonus_amount       Float  @default(0)
+  absence_deductions Float  @default(0)
+  amount_final       Float
+  status             String @default("Generated")
+  id_emp             Int
+  id_contract        Int
+
+  employee Employee @relation(fields: [id_emp], references: [id_emp])
+  contract Contract @relation(fields: [id_contract], references: [id_contract])
+}
+
+model Notification {
+  id_notif     Int      @id @default(autoincrement())
+  recipient_id Int
+  type         String
+  message      String
+  is_read      Boolean  @default(false)
+  created_at   DateTime @default(now())
+  target_model String
+  target_id    Int
+
+  recipient Employee @relation(fields: [recipient_id], references: [id_emp])
+}
+
+model AuditLog {
+  id_log       Int      @id @default(autoincrement())
+  actor_id     Int?
+  action       String
+  target_model String
+  target_id    Int
+  snapshot     String
+  timestamp    DateTime @default(now())
+
+  actor Employee? @relation(fields: [actor_id], references: [id_emp])
+}
