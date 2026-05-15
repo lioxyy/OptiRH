@@ -8,17 +8,31 @@ import { toast } from 'sonner'
 import { useState } from 'react'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
-import { Label } from '../../components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select'
 
 const FormSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email'),
   phone: z.string().optional(),
   role: z.enum(['Admin', 'Agent', 'Employee']),
-  id_dept: z.coerce.number(),
+  id_dept: z.coerce.number({ invalid_type_error: 'Department is required' }),
   supervisor_id: z.coerce.number().optional(),
-  password: z.string().min(6),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
 type FormData = z.infer<typeof FormSchema>
@@ -54,8 +68,9 @@ export function EmployeeForm() {
     },
   })
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
+    defaultValues: { role: 'Employee' },
   })
 
   async function onSubmit(data: FormData) {
@@ -80,56 +95,135 @@ export function EmployeeForm() {
           <CardTitle>Employee Details</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" {...register('name')} />
-              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register('email')} />
-              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" {...register('phone')} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register('password')} />
-              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <select id="role" {...register('role')} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                <option value="Employee">Employee</option>
-                <option value="Agent">Agent</option>
-                <option value="Admin">Admin</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="id_dept">Department</Label>
-              <select id="id_dept" {...register('id_dept', { valueAsNumber: true })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                <option value="">Select...</option>
-                {departments.map((d) => (
-                  <option key={d.id_dept} value={d.id_dept}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="supervisor_id">Supervisor</Label>
-              <select id="supervisor_id" {...register('supervisor_id', { valueAsNumber: true })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                <option value="">None</option>
-                {allEmployees.map((e) => (
-                  <option key={e.id_emp} value={e.id_emp}>{e.name}</option>
-                ))}
-              </select>
-            </div>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? 'Creating...' : 'Create Employee'}
-            </Button>
-          </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="john@company.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+1 555-0000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Employee">Employee</SelectItem>
+                        <SelectItem value="Agent">Agent</SelectItem>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="id_dept"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select department" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id_dept} value={d.id_dept.toString()}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="supervisor_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Supervisor</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="None" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {allEmployees.map((e) => (
+                          <SelectItem key={e.id_emp} value={e.id_emp.toString()}>
+                            {e.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={submitting} className="w-full">
+                {submitting ? 'Creating...' : 'Create Employee'}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>
