@@ -1,73 +1,39 @@
-import { Outlet, Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../../context/auth-context'
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { Separator } from '@/components/ui/separator'
+import { Outlet, Navigate } from 'react-router-dom'
 import { AppSidebar } from '../app-sidebar'
-import { SiteHeader } from '../site-header'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '../ui/sidebar'
-
-interface NavItem {
-  key: string
-  label: string
-  path: string
-  roles: string[]
-}
-
-const navItems: NavItem[] = [
-  { key: 'overview', label: 'Overview', path: '/dashboard', roles: ['Admin', 'Agent', 'Employee'] },
-  { key: 'employees', label: 'Employees', path: '/dashboard/employees', roles: ['Admin', 'Agent'] },
-  { key: 'leave', label: 'Leave', path: '/dashboard/leave', roles: ['Admin', 'Agent', 'Employee'] },
-  { key: 'contracts', label: 'Contracts', path: '/dashboard/contracts', roles: ['Admin', 'Agent'] },
-  { key: 'payroll', label: 'Payroll', path: '/dashboard/payroll', roles: ['Admin'] },
-  { key: 'tasks', label: 'Tasks', path: '/dashboard/tasks', roles: ['Admin', 'Agent', 'Employee'] },
-  { key: 'recruitment', label: 'Recruitment', path: '/dashboard/recruitment', roles: ['Admin', 'Agent'] },
-  { key: 'evaluations', label: 'Evaluations', path: '/dashboard/evaluations', roles: ['Admin', 'Agent'] },
-  { key: 'analytics', label: 'Analytics', path: '/dashboard/analytics', roles: ['Admin'] },
-]
-
-const pageTitles: Record<string, string> = {
-  '/dashboard': 'Overview',
-  '/dashboard/employees': 'Employees',
-  '/dashboard/leave': 'Leave',
-  '/dashboard/contracts': 'Contracts',
-  '/dashboard/payroll': 'Payroll',
-  '/dashboard/tasks': 'Tasks',
-  '/dashboard/recruitment': 'Recruitment',
-  '/dashboard/evaluations': 'Evaluations',
-  '/dashboard/analytics': 'Analytics',
-}
+import { NotificationBell } from './notification-bell'
+import { useAuth } from '@/context/auth-context'
 
 export function DashboardLayout() {
-  const { user, logout } = useAuth()
-  const location = useLocation()
-  if (!user) return <Navigate to="/login" replace />
+  const { user, isLoading } = useAuth()
 
-  const visibleItems = navItems.filter((item) => item.roles.includes(user.role))
-  const pageTitle = pageTitles[location.pathname] || ''
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
 
   return (
-    <SidebarProvider
-      className="h-screen w-screen overflow-hidden"
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" navItems={visibleItems} user={{ name: user.name, email: user.email, role: user.role }} onLogout={logout} />
-      <SidebarInset className="overflow-hidden">
-        <SiteHeader pageTitle={pageTitle} role={user.role} />
-        <div className="flex flex-1 flex-col overflow-auto">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <div className="px-4 lg:px-6 min-w-0">
-                <Outlet />
-              </div>
-            </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <div className="flex flex-1 items-center justify-end gap-2">
+            <NotificationBell />
           </div>
-        </div>
+        </header>
+        <main className="flex-1 overflow-auto p-6">
+          <Outlet />
+        </main>
       </SidebarInset>
     </SidebarProvider>
   )
