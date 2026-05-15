@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 
 export type NotificationType =
   | 'CONTRACT_EXPIRY'
@@ -8,7 +8,7 @@ export type NotificationType =
   | 'PAYROLL_GENERATED'
 
 export async function createNotification(
-  tx: PrismaClient | Parameters<Parameters<PrismaClient['$transaction']>[0]>[0],
+  tx: Prisma.TransactionClient,
   recipientId: number,
   type: NotificationType,
   message: string,
@@ -17,7 +17,7 @@ export async function createNotification(
 ) {
   const now = new Date()
 
-  const existing = await (tx as any).notification.findFirst({
+  const existing = await tx.notification.findFirst({
     where: {
       recipient_id: recipientId,
       type,
@@ -31,7 +31,7 @@ export async function createNotification(
   })
   if (existing) return existing
 
-  return (tx as any).notification.create({
+  return tx.notification.create({
     data: {
       recipient_id: recipientId,
       type,
