@@ -11,7 +11,7 @@ model Department {
   id_dept     Int        @id @default(autoincrement())
   name        String
   description String?
-  manager_id  Int?
+  manager_id  Int?    @unique
 
   manager     Employee?  @relation("DeptManager", fields: [manager_id], references: [id_emp])
   employees   Employee[] @relation("DeptEmployees")
