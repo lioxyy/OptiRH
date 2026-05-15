@@ -2,6 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from './features/auth/login-page'
 import { DashboardLayout } from './components/layout/dashboard-layout'
 import { OverviewPage } from './features/overview/overview-page'
+import { EmployeesPage } from './features/employees/employees-page'
+import { EmployeeDetail } from './features/employees/employee-detail'
+import { EmployeeForm } from './features/employees/employee-form'
 import { RoleGuard } from './components/layout/role-guard'
 
 function PlaceholderPage({ title }: { title: string }) {
@@ -18,7 +21,23 @@ export function AppRouter() {
           path="employees"
           element={
             <RoleGuard roles={['Admin', 'Agent']}>
-              <PlaceholderPage title="Employees" />
+              <EmployeesPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="employees/new"
+          element={
+            <RoleGuard roles={['Admin']}>
+              <EmployeeForm />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="employees/:id"
+          element={
+            <RoleGuard roles={['Admin', 'Agent']}>
+              <EmployeeDetail />
             </RoleGuard>
           }
         />
