@@ -102,7 +102,7 @@ export function EmployeeForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <select id="role" {...register('role')} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <select id="role" {...register('role')} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                 <option value="Employee">Employee</option>
                 <option value="Agent">Agent</option>
                 <option value="Admin">Admin</option>
@@ -110,7 +110,7 @@ export function EmployeeForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="id_dept">Department</Label>
-              <select id="id_dept" {...register('id_dept', { valueAsNumber: true })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <select id="id_dept" {...register('id_dept', { valueAsNumber: true })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                 <option value="">Select...</option>
                 {departments.map((d) => (
                   <option key={d.id_dept} value={d.id_dept}>{d.name}</option>
@@ -119,7 +119,7 @@ export function EmployeeForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="supervisor_id">Supervisor</Label>
-              <select id="supervisor_id" {...register('supervisor_id', { valueAsNumber: true })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <select id="supervisor_id" {...register('supervisor_id', { valueAsNumber: true })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                 <option value="">None</option>
                 {allEmployees.map((e) => (
                   <option key={e.id_emp} value={e.id_emp}>{e.name}</option>

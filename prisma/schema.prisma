@@ -220,6 +220,8 @@ model Salaire {
 
   employee Employee @relation(fields: [id_emp], references: [id_emp])
   contract Contract @relation(fields: [id_contract], references: [id_contract])
+
+  @@unique([id_emp, month_year])
 }
 
 model Notification {
