@@ -1,74 +1,60 @@
-import { Outlet, Link, useLocation, Navigate } from 'react-router-dom'
+import { Outlet, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth-context'
+import { AppSidebar } from '../app-sidebar'
 import { NotificationBell } from './notification-bell'
-import { Button } from '../../components/ui/button'
-import { Badge } from '../../components/ui/badge'
-import { Separator } from '../../components/ui/separator'
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from '../ui/sidebar'
+import { Separator } from '../ui/separator'
 
 interface NavItem {
+  key: string
   label: string
   path: string
   roles: string[]
 }
 
 const navItems: NavItem[] = [
-  { label: 'Overview', path: '/dashboard', roles: ['Admin', 'Agent', 'Employee'] },
-  { label: 'Employees', path: '/dashboard/employees', roles: ['Admin', 'Agent'] },
-  { label: 'Leave', path: '/dashboard/leave', roles: ['Admin', 'Agent', 'Employee'] },
-  { label: 'Contracts', path: '/dashboard/contracts', roles: ['Admin', 'Agent'] },
-  { label: 'Payroll', path: '/dashboard/payroll', roles: ['Admin'] },
-  { label: 'Tasks', path: '/dashboard/tasks', roles: ['Admin', 'Agent', 'Employee'] },
-  { label: 'Recruitment', path: '/dashboard/recruitment', roles: ['Admin', 'Agent'] },
-  { label: 'Evaluations', path: '/dashboard/evaluations', roles: ['Admin', 'Agent'] },
-  { label: 'Analytics', path: '/dashboard/analytics', roles: ['Admin'] },
+  { key: 'overview', label: 'Overview', path: '/dashboard', roles: ['Admin', 'Agent', 'Employee'] },
+  { key: 'employees', label: 'Employees', path: '/dashboard/employees', roles: ['Admin', 'Agent'] },
+  { key: 'leave', label: 'Leave', path: '/dashboard/leave', roles: ['Admin', 'Agent', 'Employee'] },
+  { key: 'contracts', label: 'Contracts', path: '/dashboard/contracts', roles: ['Admin', 'Agent'] },
+  { key: 'payroll', label: 'Payroll', path: '/dashboard/payroll', roles: ['Admin'] },
+  { key: 'tasks', label: 'Tasks', path: '/dashboard/tasks', roles: ['Admin', 'Agent', 'Employee'] },
+  { key: 'recruitment', label: 'Recruitment', path: '/dashboard/recruitment', roles: ['Admin', 'Agent'] },
+  { key: 'evaluations', label: 'Evaluations', path: '/dashboard/evaluations', roles: ['Admin', 'Agent'] },
+  { key: 'analytics', label: 'Analytics', path: '/dashboard/analytics', roles: ['Admin'] },
 ]
 
 export function DashboardLayout() {
   const { user, logout } = useAuth()
-  const location = useLocation()
 
   if (!user) return <Navigate to="/login" replace />
 
   const visibleItems = navItems.filter((item) => item.roles.includes(user.role))
 
   return (
-    <div className="flex h-screen">
-      <aside className="w-56 border-r bg-card flex flex-col">
-        <div className="p-4">
-          <h2 className="text-lg font-bold">OptiRH</h2>
-        </div>
-        <Separator />
-        <nav className="flex flex-col gap-1 p-2 flex-1">
-          {visibleItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                location.pathname === item.path
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-accent hover:text-accent-foreground'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-      <div className="flex flex-col flex-1">
-        <header className="h-14 border-b bg-card flex items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{user.name}</span>
-            <Badge variant="secondary" className="text-xs">{user.role}</Badge>
-          </div>
-          <div className="flex items-center gap-2">
+    <SidebarProvider>
+      <AppSidebar
+        navItems={visibleItems}
+        user={{ name: user.name, email: user.email, role: user.role }}
+        onLogout={logout}
+      />
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <div className="flex flex-1 items-center justify-between">
+            <span className="text-sm text-muted-foreground">{user.role}</span>
             <NotificationBell />
-            <Button variant="ghost" size="sm" onClick={logout}>Logout</Button>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-6 bg-background">
+        <main className="flex-1 overflow-auto p-6">
           <Outlet />
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
