@@ -1,27 +1,88 @@
-import { app, BrowserWindow } from 'electron';
-import * as path from 'path';
+import { app, BrowserWindow, dialog } from 'electron'
+import { createApp } from './server'
+import { execSync } from 'child_process'
+import * as net from 'net'
+import * as path from 'path'
+import * as http from 'http'
 
-// Minimal stub for Phase 0
-function createWindow() {
-    const win = new BrowserWindow({
-        width: 800,
-        height: 600,
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-        },
-    });
-
-    if (process.env.NODE_ENV === 'development') {
-        win.loadURL('http://localhost:5173');
-    } else {
-        win.loadFile(path.join(__dirname, '../renderer/dist/index.html'));
-    }
+function getFreePort(): Promise<number> {
+  return new Promise((resolve) => {
+    const srv = net.createServer()
+    srv.listen(0, '127.0.0.1', () => {
+      const port = (srv.address() as net.AddressInfo).port
+      srv.close(() => resolve(port))
+    })
+  })
 }
 
-app.whenReady().then(createWindow);
+let mainWindow: BrowserWindow | null = null
+let server: http.Server | null = null
+
+async function start() {
+  const dbPath = app.isPackaged
+    ? path.join(app.getPath('userData'), 'database.sqlite')
+    : path.join(__dirname, '../../prisma/dev.db')
+
+  process.env.DATABASE_URL = `file:${dbPath}`
+
+  if (app.isPackaged) {
+    try {
+      execSync('npx prisma migrate deploy', {
+        env: { ...process.env },
+        cwd: path.join(__dirname, '../..'),
+      })
+    } catch (err) {
+      dialog.showErrorBox('Migration Error', `Database migration failed:\n${String(err)}`)
+      app.quit()
+      return
+    }
+  }
+
+  const port = await getFreePort()
+
+  const expressApp = createApp()
+  await new Promise<void>((resolve) => {
+    server = expressApp.listen(port, '127.0.0.1', () => {
+      console.log(`[Server] Running on http://127.0.0.1:${port}`)
+      resolve()
+    })
+  })
+
+  mainWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    show: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      preload: path.join(__dirname, 'preload.js'),
+      additionalArguments: [`--backend-port=${port}`],
+    },
+  })
+
+  const isDev = !app.isPackaged
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5173')
+    mainWindow.webContents.openDevTools()
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../renderer/dist/index.html'))
+  }
+
+  mainWindow.once('ready-to-show', () => mainWindow?.show())
+  mainWindow.on('closed', () => { mainWindow = null })
+}
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
-});
+  server?.close()
+  app.quit()
+})
+
+app.on('before-quit', () => {
+  server?.close()
+})
+
+app.whenReady().then(start).catch((err) => {
+  dialog.showErrorBox('Startup Error', String(err))
+  app.quit()
+})
