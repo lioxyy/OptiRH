@@ -5,6 +5,10 @@ import { useAuth } from '../../context/auth-context'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Label } from '../../components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 
 const LoginFormSchema = z.object({
   email: z.string().email(),
@@ -36,33 +40,28 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-sm space-y-4 p-6">
-        <h1 className="text-2xl font-bold text-center">OptiRH</h1>
-        <div>
-          <input
-            {...register('email')}
-            placeholder="Email"
-            className="w-full border rounded px-3 py-2"
-          />
-          {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-        </div>
-        <div>
-          <input
-            {...register('password')}
-            type="password"
-            placeholder="Password"
-            className="w-full border rounded px-3 py-2"
-          />
-          {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
-        </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-primary text-primary-foreground rounded px-3 py-2 disabled:opacity-50"
-        >
-          {submitting ? 'Signing in...' : 'Sign in'}
-        </button>
-      </form>
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">OptiRH</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" {...register('email')} placeholder="admin@optirh.com" />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" {...register('password')} placeholder="••••••" />
+              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+            </div>
+            <Button type="submit" disabled={submitting} className="w-full">
+              {submitting ? 'Signing in...' : 'Sign in'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

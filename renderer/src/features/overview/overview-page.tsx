@@ -1,4 +1,5 @@
 import { useAuth } from '../../context/auth-context'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 
 export function OverviewPage() {
   const { user } = useAuth()
@@ -32,10 +33,14 @@ export function OverviewPage() {
       <h1 className="text-2xl font-bold mb-6">Overview</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiCards.map((card) => (
-          <div key={card.title} className="border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">{card.title}</p>
-            <p className="text-2xl font-bold mt-1">{card.value}</p>
-          </div>
+          <Card key={card.title}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground font-medium">{card.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{card.value}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

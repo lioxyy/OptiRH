@@ -6,15 +6,19 @@ import { api } from '../../lib/api'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useState } from 'react'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Label } from '../../components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 
 const FormSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   phone: z.string().optional(),
   role: z.enum(['Admin', 'Agent', 'Employee']),
-  id_dept: z.number(),
-  supervisor_id: z.number().optional(),
-  password: z.string().min(6).optional(),
+  id_dept: z.coerce.number(),
+  supervisor_id: z.coerce.number().optional(),
+  password: z.string().min(6),
 })
 
 type FormData = z.infer<typeof FormSchema>
@@ -71,56 +75,63 @@ export function EmployeeForm() {
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold mb-6">Add Employee</h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Name</label>
-          <input {...register('name')} className="w-full border rounded px-3 py-2 text-sm" />
-          {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input {...register('email')} type="email" className="w-full border rounded px-3 py-2 text-sm" />
-          {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
-          <input {...register('password')} type="password" className="w-full border rounded px-3 py-2 text-sm" />
-          {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Role</label>
-          <select {...register('role')} className="w-full border rounded px-3 py-2 text-sm">
-            <option value="Employee">Employee</option>
-            <option value="Agent">Agent</option>
-            <option value="Admin">Admin</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Department</label>
-          <select {...register('id_dept', { valueAsNumber: true })} className="w-full border rounded px-3 py-2 text-sm">
-            <option value="">Select...</option>
-            {departments.map((d) => (
-              <option key={d.id_dept} value={d.id_dept}>{d.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Supervisor</label>
-          <select {...register('supervisor_id', { valueAsNumber: true })} className="w-full border rounded px-3 py-2 text-sm">
-            <option value="">None</option>
-            {allEmployees.map((e) => (
-              <option key={e.id_emp} value={e.id_emp}>{e.name}</option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded text-sm disabled:opacity-50"
-        >
-          {submitting ? 'Creating...' : 'Create'}
-        </button>
-      </form>
+      <Card>
+        <CardHeader>
+          <CardTitle>Employee Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" {...register('name')} />
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" {...register('email')} />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" {...register('phone')} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" {...register('password')} />
+              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <select id="role" {...register('role')} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <option value="Employee">Employee</option>
+                <option value="Agent">Agent</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="id_dept">Department</Label>
+              <select id="id_dept" {...register('id_dept', { valueAsNumber: true })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <option value="">Select...</option>
+                {departments.map((d) => (
+                  <option key={d.id_dept} value={d.id_dept}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supervisor_id">Supervisor</Label>
+              <select id="supervisor_id" {...register('supervisor_id', { valueAsNumber: true })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <option value="">None</option>
+                {allEmployees.map((e) => (
+                  <option key={e.id_emp} value={e.id_emp}>{e.name}</option>
+                ))}
+              </select>
+            </div>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Creating...' : 'Create Employee'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -1,6 +1,9 @@
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth-context'
 import { NotificationBell } from './notification-bell'
+import { Button } from '../../components/ui/button'
+import { Badge } from '../../components/ui/badge'
+import { Separator } from '../../components/ui/separator'
 
 interface NavItem {
   label: string
@@ -30,15 +33,20 @@ export function DashboardLayout() {
 
   return (
     <div className="flex h-screen">
-      <aside className="w-56 border-r flex flex-col p-4">
-        <h2 className="text-lg font-bold mb-6">OptiRH</h2>
-        <nav className="flex flex-col gap-1 flex-1">
+      <aside className="w-56 border-r bg-card flex flex-col">
+        <div className="p-4">
+          <h2 className="text-lg font-bold">OptiRH</h2>
+        </div>
+        <Separator />
+        <nav className="flex flex-col gap-1 p-2 flex-1">
           {visibleItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`px-3 py-2 rounded text-sm ${
-                location.pathname === item.path ? 'bg-muted font-medium' : 'hover:bg-muted'
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                location.pathname === item.path
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-accent hover:text-accent-foreground'
               }`}
             >
               {item.label}
@@ -47,19 +55,17 @@ export function DashboardLayout() {
         </nav>
       </aside>
       <div className="flex flex-col flex-1">
-        <header className="h-14 border-b flex items-center justify-between px-6">
-          <span className="text-sm text-muted-foreground">
-            {user.name}
-            <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-muted">{user.role}</span>
-          </span>
-          <div className="flex items-center gap-3">
+        <header className="h-14 border-b bg-card flex items-center justify-between px-6">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{user.name}</span>
+            <Badge variant="secondary" className="text-xs">{user.role}</Badge>
+          </div>
+          <div className="flex items-center gap-2">
             <NotificationBell />
-            <button onClick={logout} className="text-sm text-muted-foreground hover:text-foreground">
-              Logout
-            </button>
+            <Button variant="ghost" size="sm" onClick={logout}>Logout</Button>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 bg-background">
           <Outlet />
         </main>
       </div>

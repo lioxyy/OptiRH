@@ -2,6 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
 import { Link } from 'react-router-dom'
+import { Button } from '../../components/ui/button'
+import { Badge } from '../../components/ui/badge'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '../../components/ui/table'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 
 interface Employee {
   id_emp: number
@@ -11,6 +17,12 @@ interface Employee {
   id_dept: number
   department: { name: string }
   supervisor?: { name: string } | null
+}
+
+const roleVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
+  Admin: 'default',
+  Agent: 'secondary',
+  Employee: 'outline',
 }
 
 export function EmployeesPage() {
@@ -31,44 +43,46 @@ export function EmployeesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Employees</h1>
         {user?.role === 'Admin' && (
-          <Link
-            to="/dashboard/employees/new"
-            className="px-3 py-1.5 bg-primary text-primary-foreground rounded text-sm"
-          >
-            Add Employee
-          </Link>
+          <Button asChild>
+            <Link to="/dashboard/employees/new">Add Employee</Link>
+          </Button>
         )}
       </div>
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted">
-            <tr>
-              <th className="text-left px-4 py-2">Name</th>
-              <th className="text-left px-4 py-2">Email</th>
-              <th className="text-left px-4 py-2">Role</th>
-              <th className="text-left px-4 py-2">Department</th>
-              <th className="text-left px-4 py-2">Supervisor</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.map((emp) => (
-              <tr key={emp.id_emp} className="border-t">
-                <td className="px-4 py-2">
-                  <Link to={`/dashboard/employees/${emp.id_emp}`} className="hover:underline">
-                    {emp.name}
-                  </Link>
-                </td>
-                <td className="px-4 py-2">{emp.email}</td>
-                <td className="px-4 py-2">
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-muted">{emp.role}</span>
-                </td>
-                <td className="px-4 py-2">{emp.department?.name}</td>
-                <td className="px-4 py-2">{emp.supervisor?.name ?? '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>All Employees</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Supervisor</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {employees.map((emp) => (
+                <TableRow key={emp.id_emp}>
+                  <TableCell>
+                    <Link to={`/dashboard/employees/${emp.id_emp}`} className="hover:underline font-medium">
+                      {emp.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{emp.email}</TableCell>
+                  <TableCell>
+                    <Badge variant={roleVariant[emp.role] ?? 'outline'}>{emp.role}</Badge>
+                  </TableCell>
+                  <TableCell>{emp.department?.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{emp.supervisor?.name ?? '—'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }
