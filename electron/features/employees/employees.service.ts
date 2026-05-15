@@ -33,13 +33,13 @@ export async function getEmployeeById(id: number, requestUser: RequestUser) {
 }
 
 export async function createEmployee(data: CreateEmployeeDTO, actorId: number) {
-  const existing = await prisma.employee.findUnique({ where: { email: data.email } })
-  if (existing) throw new AppError('EMAIL_ALREADY_EXISTS', 409)
-
-  const password_hash = await bcrypt.hash(data.password, 10)
   const { password, ...rest } = data
+  const password_hash = await bcrypt.hash(password, 10)
 
   return prisma.$transaction(async (tx) => {
+    const existing = await tx.employee.findUnique({ where: { email: rest.email } })
+    if (existing) throw new AppError('EMAIL_ALREADY_EXISTS', 409)
+
     const employee = await tx.employee.create({
       data: { ...rest, password_hash },
     })
@@ -56,11 +56,10 @@ export async function updateEmployee(id: number, data: UpdateEmployeeDTO, reques
     throw new AppError('FORBIDDEN', 403)
   }
 
-  const updateData: any = { ...data }
-  if (data.password) {
-    updateData.password_hash = await bcrypt.hash(data.password, 10)
-  }
-  delete updateData.password
+  const { password, ...rest } = data
+  const updateData = password
+    ? { ...rest, password_hash: await bcrypt.hash(password, 10) }
+    : rest
 
   return prisma.$transaction(async (tx) => {
     const updated = await tx.employee.update({
@@ -96,7 +95,8 @@ export async function getMe(employeeId: number) {
   return employee
 }
 
-export async function getDepartments() {
+export async function getDepartments(requestUser: RequestUser) {
+  if (requestUser.role === 'Employee') throw new AppError('FORBIDDEN', 403)
   return prisma.department.findMany()
 }
 

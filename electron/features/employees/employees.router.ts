@@ -30,7 +30,7 @@ router.get('/me', asyncHandler(async (req, res) => {
 }))
 
 router.get('/departments', asyncHandler(async (req, res) => {
-  const departments = await EmployeeService.getDepartments()
+  const departments = await EmployeeService.getDepartments(req.user)
   res.json(success(departments))
 }))
 
