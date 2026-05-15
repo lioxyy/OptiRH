@@ -1,0 +1,64 @@
+# Dependency directories
+node_modules/
+
+# Build artifacts
+dist/
+dist-app/
+out/
+build/
+*.exe
+*.dmg
+*.AppImage
+
+# Databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE / Editor folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# Prisma
+/prisma/migrations/
+/prisma/dev.db
+/prisma/dev.db-journal
+
+# Compiled TypeScript
+electron/dist/
+renderer/dist/
+dist-app/
+dist-electron/
+dist-renderer/
+
+OptiRH_Agent_Plan_Prompt.md
+OptiRH_Conventions_Final.md
+.opencode/
+electron/CONVENTIONS.md
+AGENTS.md
+.gitignore
+opencode.json
