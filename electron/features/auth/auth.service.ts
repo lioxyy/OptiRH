@@ -70,18 +70,19 @@ async function checkExpiringContracts(employeeId: number, role: string) {
     },
   })
 
+  const admins = await prisma.employee.findMany({
+    where: { role: 'Admin' },
+    select: { id_emp: true },
+  })
+  const adminIds = admins.map(a => a.id_emp)
+
   for (const contract of contracts) {
     const supervisors: number[] = []
     if (contract.employee.supervisor_id) {
       supervisors.push(contract.employee.supervisor_id)
     }
 
-    const admins = await prisma.employee.findMany({
-      where: { role: 'Admin' },
-      select: { id_emp: true },
-    })
-
-    const recipients = [...new Set([...supervisors, ...admins.map(a => a.id_emp)])]
+    const recipients = [...new Set([...supervisors, ...adminIds])]
 
     for (const recipientId of recipients) {
       await createNotification(
