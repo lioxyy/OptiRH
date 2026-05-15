@@ -59,7 +59,7 @@ export function AppSidebar({ navItems, user, onLogout }: AppSidebarProps) {
   const location = useLocation()
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
+    <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">

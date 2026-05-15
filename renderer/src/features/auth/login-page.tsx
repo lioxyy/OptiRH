@@ -8,25 +8,31 @@ import { toast } from 'sonner'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/card'
 
-const LoginFormSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
+const LoginSchema = z.object({
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(1, 'Password is required'),
 })
 
-type LoginFormData = z.infer<typeof LoginFormSchema>
+type LoginData = z.infer<typeof LoginSchema>
 
 export function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [submitting, setSubmitting] = useState(false)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
-    resolver: zodResolver(LoginFormSchema),
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginData>({
+    resolver: zodResolver(LoginSchema),
   })
 
-  async function onSubmit(data: LoginFormData) {
+  async function onSubmit(data: LoginData) {
     setSubmitting(true)
     try {
       await login(data.email, data.password)
@@ -39,29 +45,48 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">OptiRH</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" {...register('email')} placeholder="admin@optirh.com" />
-              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register('password')} placeholder="••••••" />
-              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-            </div>
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="flex flex-col gap-6 w-full max-w-sm">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">OptiRH</CardTitle>
+            <CardDescription>Enter your credentials to access your account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="admin@optirh.com"
+                    {...register('email')}
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-destructive">{errors.email.message}</p>
+                  )}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••"
+                    {...register('password')}
+                  />
+                  {errors.password && (
+                    <p className="text-sm text-destructive">{errors.password.message}</p>
+                  )}
+                </div>
+                <Button type="submit" disabled={submitting} className="w-full">
+                  {submitting ? 'Signing in...' : 'Sign in'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
