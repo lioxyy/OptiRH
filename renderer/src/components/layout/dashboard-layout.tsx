@@ -1,13 +1,13 @@
-import { Outlet, Navigate } from 'react-router-dom'
+import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/auth-context'
 import { AppSidebar } from '../app-sidebar'
+import { SiteHeader } from '../site-header'
 import { NotificationBell } from './notification-bell'
+import { Badge } from '../ui/badge'
 import {
-  SidebarProvider,
   SidebarInset,
-  SidebarTrigger,
+  SidebarProvider,
 } from '../ui/sidebar'
-import { Separator } from '../ui/separator'
 
 interface NavItem {
   key: string
@@ -28,32 +28,54 @@ const navItems: NavItem[] = [
   { key: 'analytics', label: 'Analytics', path: '/dashboard/analytics', roles: ['Admin'] },
 ]
 
+const pageTitles: Record<string, string> = {
+  '/dashboard': 'Overview',
+  '/dashboard/employees': 'Employees',
+  '/dashboard/leave': 'Leave',
+  '/dashboard/contracts': 'Contracts',
+  '/dashboard/payroll': 'Payroll',
+  '/dashboard/tasks': 'Tasks',
+  '/dashboard/recruitment': 'Recruitment',
+  '/dashboard/evaluations': 'Evaluations',
+  '/dashboard/analytics': 'Analytics',
+}
+
 export function DashboardLayout() {
   const { user, logout } = useAuth()
-
+  const location = useLocation()
   if (!user) return <Navigate to="/login" replace />
 
   const visibleItems = navItems.filter((item) => item.roles.includes(user.role))
+  const pageTitle = pageTitles[location.pathname] || ''
 
   return (
-    <SidebarProvider className="h-screen w-screen overflow-hidden">
-      <AppSidebar
-        navItems={visibleItems}
-        user={{ name: user.name, email: user.email, role: user.role }}
-        onLogout={logout}
-      />
-      <SidebarInset className="overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <div className="flex flex-1 items-center justify-between">
-            <span className="text-sm text-muted-foreground">{user.role}</span>
-            <NotificationBell />
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" navItems={visibleItems} user={{ name: user.name, email: user.email, role: user.role }} onLogout={logout} />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-2">
+            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+              <div className="flex items-center justify-between px-4 lg:px-6">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold">{pageTitle}</h1>
+                  <Badge variant="secondary" className="text-xs">{user.role}</Badge>
+                </div>
+                <NotificationBell />
+              </div>
+              <div className="px-4 lg:px-6">
+                <Outlet />
+              </div>
+            </div>
           </div>
-        </header>
-        <main className="flex-1 overflow-auto p-6 min-w-0">
-          <Outlet />
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )
