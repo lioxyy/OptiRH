@@ -36,13 +36,13 @@ export function DashboardLayout() {
   const visibleItems = navItems.filter((item) => item.roles.includes(user.role))
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-screen w-screen overflow-hidden">
       <AppSidebar
         navItems={visibleItems}
         user={{ name: user.name, email: user.email, role: user.role }}
         onLogout={logout}
       />
-      <SidebarInset>
+      <SidebarInset className="overflow-hidden">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger />
           <Separator orientation="vertical" className="mr-2 h-4" />
@@ -51,7 +51,7 @@ export function DashboardLayout() {
             <NotificationBell />
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 min-w-0">
           <Outlet />
         </main>
       </SidebarInset>
