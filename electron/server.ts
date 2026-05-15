@@ -3,6 +3,8 @@ import cors from 'cors'
 import { globalErrorHandler } from './lib/errors'
 import { fail } from './lib/response'
 import authRouter from './features/auth/auth.router'
+import notificationsRouter from './features/notifications/notifications.router'
+import auditRouter from './features/audit/audit.router'
 
 export function createApp() {
   const app = express()
@@ -20,6 +22,8 @@ export function createApp() {
   app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
   app.use('/api/auth', authRouter)
+  app.use('/api/notifications', notificationsRouter)
+  app.use('/api/audit', auditRouter)
 
   app.use('/api/*', (_req, res) => {
     res.status(404).json(fail('NOT_FOUND', 'API route not found'))
