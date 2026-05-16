@@ -48,6 +48,14 @@ ipcMain.on('window-zoom-reset', () => {
   mainWindow?.webContents.setZoomLevel(0)
 })
 
+ipcMain.on('window-toggle-devtools', () => {
+  if (mainWindow?.webContents.isDevToolsOpened()) {
+    mainWindow.webContents.closeDevTools()
+  } else {
+    mainWindow?.webContents.openDevTools()
+  }
+})
+
 async function start() {
   const dbPath = app.isPackaged
     ? path.join(app.getPath('userData'), 'database.sqlite')

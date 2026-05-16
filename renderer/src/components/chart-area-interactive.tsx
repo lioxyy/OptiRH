@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardAction,
 } from "@/components/ui/card"
 import {
   ChartConfig,
@@ -137,6 +138,7 @@ const chartConfig = {
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = React.useState("30d")
+  const [activeChart, setActiveChart] = React.useState<keyof typeof chartConfig>("desktop")
 
   React.useEffect(() => {
     if (isMobile) {
@@ -168,44 +170,35 @@ export function ChartAreaInteractive() {
           </span>
           <span className="@[540px]/card:hidden">Last 3 months</span>
         </CardDescription>
-        <div className="absolute right-4 top-4">
+        <CardAction>
           <ToggleGroup
             type="single"
             value={timeRange}
-            onValueChange={setTimeRange}
-            variant="outline"
-            className="@[767px]/card:flex hidden"
+            onValueChange={(value) => value && setTimeRange(value as "90d" | "30d" | "7d")}
+            size="sm"
+            className="hidden sm:flex border bg-muted/50 rounded-lg p-0.5"
           >
-            <ToggleGroupItem value="90d" className="h-8 px-2.5">
-              Last 3 months
-            </ToggleGroupItem>
-            <ToggleGroupItem value="30d" className="h-8 px-2.5">
-              Last 30 days
-            </ToggleGroupItem>
-            <ToggleGroupItem value="7d" className="h-8 px-2.5">
-              Last 7 days
-            </ToggleGroupItem>
+            <ToggleGroupItem value="90d" className="text-xs px-2 h-7 rounded-md data-[state=on]:bg-background data-[state=on]:shadow-sm">90d</ToggleGroupItem>
+            <ToggleGroupItem value="30d" className="text-xs px-2 h-7 rounded-md data-[state=on]:bg-background data-[state=on]:shadow-sm">30d</ToggleGroupItem>
+            <ToggleGroupItem value="7d" className="text-xs px-2 h-7 rounded-md data-[state=on]:bg-background data-[state=on]:shadow-sm">7d</ToggleGroupItem>
           </ToggleGroup>
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select value={activeChart} onValueChange={(v) => setActiveChart(v as keyof typeof chartConfig)}>
             <SelectTrigger
-              className="@[767px]/card:hidden flex w-40"
+              className="ml-auto h-7 w-[130px] rounded-lg sm:ml-0 bg-transparent border-none focus:ring-0"
               aria-label="Select a value"
             >
               <SelectValue placeholder="Last 3 months" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="90d" className="rounded-lg">
-                Last 3 months
+            <SelectContent className="rounded-xl border-sidebar-border bg-[#1c1c1e]">
+              <SelectItem value="desktop" className="rounded-lg focus:bg-primary focus:text-primary-foreground">
+                Desktop
               </SelectItem>
-              <SelectItem value="30d" className="rounded-lg">
-                Last 30 days
-              </SelectItem>
-              <SelectItem value="7d" className="rounded-lg">
-                Last 7 days
+              <SelectItem value="mobile" className="rounded-lg focus:bg-primary focus:text-primary-foreground">
+                Mobile
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </CardAction>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer

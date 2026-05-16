@@ -74,6 +74,10 @@ export function TitleBar() {
                             <MenubarItem onClick={zoomReset} className="px-3 py-1.5 focus:bg-primary focus:text-primary-foreground rounded-sm">
                                 Reset Zoom <MenubarShortcut className="ml-auto opacity-50">Ctrl+0</MenubarShortcut>
                             </MenubarItem>
+                            <MenubarSeparator className="bg-sidebar-border my-1 mx-1" />
+                            <MenubarItem onClick={() => (window as any).electronAPI?.toggleDevTools()} className="px-3 py-1.5 focus:bg-primary focus:text-primary-foreground rounded-sm">
+                                Toggle Developer Tools <MenubarShortcut className="ml-auto opacity-50">Ctrl+Shift+I</MenubarShortcut>
+                            </MenubarItem>
                         </MenubarContent>
                     </MenubarMenu>
 

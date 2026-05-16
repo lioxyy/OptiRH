@@ -22,11 +22,11 @@ export function DashboardLayout() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-sidebar overflow-hidden">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       <TitleBar />
-      <SidebarProvider>
+      <SidebarProvider className="h-full w-full overflow-hidden">
         <AppSidebar />
-        <SidebarInset className="overflow-hidden">
+        <SidebarInset className="overflow-hidden min-w-0 flex-1">
           <SiteHeader />
           <ScrollArea className="flex-1 min-h-0">
             <div className="flex flex-1 flex-col gap-4 p-4">
