@@ -10,6 +10,8 @@ import { ContractsPage } from './features/contracts/contracts-page'
 import { RoleGuard } from './components/layout/role-guard'
 import { PayrollPage } from './features/payroll/payroll-page'
 import { TasksPage } from './features/tasks/tasks-page'
+import { RecruitmentPage } from './features/recruitment/recruitment-page'
+import { EvaluationsPage } from './features/evaluations/evaluations-page'
 
 function PlaceholderPage({ title }: { title: string }) {
   return <div className="p-6"><h1 className="text-xl font-bold">{title}</h1></div>
@@ -72,7 +74,7 @@ export function AppRouter() {
             path="recruitment"
             element={
               <RoleGuard roles={['Admin', 'Agent']}>
-                <PlaceholderPage title="Recruitment" />
+                <RecruitmentPage />
               </RoleGuard>
             }
           />
@@ -80,7 +82,7 @@ export function AppRouter() {
             path="evaluations"
             element={
               <RoleGuard roles={['Admin', 'Agent']}>
-                <PlaceholderPage title="Evaluations" />
+                <EvaluationsPage />
               </RoleGuard>
             }
           />
