@@ -55,11 +55,5 @@ dist-app/
 dist-electron/
 dist-renderer/
 
-OptiRH_Agent_Plan_Prompt.md
-OptiRH_Conventions_Final.md
-.opencode/
-electron/CONVENTIONS.md
-AGENTS.md
-.gitignore
-opencode.json
-logistics-ERP/
+# Local / Private Ignores
+.gitignore_local
