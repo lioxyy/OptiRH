@@ -50,18 +50,16 @@ The project uses a monorepo pattern to maintain type safety across the stack:
 
 ### Running the Application
 
-OptiRH requires both the frontend dev server and the Electron compiler to be active.
+OptiRH requires both the frontend dev server and the Electron compiler to be active. Automation scripts are provided for ease of use.
 
-1. **Start Development Servers** (Root):
-   ```bash
-   npm run dev
-   ```
-   *This starts the Vite dev server for the frontend and the TypeScript compiler (watch mode) for the backend.*
+**Choose the script for your terminal:**
 
-2. **Launch the Desktop Application** (In a new terminal at Root):
-   ```bash
-   npm start
-   ```
+| Terminal | Setup Script | Run Script |
+| :--- | :--- | :--- |
+| **Windows CMD** | `setup.bat` | `run.bat` |
+| **Git Bash / Linux / macOS** | `./setup.sh` | `./run.sh` |
+
+*Note: The setup script automatically generates a `.env` file to configure your local SQLite database.*
 
 ---
 *Built with ❤️ by the OptiRH Development Team.*
