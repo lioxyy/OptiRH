@@ -1,29 +1,51 @@
-# Dependency directories
+# ─── Dependency directories ───────────────────────────────────────────────────
 node_modules/
 
-# Build artifacts
+# ─── Build artifacts ──────────────────────────────────────────────────────────
 dist/
 dist-app/
+dist-electron/
+dist-renderer/
 out/
 build/
 *.exe
 *.dmg
 *.AppImage
 
-# Databases
+# ─── Databases (SQLite — never commit data files) ─────────────────────────────
 *.db
 *.db-journal
 *.sqlite
 *.sqlite-journal
+*.db-shm
+*.db-wal
+/prisma/dev.db
+/prisma/dev.db-journal
+/prisma/dev.db-shm
+/prisma/dev.db-wal
+/prisma/test.db
+/prisma/test.db-journal
+/prisma/*.db
 
-# Environment variables
+# ─── Environment variables ────────────────────────────────────────────────────
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# IDE / Editor folders
+# ─── Test output & coverage ───────────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+playwright-report/
+/prisma/prisma/
+
+# ─── Prisma migrations (local only) ──────────────────────────────────────────
+/prisma/migrations/
+
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.suo
@@ -32,28 +54,16 @@ build/
 *.sln
 *.sw?
 
-# OS files
+# ─── OS files ────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# Logs
+# ─── Logs ────────────────────────────────────────────────────────────────────
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 logs/
 *.log
 
-# Prisma
-/prisma/migrations/
-/prisma/dev.db
-/prisma/dev.db-journal
-
-# Compiled TypeScript
-electron/dist/
-renderer/dist/
-dist-app/
-dist-electron/
-dist-renderer/
-
-# Local / Private Ignores
-.gitignore_local
+# ─── Local overrides ─────────────────────────────────────────────────────────
+.gitignore_local

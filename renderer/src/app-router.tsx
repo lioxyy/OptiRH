@@ -6,6 +6,7 @@ import { EmployeesPage } from './features/employees/employees-page'
 import { EmployeeDetail } from './features/employees/employee-detail'
 import { EmployeeForm } from './features/employees/employee-form'
 import { RoleGuard } from './components/layout/role-guard'
+import { LeavePage } from './features/leaves/leave-page'
 
 function PlaceholderPage({ title }: { title: string }) {
   return <div className="p-6"><h1 className="text-xl font-bold">{title}</h1></div>
@@ -46,7 +47,7 @@ export function AppRouter() {
           />
           <Route
             path="leave"
-            element={<PlaceholderPage title="Leave" />}
+            element={<LeavePage />}
           />
           <Route
             path="contracts"
