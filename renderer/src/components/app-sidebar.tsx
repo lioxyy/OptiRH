@@ -1,6 +1,7 @@
 "use client"
 
-import * as React from "react"
+import { Link, useLocation } from "react-router-dom"
+import { useAuth } from "@/context/auth-context"
 import {
   LayoutDashboardIcon,
   UsersIcon,
@@ -13,31 +14,40 @@ import {
   BarChart3Icon,
   SettingsIcon,
   HelpCircleIcon,
+  DatabaseIcon,
+  ClipboardListIcon,
+  FileIcon,
+  LogOutIcon,
+  ChevronsUpDownIcon,
 } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
-import { NavSecondary } from "@/components/nav-secondary"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Link } from "react-router-dom"
-import { useAuth } from "@/context/auth-context"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 type Role = "Admin" | "Agent" | "Employee"
 
 interface NavItem {
   title: string
   url: string
-  icon: LucideIcon
+  icon: React.ElementType
 }
 
 const navItems: Record<Role, NavItem[]> = {
@@ -70,6 +80,7 @@ const navItems: Record<Role, NavItem[]> = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth()
+  const location = useLocation()
   const role = (user?.role as Role) ?? "Employee"
   const items = navItems[role]
 
@@ -94,18 +105,108 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={items} />
-        <NavSecondary
-          items={[
-            { title: "Settings", url: "#", icon: SettingsIcon },
-            { title: "Get Help", url: "#", icon: HelpCircleIcon },
-          ]}
-          className="mt-auto"
-        />
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === item.url}
+                    tooltip={item.title}
+                  >
+                    <Link to={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Documents</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {[
+                { name: "Data Library", url: "#", icon: DatabaseIcon },
+                { name: "Reports", url: "#", icon: ClipboardListIcon },
+                { name: "Word Assistant", url: "#", icon: FileIcon },
+              ].map((doc) => (
+                <SidebarMenuItem key={doc.name}>
+                  <SidebarMenuButton asChild>
+                    <Link to={doc.url}>
+                      <doc.icon />
+                      <span>{doc.name}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Settings">
+                  <Link to="#">
+                    <SettingsIcon />
+                    <span>Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Get Help">
+                  <Link to="#">
+                    <HelpCircleIcon />
+                    <span>Get Help</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={{ name: user?.name ?? "", email: user?.email ?? "" }} onLogout={logout} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent"
+                >
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarFallback className="rounded-lg">
+                      {user?.name?.slice(0, 2).toUpperCase() ?? "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">{user?.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+                  </div>
+                  <ChevronsUpDownIcon className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-[--radix-dropdown-menu-trigger-width]"
+                side="top"
+                align="start"
+              >
+                <DropdownMenuItem onClick={logout}>
+                  <LogOutIcon className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
 
       <SidebarRail />
