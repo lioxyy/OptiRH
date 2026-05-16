@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
 import { globalErrorHandler } from './lib/errors'
 import { fail } from './lib/response'
 import authRouter from './features/auth/auth.router'
@@ -8,6 +9,10 @@ import notificationsRouter from './features/notifications/notifications.router'
 import auditRouter from './features/audit/audit.router'
 import leaveRouter from './features/leave/leave.router'
 import contractsRouter from './features/contracts/contracts.router'
+import payrollRouter from './features/payroll/payroll.router'
+import tasksRouter from './features/tasks/tasks.router'
+import recruitmentRouter from './features/recruitment/recruitment.router'
+import evaluationsRouter from './features/evaluations/evaluations.router'
 
 export function createApp() {
   const app = express()
@@ -22,6 +27,8 @@ export function createApp() {
   app.use(express.json({ limit: '10mb' }))
   app.use(express.urlencoded({ extended: true }))
 
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+
   app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
   app.use('/api/auth', authRouter)
@@ -30,6 +37,10 @@ export function createApp() {
   app.use('/api/audit', auditRouter)
   app.use('/api/leave', leaveRouter)
   app.use('/api/contracts', contractsRouter)
+  app.use('/api/payroll', payrollRouter)
+  app.use('/api/tasks', tasksRouter)
+  app.use('/api/recruitment', recruitmentRouter)
+  app.use('/api/evaluations', evaluationsRouter)
 
   app.use('/api/*', (_req, res) => {
     res.status(404).json(fail('NOT_FOUND', 'API route not found'))

@@ -8,6 +8,8 @@ import { EmployeeForm } from './features/employees/employee-form'
 import { LeavePage } from './features/leave/leave-page'
 import { ContractsPage } from './features/contracts/contracts-page'
 import { RoleGuard } from './components/layout/role-guard'
+import { PayrollPage } from './features/payroll/payroll-page'
+import { TasksPage } from './features/tasks/tasks-page'
 
 function PlaceholderPage({ title }: { title: string }) {
   return <div className="p-6"><h1 className="text-xl font-bold">{title}</h1></div>
@@ -58,13 +60,13 @@ export function AppRouter() {
             path="payroll"
             element={
               <RoleGuard roles={['Admin']}>
-                <PlaceholderPage title="Payroll" />
+                <PayrollPage />
               </RoleGuard>
             }
           />
           <Route
             path="tasks"
-            element={<PlaceholderPage title="Tasks" />}
+            element={<TasksPage />}
           />
           <Route
             path="recruitment"
