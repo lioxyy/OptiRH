@@ -20,6 +20,11 @@ router.post('/types', authenticate, authorize('Admin'), validate('body', LeaveTy
   res.json(success(type))
 }))
 
+router.put('/types/:id', authenticate, authorize('Admin'), validate('body', LeaveTypeSchema), asyncHandler(async (req, res) => {
+  const type = await LeaveService.updateLeaveType(Number(req.params.id), req.body)
+  res.json(success(type))
+}))
+
 // Leave Requests
 router.get('/requests', authenticate, asyncHandler(async (req, res) => {
   const filters: any = {}

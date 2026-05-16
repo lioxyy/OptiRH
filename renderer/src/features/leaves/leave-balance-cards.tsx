@@ -58,7 +58,7 @@ export function LeaveBalanceCards() {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          Aucun solde de congé pour l'année {year}.
+          No leave balance for the year {year}.
         </CardContent>
       </Card>
     )
@@ -78,29 +78,29 @@ export function LeaveBalanceCards() {
             <CardContent className="space-y-3">
               <dl className="space-y-1.5 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Alloué</dt>
-                  <dd className="font-medium">{b.allocated} j</dd>
+                  <dt className="text-muted-foreground">Allocated</dt>
+                  <dd className="font-medium">{b.allocated} d</dd>
                 </div>
                 {b.carried_over > 0 && (
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Report N-1</dt>
-                    <dd className="font-medium">+{b.carried_over} j</dd>
+                    <dt className="text-muted-foreground">Carried over</dt>
+                    <dd className="font-medium">+{b.carried_over} d</dd>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Consommé</dt>
-                  <dd className="font-medium text-destructive">{b.consumed} j</dd>
+                  <dt className="text-muted-foreground">Consumed</dt>
+                  <dd className="font-medium text-destructive">{b.consumed} d</dd>
                 </div>
                 <div className="flex justify-between border-t pt-1.5">
-                  <dt className="font-semibold">Restant</dt>
+                  <dt className="font-semibold">Remaining</dt>
                   <dd className={`font-bold ${remaining <= 0 ? 'text-destructive' : 'text-primary'}`}>
-                    {remaining} j
+                    {remaining} d
                   </dd>
                 </div>
               </dl>
               <BalanceBar value={b.consumed} max={total} />
               <p className="text-xs text-muted-foreground text-right">
-                {b.consumed}/{total} jours utilisés
+                {b.consumed}/{total} days used
               </p>
             </CardContent>
           </Card>

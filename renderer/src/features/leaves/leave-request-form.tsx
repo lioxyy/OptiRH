@@ -45,12 +45,12 @@ interface Balance {
 
 const schema = z
   .object({
-    id_type: z.coerce.number().int().positive('Sélectionnez un type'),
-    date_deb: z.string().min(1, 'Date de début requise'),
-    date_fin: z.string().min(1, 'Date de fin requise'),
+    id_type: z.coerce.number().int().positive('Select a type'),
+    date_deb: z.string().min(1, 'Start date required'),
+    date_fin: z.string().min(1, 'End date required'),
   })
   .refine((d) => new Date(d.date_fin) >= new Date(d.date_deb), {
-    message: 'La date de fin doit être après la date de début',
+    message: 'End date must be after start date',
     path: ['date_fin'],
   })
 
@@ -110,7 +110,7 @@ export function LeaveRequestForm() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leaves'] })
-      toast.success('Demande envoyée avec succès')
+      toast.success('Request submitted successfully')
       form.reset()
       setOpen(false)
     },
@@ -118,14 +118,14 @@ export function LeaveRequestForm() {
       console.error("Leave request error:", err.response?.data || err.message)
       const code = err?.response?.data?.code
       if (code === 'INSUFFICIENT_BALANCE') {
-        toast.error('Solde insuffisant pour cette demande')
+        toast.error('Insufficient balance for this request')
       } else if (code === 'INVALID_DATES') {
-        toast.error('Dates invalides')
+        toast.error('Invalid dates')
       } else if (code === 'VALIDATION_ERROR') {
         const details = err?.response?.data?.details
-        toast.error('Erreur de validation : ' + JSON.stringify(details))
+        toast.error('Validation error: ' + JSON.stringify(details))
       } else {
-        toast.error('Échec de la demande : ' + (err?.response?.data?.message || err.message))
+        toast.error('Request failed: ' + (err?.response?.data?.message || err.message))
       }
     },
   })
@@ -134,13 +134,13 @@ export function LeaveRequestForm() {
     <>
       <Button size="sm" onClick={() => setOpen(true)}>
         <Plus className="h-4 w-4 mr-1" />
-        Nouvelle demande
+        New Request
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) form.reset() }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Nouvelle demande de congé</DialogTitle>
+            <DialogTitle>New Leave Request</DialogTitle>
           </DialogHeader>
 
           <Form {...form}>
@@ -150,11 +150,11 @@ export function LeaveRequestForm() {
                 name="id_type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Type de congé</FormLabel>
+                    <FormLabel>Leave Type</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value?.toString()}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
+                          <SelectValue placeholder="Select..." />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -176,7 +176,7 @@ export function LeaveRequestForm() {
                   name="date_deb"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date de début</FormLabel>
+                      <FormLabel>Start Date</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -189,7 +189,7 @@ export function LeaveRequestForm() {
                   name="date_fin"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date de fin</FormLabel>
+                      <FormLabel>End Date</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -203,15 +203,15 @@ export function LeaveRequestForm() {
               {days > 0 && (
                 <div className="rounded-md border bg-muted/40 px-4 py-3 space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Durée calculée</span>
-                    <span className="font-semibold">{days} jour{days > 1 ? 's' : ''}</span>
+                    <span className="text-muted-foreground">Calculated duration</span>
+                    <span className="font-semibold">{days} day{days > 1 ? 's' : ''}</span>
                   </div>
                   {remaining !== null && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Solde disponible</span>
+                      <span className="text-muted-foreground">Available balance</span>
                       <span className={`font-semibold ${remaining < days ? 'text-destructive' : 'text-primary'}`}>
-                        {remaining} jour{remaining > 1 ? 's' : ''}
-                        {remaining < days && ' ⚠ insuffisant'}
+                        {remaining} day{remaining > 1 ? 's' : ''}
+                        {remaining < days && ' ⚠ insufficient'}
                       </span>
                     </div>
                   )}
@@ -220,10 +220,10 @@ export function LeaveRequestForm() {
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => { setOpen(false); form.reset() }}>
-                  Annuler
+                  Cancel
                 </Button>
                 <Button type="submit" disabled={submit.isPending}>
-                  {submit.isPending ? 'Envoi...' : 'Soumettre'}
+                  {submit.isPending ? 'Submitting...' : 'Submit'}
                 </Button>
               </DialogFooter>
             </form>

@@ -41,6 +41,7 @@ OptiRH is designed for zero-config onboarding. Use the automation scripts to han
 
 > [!TIP]
 > The **Setup Script** automatically installs all monorepo dependencies, generates your `.env` configuration, and initializes the local SQLite database with seed data (Admin: `admin@optirh.com` / `admin123`).
+> To specifically reset or re-seed the test data for leaves, you can run: `npx prisma db seed`. This executes the dedicated [leaves-test-data.ts](file:///C:/Users/Lenoovo/Desktop/projetORAd/prisma/leaves-test-data.ts) script.
 
 ---
 *Built with ❤️ by the OptiRH Development Team.*

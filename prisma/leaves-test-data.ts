@@ -1,13 +1,13 @@
 /**
- * seed.ts — Données de test pour OptiRH
+ * leaves-test-data.ts — Seed and Test Data for OptiRH (Leaves Module)
  *
- * Comptes créés :
+ * Test Accounts:
  *  Admin   → admin@optirh.com      / admin123
  *  Agent   → agent@optirh.com      / agent123
- *  Employé → alice@optirh.com      / emp123   (solde normal)
- *  Employé → bob@optirh.com        / emp123   (solde presque épuisé)
- *  Employé → carol@optirh.com      / emp123   (solde épuisé — cas limite)
- *  Employé → david@optirh.com      / emp123   (aucun solde initialisé)
+ *  Employee → alice@optirh.com      / emp123   (normal balance)
+ *  Employee → bob@optirh.com        / emp123   (balance nearly exhausted)
+ *  Employee → carol@optirh.com      / emp123   (balance exhausted — limit case)
+ *  Employee → david@optirh.com      / emp123   (no initialized balance)
  */
 
 import { PrismaClient } from '@prisma/client'
@@ -16,35 +16,35 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Démarrage du seed...')
+  console.log('🌱 Starting seed database for leaves...')
 
-  // ─── 1. Départements ───────────────────────────────────────────────────────
+  // ─── 1. Departments ───────────────────────────────────────────────────────
   const deptRH = await prisma.department.upsert({
     where: { id_dept: 1 },
-    update: { name: 'Ressources Humaines' },
-    create: { name: 'Ressources Humaines', description: 'Service RH' },
+    update: { name: 'Human Resources' },
+    create: { name: 'Human Resources', description: 'HR Department' },
   })
 
   const deptIT = await prisma.department.upsert({
     where: { id_dept: 2 },
-    update: { name: 'Informatique' },
-    create: { name: 'Informatique', description: 'Service IT' },
+    update: { name: 'Information Technology' },
+    create: { name: 'Information Technology', description: 'IT Department' },
   })
 
   const deptFIN = await prisma.department.upsert({
     where: { id_dept: 3 },
     update: { name: 'Finance' },
-    create: { name: 'Finance', description: 'Service Finance' },
+    create: { name: 'Finance', description: 'Finance Department' },
   })
 
-  // ─── 2. Types de congé ─────────────────────────────────────────────────────
+  // ─── 2. Leave Types ─────────────────────────────────────────────────────
   const leaveTypes: Record<string, number> = {}
 
   const typesData = [
-    { name: 'Congé annuel',       default_days: 30, is_cumulative: true  },
-    { name: 'Congé maladie',      default_days: 15, is_cumulative: false },
-    { name: 'Congé maternité',    default_days: 90, is_cumulative: false },
-    { name: 'Congé sans solde',   default_days: 0,  is_cumulative: false },
+    { name: 'Annual Leave',       default_days: 30, is_cumulative: true  },
+    { name: 'Sick Leave',         default_days: 15, is_cumulative: false },
+    { name: 'Maternity Leave',    default_days: 90, is_cumulative: false },
+    { name: 'Unpaid Leave',       default_days: 0,  is_cumulative: false },
   ]
 
   for (const t of typesData) {
@@ -56,10 +56,10 @@ async function main() {
     leaveTypes[t.name] = lt.id_type
   }
 
-  const annualId   = leaveTypes['Congé annuel']
-  const sickId     = leaveTypes['Congé maladie']
+  const annualId   = leaveTypes['Annual Leave']
+  const sickId     = leaveTypes['Sick Leave']
 
-  // ─── 3. Employés ───────────────────────────────────────────────────────────
+  // ─── 3. Employees ───────────────────────────────────────────────────────────
   const hash = {
     admin: await bcrypt.hash('admin123', 10),
     agent: await bcrypt.hash('agent123', 10),
@@ -99,11 +99,10 @@ async function main() {
       date_birth: new Date('1990-07-22'),
       date_employment: new Date('2018-06-01'),
       id_dept: deptRH.id_dept,
-      supervisor_id: admin.id_emp,
     },
   })
 
-  // Alice — solde normal (15 consommés sur 30, 5 de report)
+  // Alice — normal balance
   const alice = await prisma.employee.upsert({
     where: { email: 'alice@optirh.com' },
     update: {},
@@ -121,7 +120,7 @@ async function main() {
     },
   })
 
-  // Bob — solde presque épuisé (27 consommés sur 30)
+  // Bob — balance nearly exhausted
   const bob = await prisma.employee.upsert({
     where: { email: 'bob@optirh.com' },
     update: {},
@@ -139,7 +138,7 @@ async function main() {
     },
   })
 
-  // Carol — solde épuisé (30/30) → cas limite
+  // Carol — balance exhausted → limit case
   const carol = await prisma.employee.upsert({
     where: { email: 'carol@optirh.com' },
     update: {},
@@ -157,7 +156,7 @@ async function main() {
     },
   })
 
-  // David — aucun solde (nouveau, pas encore initialisé)
+  // David — no initial balance (new, not yet initialized)
   const david = await prisma.employee.upsert({
     where: { email: 'david@optirh.com' },
     update: {},
@@ -175,8 +174,7 @@ async function main() {
     },
   })
 
-  // ─── 4. Balances de congé ──────────────────────────────────────────────────
-  // Helper pour upsert balance
+  // ─── 4. Leave Balances ──────────────────────────────────────────────────
   async function upsertBalance(
     id_emp: number, id_type: number,
     allocated: number, consumed: number, carried_over = 0,
@@ -188,22 +186,21 @@ async function main() {
     })
   }
 
-  // Alice — 30 alloués + 5 report, 15 consommés → 20 restants ✅
+  // Alice — 30 allocated + 5 carried over, 15 consumed → 20 remaining ✅
   await upsertBalance(alice.id_emp, annualId,  30, 15, 5)
   await upsertBalance(alice.id_emp, sickId,    15,  2, 0)
 
-  // Bob — 30 alloués, 27 consommés → 3 restants ⚠️
+  // Bob — 30 allocated, 27 consumed → 3 remaining ⚠️
   await upsertBalance(bob.id_emp,   annualId,  30, 27, 0)
   await upsertBalance(bob.id_emp,   sickId,    15,  0, 0)
 
-  // Carol — 30 alloués, 30 consommés → 0 restants ❌ (cas limite)
+  // Carol — 30 allocated, 30 consumed → 0 remaining ❌
   await upsertBalance(carol.id_emp, annualId,  30, 30, 0)
   await upsertBalance(carol.id_emp, sickId,    15, 15, 0)
 
-  // David — pas de balance (sera créé auto au premier POST /requests)
+  // David — no initial balance
 
-  // ─── 5. Demandes de congé variées ──────────────────────────────────────────
-  // Helper pour upsert conge
+  // ─── 5. Leave Requests ──────────────────────────────────────────
   async function upsertConge(data: {
     id_emp: number; id_type: number
     date_deb: Date; date_fin: Date
@@ -217,7 +214,7 @@ async function main() {
     }
   }
 
-  // Alice : une demande approuvée (passée), une en attente (future)
+  // Alice: one approved (past), one pending (future)
   await upsertConge({
     id_emp: alice.id_emp, id_type: annualId,
     date_deb: new Date(`${year}-03-01`), date_fin: new Date(`${year}-03-15`),
@@ -234,7 +231,7 @@ async function main() {
     status: 'Pending',
   })
 
-  // Bob : une approuvée (longue — vide presque tout le solde), une rejetée
+  // Bob: one approved (long), one rejected, one pending
   await upsertConge({
     id_emp: bob.id_emp, id_type: annualId,
     date_deb: new Date(`${year}-01-06`), date_fin: new Date(`${year}-02-01`),
@@ -251,7 +248,7 @@ async function main() {
     status: 'Pending',
   })
 
-  // Carol : solde épuisé — toutes ses demandes passées sont approuvées
+  // Carol: exhausted balance — all past requests are approved
   await upsertConge({
     id_emp: carol.id_emp, id_type: annualId,
     date_deb: new Date(`${year}-01-02`), date_fin: new Date(`${year}-01-31`),
@@ -263,26 +260,24 @@ async function main() {
     status: 'Approved', approved_by: agent.id_emp,
   })
 
-  // David : aucune demande — compte vierge
-
-  // ─── 6. Mettre à jour manager du département ───────────────────────────────
+  // ─── 6. Update Department Manager ───────────────────────────────
   await prisma.department.update({
     where: { id_dept: deptRH.id_dept },
     data: { manager_id: admin.id_emp },
   })
 
-  // ─── Résumé ────────────────────────────────────────────────────────────────
-  console.log('\n✅ Seed terminé !\n')
+  // ─── Summary ────────────────────────────────────────────────────────────────
+  console.log('\n✅ Database seeded successfully!\n')
   console.log('═══════════════════════════════════════════════════════════')
-  console.log('  COMPTES DE TEST')
+  console.log('  TEST ACCOUNTS')
   console.log('═══════════════════════════════════════════════════════════')
   console.log('  👑 Admin   : admin@optirh.com     / admin123')
   console.log('  🧑‍💼 Agent   : agent@optirh.com     / agent123')
   console.log('  ─────────────────────────────────────────────────────────')
-  console.log('  👤 Alice   : alice@optirh.com     / emp123  (20j restants ✅)')
-  console.log('  👤 Bob     : bob@optirh.com       / emp123  ( 3j restants ⚠️)')
-  console.log('  👤 Carol   : carol@optirh.com     / emp123  ( 0j restants ❌)')
-  console.log('  👤 David   : david@optirh.com     / emp123  (nouveau, sans solde)')
+  console.log('  👤 Alice   : alice@optirh.com     / emp123  (20d remaining ✅)')
+  console.log('  👤 Bob     : bob@optirh.com       / emp123  ( 3d remaining ⚠️)')
+  console.log('  👤 Carol   : carol@optirh.com     / emp123  ( 0d remaining ❌)')
+  console.log('  👤 David   : david@optirh.com     / emp123  (new, no balance)')
   console.log('═══════════════════════════════════════════════════════════\n')
 }
 

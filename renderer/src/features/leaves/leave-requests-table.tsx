@@ -27,9 +27,9 @@ interface LeaveRequest {
 }
 
 const STATUS_CONFIG = {
-  Pending:  { label: 'En attente', variant: 'outline'    as const, className: 'text-yellow-600 border-yellow-400' },
-  Approved: { label: 'Approuvé',   variant: 'default'    as const, className: '' },
-  Rejected: { label: 'Rejeté',     variant: 'secondary'  as const, className: 'text-destructive' },
+  Pending:  { label: 'Pending', variant: 'outline'    as const, className: 'text-yellow-600 border-yellow-400' },
+  Approved: { label: 'Approved',   variant: 'default'    as const, className: '' },
+  Rejected: { label: 'Rejected',     variant: 'secondary'  as const, className: 'text-destructive' },
 }
 
 function calcDays(start: string, end: string) {
@@ -39,7 +39,7 @@ function calcDays(start: string, end: string) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 type StatusFilter = 'all' | 'Pending' | 'Approved' | 'Rejected'
@@ -63,9 +63,9 @@ export function LeaveRequestsTable() {
       api.patch(`/api/leaves/requests/${id}/status`, { status }),
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['leaves'] })
-      toast.success(vars.status === 'Approved' ? 'Demande approuvée' : 'Demande rejetée')
+      toast.success(vars.status === 'Approved' ? 'Request approved' : 'Request rejected')
     },
-    onError: () => toast.error('Échec de la mise à jour'),
+    onError: () => toast.error('Update failed'),
   })
 
   const filtered = filter === 'all' ? requests : requests.filter((r) => r.status === filter)
@@ -74,17 +74,17 @@ export function LeaveRequestsTable() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-base">
-          {isManager ? 'Toutes les demandes' : 'Mes demandes'}
+          {isManager ? 'All Requests' : 'My Requests'}
         </CardTitle>
         <Select value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
           <SelectTrigger className="w-40 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="Pending">En attente</SelectItem>
-            <SelectItem value="Approved">Approuvé</SelectItem>
-            <SelectItem value="Rejected">Rejeté</SelectItem>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="Pending">Pending</SelectItem>
+            <SelectItem value="Approved">Approved</SelectItem>
+            <SelectItem value="Rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
       </CardHeader>
@@ -96,18 +96,18 @@ export function LeaveRequestsTable() {
           </div>
         ) : filtered.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Aucune demande trouvée.
+            No requests found.
           </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                {isManager && <TableHead>Employé</TableHead>}
+                {isManager && <TableHead>Employee</TableHead>}
                 <TableHead>Type</TableHead>
-                <TableHead>Début</TableHead>
-                <TableHead>Fin</TableHead>
-                <TableHead>Jours</TableHead>
-                <TableHead>Statut</TableHead>
+                <TableHead>Start</TableHead>
+                <TableHead>End</TableHead>
+                <TableHead>Days</TableHead>
+                <TableHead>Status</TableHead>
                 {isManager && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
@@ -123,7 +123,7 @@ export function LeaveRequestsTable() {
                     <TableCell className="text-muted-foreground">{req.leave_type?.name}</TableCell>
                     <TableCell>{formatDate(req.date_deb)}</TableCell>
                     <TableCell>{formatDate(req.date_fin)}</TableCell>
-                    <TableCell>{days} j</TableCell>
+                    <TableCell>{days} d</TableCell>
                     <TableCell>
                       <Badge variant={cfg.variant} className={cfg.className}>
                         {cfg.label}

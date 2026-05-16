@@ -15,7 +15,7 @@
     "package": "npm run build && electron-builder"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/leaves-test-data.ts"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

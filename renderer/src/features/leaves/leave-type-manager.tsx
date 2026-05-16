@@ -28,7 +28,7 @@ import {
 } from '../../components/ui/form'
 import { Checkbox } from '../../components/ui/checkbox'
 import { Skeleton } from '../../components/ui/skeleton'
-import { Plus } from 'lucide-react'
+import { Plus, Pencil } from 'lucide-react'
 
 interface LeaveType {
   id_type: number
@@ -38,8 +38,8 @@ interface LeaveType {
 }
 
 const schema = z.object({
-  name: z.string().min(1, 'Le nom est requis').max(100),
-  default_days: z.coerce.number().int().nonnegative('Doit être ≥ 0'),
+  name: z.string().min(1, 'Name is required').max(100),
+  default_days: z.coerce.number().int().nonnegative('Must be >= 0'),
   is_cumulative: z.boolean().default(false),
 })
 
@@ -47,6 +47,7 @@ type FormData = z.infer<typeof schema>
 
 export function LeaveTypeManager() {
   const [open, setOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const queryClient = useQueryClient()
 
   const { data: types = [], isLoading } = useQuery<LeaveType[]>({
@@ -62,32 +63,64 @@ export function LeaveTypeManager() {
     defaultValues: { name: '', default_days: 0, is_cumulative: false },
   })
 
+  const handleClose = () => {
+    setOpen(false)
+    setEditingId(null)
+    form.reset({ name: '', default_days: 0, is_cumulative: false })
+  }
+
+  const handleEdit = (t: LeaveType) => {
+    setEditingId(t.id_type)
+    form.reset({
+      name: t.name,
+      default_days: t.default_days,
+      is_cumulative: t.is_cumulative,
+    })
+    setOpen(true)
+  }
+
   const create = useMutation({
     mutationFn: (data: FormData) => api.post('/api/leaves/types', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leaves', 'types'] })
-      toast.success('Type de congé créé')
-      form.reset()
-      setOpen(false)
+      toast.success('Leave type created')
+      handleClose()
     },
     onError: (err: any) => {
       console.error("Leave type error:", err.response?.data || err.message)
       const code = err?.response?.data?.code
       if (code === 'CONFLICT') {
-        toast.error('Ce type de congé existe déjà')
+        toast.error('This leave type already exists')
       } else {
-        toast.error('Échec de la création : ' + (err?.response?.data?.message || err.message))
+        toast.error('Creation failed: ' + (err?.response?.data?.message || err.message))
       }
     },
   })
 
+  const update = useMutation({
+    mutationFn: (data: FormData) => api.put(`/api/leaves/types/${editingId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leaves', 'types'] })
+      toast.success('Leave type updated')
+      handleClose()
+    },
+    onError: (err: any) => {
+      toast.error('Update failed: ' + (err?.response?.data?.message || err.message))
+    },
+  })
+
+  const onSubmit = (d: FormData) => {
+    if (editingId) update.mutate(d)
+    else create.mutate(d)
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-base">Types de congé</CardTitle>
+        <CardTitle className="text-base">Leave Types</CardTitle>
         <Button size="sm" onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4 mr-1" />
-          Ajouter un type
+          Add a type
         </Button>
       </CardHeader>
 
@@ -98,26 +131,32 @@ export function LeaveTypeManager() {
           </div>
         ) : types.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Aucun type de congé configuré.
+            No leave types configured.
           </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Jours par défaut</TableHead>
-                <TableHead>Cumulable</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Default days</TableHead>
+                <TableHead>Cumulative</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {types.map((t) => (
                 <TableRow key={t.id_type}>
                   <TableCell className="font-medium">{t.name}</TableCell>
-                  <TableCell>{t.default_days} j</TableCell>
+                  <TableCell>{t.default_days} d</TableCell>
                   <TableCell>
                     <span className={t.is_cumulative ? 'text-primary' : 'text-muted-foreground'}>
-                      {t.is_cumulative ? '✓ Oui' : '— Non'}
+                      {t.is_cumulative ? '✓ Yes' : '— No'}
                     </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(t)}>
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -126,23 +165,22 @@ export function LeaveTypeManager() {
         )}
       </CardContent>
 
-      {/* Dialog ajout */}
-      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) form.reset() }}>
+      <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(v) }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Nouveau type de congé</DialogTitle>
+            <DialogTitle>{editingId ? 'Edit leave type' : 'New leave type'}</DialogTitle>
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((d) => create.mutate(d))} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nom</FormLabel>
+                    <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex. Congé annuel" {...field} />
+                      <Input placeholder="E.g. Annual leave" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -154,7 +192,7 @@ export function LeaveTypeManager() {
                 name="default_days"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Jours alloués par défaut</FormLabel>
+                    <FormLabel>Default allocated days</FormLabel>
                     <FormControl>
                       <Input type="number" min={0} {...field} />
                     </FormControl>
@@ -175,18 +213,18 @@ export function LeaveTypeManager() {
                       />
                     </FormControl>
                     <FormLabel className="cursor-pointer">
-                      Cumulable (report d'une année à l'autre)
+                      Cumulative (carries over to next year)
                     </FormLabel>
                   </FormItem>
                 )}
               />
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => { setOpen(false); form.reset() }}>
-                  Annuler
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
                 </Button>
-                <Button type="submit" disabled={create.isPending}>
-                  {create.isPending ? 'Création...' : 'Créer'}
+                <Button type="submit" disabled={create.isPending || update.isPending}>
+                  {create.isPending || update.isPending ? 'Saving...' : 'Save'}
                 </Button>
               </DialogFooter>
             </form>
