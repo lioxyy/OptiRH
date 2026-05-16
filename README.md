@@ -50,26 +50,18 @@ The project uses a monorepo pattern to maintain type safety across the stack:
 
 ### Running the Application
 
-OptiRH requires both the frontend dev server and the Electron shell to be active.
+OptiRH requires both the frontend dev server and the Electron compiler to be active.
 
-1. **Start the Frontend (Dev)**:
+1. **Start Development Servers** (Root):
    ```bash
-   cd renderer && npx vite
+   npm run dev
    ```
+   *This starts the Vite dev server for the frontend and the TypeScript compiler (watch mode) for the backend.*
 
-2. **Build and Launch Electron**:
+2. **Launch the Desktop Application** (In a new terminal at Root):
    ```bash
-   # In a new terminal
-   cd electron && npx tsc
-   npx electron electron/dist/main.js
+   npm start
    ```
-
-## 💎 Design Standards
-
-OptiRH follows strict UI standardization:
-- **Canonical Palette**: Shadcn V4 `oklch` theme with 20% border softening.
-- **High-Density Layout**: Optimized for desktop productivity with minimal spacing and ultra-tight sidebar (34px collapsed).
-- **Native Ribbon**: Custom managed title bar with integrated Developer Tools and Window controls.
 
 ---
 *Built with ❤️ by the OptiRH Development Team.*

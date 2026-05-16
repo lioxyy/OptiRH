@@ -10,6 +10,7 @@
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:electron\"",
     "dev:renderer": "npm run dev --workspace=renderer",
     "dev:electron": "npm run dev --workspace=electron",
+    "start": "electron electron/",
     "build": "npm run build --workspace=renderer && npm run build --workspace=electron",
     "package": "npm run build && electron-builder"
   },
