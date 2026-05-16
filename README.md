@@ -30,36 +30,17 @@ The project uses a monorepo pattern to maintain type safety across the stack:
 - [Node.js](https://nodejs.org/) (v18+ recommended)
 - [npm](https://www.npmjs.com/)
 
-### Installation
+### Quick Start
 
-1. **Install root dependencies**:
-   ```bash
-   npm install
-   ```
+OptiRH is designed for zero-config onboarding. Use the automation scripts to handle installation, database migrations, and concurrent execution.
 
-2. **Setup Database**:
-   ```bash
-   npx prisma migrate dev
-   ```
-
-3. **Install component dependencies** (if not handled by root):
-   ```bash
-   cd renderer && npm install
-   cd ../electron && npm install
-   ```
-
-### Running the Application
-
-OptiRH requires both the frontend dev server and the Electron compiler to be active. Automation scripts are provided for ease of use.
-
-**Choose the script for your terminal:**
-
-| Terminal | Setup Script | Run Script |
+| Objective | Windows (CMD) | Linux / macOS / Git Bash |
 | :--- | :--- | :--- |
-| **Windows CMD** | `setup.bat` | `run.bat` |
-| **Git Bash / Linux / macOS** | `./setup.sh` | `./run.sh` |
+| **1. Installation** | `setup.bat` | `./setup.sh` |
+| **2. Run App** | `run.bat` | `./run.sh` |
 
-*Note: The setup script automatically generates a `.env` file to configure your local SQLite database.*
+> [!TIP]
+> The **Setup Script** automatically installs all monorepo dependencies, generates your `.env` configuration, and initializes the local SQLite database with seed data (Admin: `admin@optirh.com` / `admin123`).
 
 ---
 *Built with ❤️ by the OptiRH Development Team.*
