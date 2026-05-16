@@ -2,7 +2,6 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { Outlet, Navigate } from 'react-router-dom'
 import { AppSidebar } from '../app-sidebar'
 import { SiteHeader } from '../site-header'
-import { TitleBar } from '../title-bar'
 import { useAuth } from '@/context/auth-context'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
@@ -23,7 +22,6 @@ export function DashboardLayout() {
 
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden">
-      <TitleBar />
       <SidebarProvider className="h-full w-full overflow-hidden">
         <AppSidebar />
         <SidebarInset className="overflow-hidden min-w-0 flex-1">

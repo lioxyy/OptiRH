@@ -91,6 +91,7 @@ async function start() {
     height: 900,
     show: false,
     frame: false,
+    titleBarStyle: 'hidden',
     backgroundColor: '#18181a',
     webPreferences: {
       nodeIntegration: false,
