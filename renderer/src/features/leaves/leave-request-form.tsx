@@ -115,13 +115,17 @@ export function LeaveRequestForm() {
       setOpen(false)
     },
     onError: (err: any) => {
-      const code = err?.response?.data?.error
+      console.error("Leave request error:", err.response?.data || err.message)
+      const code = err?.response?.data?.code
       if (code === 'INSUFFICIENT_BALANCE') {
         toast.error('Solde insuffisant pour cette demande')
       } else if (code === 'INVALID_DATES') {
         toast.error('Dates invalides')
+      } else if (code === 'VALIDATION_ERROR') {
+        const details = err?.response?.data?.details
+        toast.error('Erreur de validation : ' + JSON.stringify(details))
       } else {
-        toast.error('Échec de la demande')
+        toast.error('Échec de la demande : ' + (err?.response?.data?.message || err.message))
       }
     },
   })

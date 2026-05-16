@@ -71,11 +71,12 @@ export function LeaveTypeManager() {
       setOpen(false)
     },
     onError: (err: any) => {
-      const code = err?.response?.data?.error
+      console.error("Leave type error:", err.response?.data || err.message)
+      const code = err?.response?.data?.code
       if (code === 'CONFLICT') {
         toast.error('Ce type de congé existe déjà')
       } else {
-        toast.error('Échec de la création')
+        toast.error('Échec de la création : ' + (err?.response?.data?.message || err.message))
       }
     },
   })

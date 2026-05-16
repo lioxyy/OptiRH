@@ -7,10 +7,9 @@ export const LeaveTypeSchema = z.object({
 })
 
 export const LeaveRequestSchema = z.object({
-  id_type: z.number().int().positive(),
-  date_deb: z.string().datetime(),
-  date_fin: z.string().datetime(),
-  id_emp: z.number().int().positive(),
+  id_type: z.coerce.number().int().positive(),
+  date_deb: z.string(),
+  date_fin: z.string(),
 })
 
 export const UpdateLeaveStatusSchema = z.object({

@@ -31,8 +31,15 @@ export function LoginForm({
     try {
       await login(email, password)
       navigate("/dashboard")
-    } catch {
-      toast.error("Invalid email or password")
+    } catch (err: any) {
+      console.error("Login error:", err)
+      if (err.response?.status === 401) {
+        toast.error("Invalid email or password")
+      } else if (err.code === "ERR_NETWORK") {
+        toast.error("Cannot connect to server. Is the backend running?")
+      } else {
+        toast.error("An error occurred during login")
+      }
     } finally {
       setSubmitting(false)
     }
