@@ -6,6 +6,7 @@ import authRouter from './features/auth/auth.router'
 import employeesRouter from './features/employees/employees.router'
 import notificationsRouter from './features/notifications/notifications.router'
 import auditRouter from './features/audit/audit.router'
+import leavesRouter from './features/leaves/leaves.router'
 
 export function createApp() {
   const app = express()
@@ -24,6 +25,7 @@ export function createApp() {
 
   app.use('/api/auth', authRouter)
   app.use('/api/employees', employeesRouter)
+  app.use('/api/leaves', leavesRouter)
   app.use('/api/notifications', notificationsRouter)
   app.use('/api/audit', auditRouter)
 

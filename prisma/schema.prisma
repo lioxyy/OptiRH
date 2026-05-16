@@ -99,13 +99,13 @@ model Contract {
 }
 
 model LeaveType {
-  id_type      Int      @id @default(autoincrement())
-  name         String   @unique
-  default_days Int
-
-  conges       Conge[]
-  absences     Absence[]
-  balances     CongeBalance[]
+  id_type       Int            @id @default(autoincrement())
+  name          String         @unique
+  default_days  Int
+  is_cumulative Boolean        @default(false)
+  conges        Conge[]
+  absences      Absence[]
+  balances      CongeBalance[]
 }
 
 model Conge {
