@@ -23,5 +23,29 @@
     "electron-builder": "^24.13.3",
     "tsx": "^4.22.0",
     "typescript": "^5.4.5"
+  },
+  "build": {
+    "appId": "com.optirh.app",
+    "productName": "OptiRH",
+    "directories": { "output": "dist-app" },
+    "files": [
+      "electron/dist/**/*",
+      "renderer/dist/**/*",
+      "node_modules/@prisma/client/**/*",
+      "node_modules/.prisma/**/*"
+    ],
+    "extraResources": [
+      { "from": "prisma/migrations", "to": "migrations" }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

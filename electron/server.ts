@@ -13,6 +13,7 @@ import payrollRouter from './features/payroll/payroll.router'
 import tasksRouter from './features/tasks/tasks.router'
 import recruitmentRouter from './features/recruitment/recruitment.router'
 import evaluationsRouter from './features/evaluations/evaluations.router'
+import analyticsRouter from './features/analytics/analytics.router'
 
 export function createApp() {
   const app = express()
@@ -41,6 +42,7 @@ export function createApp() {
   app.use('/api/tasks', tasksRouter)
   app.use('/api/recruitment', recruitmentRouter)
   app.use('/api/evaluations', evaluationsRouter)
+  app.use('/api/analytics', analyticsRouter)
 
   app.use('/api/*', (_req, res) => {
     res.status(404).json(fail('NOT_FOUND', 'API route not found'))

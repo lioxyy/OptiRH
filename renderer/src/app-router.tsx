@@ -12,10 +12,7 @@ import { PayrollPage } from './features/payroll/payroll-page'
 import { TasksPage } from './features/tasks/tasks-page'
 import { RecruitmentPage } from './features/recruitment/recruitment-page'
 import { EvaluationsPage } from './features/evaluations/evaluations-page'
-
-function PlaceholderPage({ title }: { title: string }) {
-  return <div className="p-6"><h1 className="text-xl font-bold">{title}</h1></div>
-}
+import { AnalyticsPage } from './features/analytics/analytics-page'
 
 import { RootLayout } from './components/layout/root-layout'
 
@@ -90,7 +87,7 @@ export function AppRouter() {
             path="analytics"
             element={
               <RoleGuard roles={['Admin']}>
-                <PlaceholderPage title="Analytics" />
+                <AnalyticsPage />
               </RoleGuard>
             }
           />
