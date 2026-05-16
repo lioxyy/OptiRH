@@ -12,15 +12,9 @@ import {
   UserPlusIcon,
   StarIcon,
   BarChart3Icon,
-  LifeBuoy,
-  Send,
-  DatabaseIcon,
-  FileIcon,
-  ClipboardListIcon,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -38,100 +32,68 @@ import { Link } from "react-router-dom"
 
 type Role = "Admin" | "Agent" | "Employee"
 
-const data = {
-  navMain: [
-    {
-      title: "Overview",
-      url: "/dashboard",
-      icon: LayoutDashboardIcon,
-      isActive: true,
-      roles: ["Admin", "Agent", "Employee"],
-    },
-    {
-      title: "Employees",
-      url: "/dashboard/employees",
-      icon: UsersIcon,
-      roles: ["Admin", "Agent"],
-    },
-    {
-      title: "Leave",
-      url: "/dashboard/leave",
-      icon: CalendarCheckIcon,
-      roles: ["Admin", "Agent", "Employee"],
-    },
-    {
-      title: "Contracts",
-      url: "/dashboard/contracts",
-      icon: FileTextIcon,
-      roles: ["Admin", "Agent"],
-    },
-    {
-      title: "Payroll",
-      url: "/dashboard/payroll",
-      icon: WalletIcon,
-      roles: ["Admin"],
-    },
-    {
-      title: "Tasks",
-      url: "/dashboard/tasks",
-      icon: ListChecksIcon,
-      roles: ["Admin", "Agent", "Employee"],
-    },
-    {
-      title: "Recruitment",
-      url: "/dashboard/recruitment",
-      icon: UserPlusIcon,
-      roles: ["Admin", "Agent"],
-    },
-    {
-      title: "Evaluations",
-      url: "/dashboard/evaluations",
-      icon: StarIcon,
-      roles: ["Admin", "Agent"],
-    },
-    {
-      title: "Analytics",
-      url: "/dashboard/analytics",
-      icon: BarChart3Icon,
-      roles: ["Admin"],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Support",
-      url: "#",
-      icon: LifeBuoy,
-    },
-    {
-      title: "Feedback",
-      url: "#",
-      icon: Send,
-    },
-  ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: DatabaseIcon,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: ClipboardListIcon,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: FileIcon,
-    },
-  ],
-}
+const navItems = [
+  {
+    title: "Overview",
+    url: "/dashboard",
+    icon: LayoutDashboardIcon,
+    roles: ["Admin", "Agent", "Employee"],
+  },
+  {
+    title: "Employees",
+    url: "/dashboard/employees",
+    icon: UsersIcon,
+    roles: ["Admin", "Agent"],
+  },
+  {
+    title: "Leave",
+    url: "/dashboard/leave",
+    icon: CalendarCheckIcon,
+    roles: ["Admin", "Agent", "Employee"],
+  },
+  {
+    title: "Contracts",
+    url: "/dashboard/contracts",
+    icon: FileTextIcon,
+    roles: ["Admin", "Agent"],
+  },
+  {
+    title: "Payroll",
+    url: "/dashboard/payroll",
+    icon: WalletIcon,
+    roles: ["Admin"],
+  },
+  {
+    title: "Tasks",
+    url: "/dashboard/tasks",
+    icon: ListChecksIcon,
+    roles: ["Admin", "Agent", "Employee"],
+  },
+  {
+    title: "Recruitment",
+    url: "/dashboard/recruitment",
+    icon: UserPlusIcon,
+    roles: ["Admin", "Agent"],
+  },
+  {
+    title: "Evaluations",
+    url: "/dashboard/evaluations",
+    icon: StarIcon,
+    roles: ["Admin", "Agent"],
+  },
+  {
+    title: "Analytics",
+    url: "/dashboard/analytics",
+    icon: BarChart3Icon,
+    roles: ["Admin"],
+  },
+]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth()
   const role = (user?.role as Role) ?? "Employee"
 
-  const filteredNavMain = data.navMain.filter((item) =>
+  const filteredNav = navItems.filter((item) =>
     item.roles.includes(role)
   )
 
@@ -153,12 +115,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="overflow-y-auto">
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <NavMain items={filteredNavMain} />
+          <NavMain items={filteredNav} />
         </SidebarGroup>
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={{ name: user?.name || "User", email: user?.email || "", avatar: "" }} onLogout={logout} />
