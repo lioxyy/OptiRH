@@ -5,7 +5,7 @@
 @theme {
   /* Layout scaling from logistics-ERP */
   --font-sans: var(--font-inter);
-  --spacing: 0.222222rem;
+  --spacing: 0.25rem;
   --text-sm: 0.8rem;
   --text-base: 0.85rem;
   --text-lg: 1.05rem;

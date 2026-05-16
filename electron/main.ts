@@ -52,7 +52,7 @@ ipcMain.on('window-toggle-devtools', () => {
   if (mainWindow?.webContents.isDevToolsOpened()) {
     mainWindow.webContents.closeDevTools()
   } else {
-    mainWindow?.webContents.openDevTools()
+    mainWindow?.webContents.openDevTools({ mode: 'detach' })
   }
 })
 
@@ -105,7 +105,7 @@ async function start() {
   const isDev = !app.isPackaged
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
-    mainWindow.webContents.openDevTools()
+    // DevTools can be opened via View > Toggle Developer Tools in the ribbon
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/dist/index.html'))
   }
