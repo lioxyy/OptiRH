@@ -8,6 +8,7 @@ npm install
 # Setup Prisma and SQLite
 echo "🗄️ Setting up database..."
 npx prisma migrate dev --name init
+npx prisma db seed
 
 # Install workspace dependencies
 echo "🎨 Installing renderer dependencies..."

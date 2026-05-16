@@ -6,6 +6,7 @@ call npm install
 
 echo 🗄️ Setting up database...
 call npx prisma migrate dev --name init
+call npx prisma db seed
 
 echo 🎨 Installing renderer dependencies...
 call npm install --workspace=renderer
