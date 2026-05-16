@@ -24,7 +24,7 @@ export function DashboardLayout() {
     <div className="flex h-screen w-full flex-col overflow-hidden">
       <SidebarProvider className="h-full w-full overflow-hidden">
         <AppSidebar />
-        <SidebarInset className="overflow-hidden min-w-0 flex-1">
+        <SidebarInset className="flex-1 min-w-0">
           <SiteHeader />
           <ScrollArea className="flex-1 min-h-0">
             <div className="flex flex-1 flex-col gap-4 p-4">
