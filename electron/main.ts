@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { createApp } from './server'
 import { execSync } from 'child_process'
 import * as net from 'net'
@@ -17,6 +17,36 @@ function getFreePort(): Promise<number> {
 
 let mainWindow: BrowserWindow | null = null
 let server: http.Server | null = null
+
+ipcMain.on('window-minimize', () => {
+  mainWindow?.minimize()
+})
+
+ipcMain.on('window-maximize', () => {
+  if (mainWindow?.isMaximized()) {
+    mainWindow.unmaximize()
+  } else {
+    mainWindow?.maximize()
+  }
+})
+
+ipcMain.on('window-close', () => {
+  mainWindow?.close()
+})
+
+ipcMain.on('window-zoom-in', () => {
+  const currentZoom = mainWindow?.webContents.getZoomLevel() || 0
+  mainWindow?.webContents.setZoomLevel(currentZoom + 0.5)
+})
+
+ipcMain.on('window-zoom-out', () => {
+  const currentZoom = mainWindow?.webContents.getZoomLevel() || 0
+  mainWindow?.webContents.setZoomLevel(currentZoom - 0.5)
+})
+
+ipcMain.on('window-zoom-reset', () => {
+  mainWindow?.webContents.setZoomLevel(0)
+})
 
 async function start() {
   const dbPath = app.isPackaged
@@ -52,6 +82,8 @@ async function start() {
     width: 1400,
     height: 900,
     show: false,
+    frame: false,
+    backgroundColor: '#18181a',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
