@@ -7,6 +7,7 @@ import employeesRouter from './features/employees/employees.router'
 import notificationsRouter from './features/notifications/notifications.router'
 import auditRouter from './features/audit/audit.router'
 import leaveRouter from './features/leave/leave.router'
+import contractsRouter from './features/contracts/contracts.router'
 
 export function createApp() {
   const app = express()
@@ -28,6 +29,7 @@ export function createApp() {
   app.use('/api/notifications', notificationsRouter)
   app.use('/api/audit', auditRouter)
   app.use('/api/leave', leaveRouter)
+  app.use('/api/contracts', contractsRouter)
 
   app.use('/api/*', (_req, res) => {
     res.status(404).json(fail('NOT_FOUND', 'API route not found'))
