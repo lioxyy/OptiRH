@@ -109,3 +109,32 @@ export async function updateDepartment(id: number, data: UpdateDepartmentDTO) {
   if (!dept) throw new AppError('DEPARTMENT_NOT_FOUND', 404)
   return prisma.department.update({ where: { id_dept: id }, data })
 }
+
+interface OrgNode {
+  id_emp: number
+  name: string
+  role: string
+  supervisor_id: number | null
+  id_dept: number
+  children: OrgNode[]
+}
+
+function buildTree(employees: OrgNode[], parentId: number | null): OrgNode[] {
+  return employees
+    .filter(e => e.supervisor_id === parentId)
+    .map(e => ({ ...e, children: buildTree(employees, e.id_emp) }))
+}
+
+export async function getOrgChart() {
+  const employees = await prisma.employee.findMany({
+    select: {
+      id_emp: true,
+      name: true,
+      role: true,
+      supervisor_id: true,
+      id_dept: true,
+    },
+  })
+
+  return buildTree(employees as OrgNode[], null)
+}

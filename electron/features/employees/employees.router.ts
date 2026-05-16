@@ -34,6 +34,11 @@ router.get('/departments', asyncHandler(async (req, res) => {
   res.json(success(departments))
 }))
 
+router.get('/org-chart', authorize('Admin'), asyncHandler(async (_req, res) => {
+  const chart = await EmployeeService.getOrgChart()
+  res.json(success(chart))
+}))
+
 router.post('/departments', authorize('Admin'), validate('body', CreateDepartmentSchema),
   asyncHandler(async (req, res) => {
     const dept = await EmployeeService.createDepartment(req.body as CreateDepartmentDTO)

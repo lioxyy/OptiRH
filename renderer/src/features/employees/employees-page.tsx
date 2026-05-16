@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
@@ -8,6 +9,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../../components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { OrgChart } from './org-chart'
 
 interface Employee {
   id_emp: number
@@ -27,6 +29,7 @@ const roleVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
 
 export function EmployeesPage() {
   const { user } = useAuth()
+  const [tab, setTab] = useState<'list' | 'orgchart'>('list')
 
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
     queryKey: ['employees'],
@@ -42,17 +45,36 @@ export function EmployeesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Employees</h1>
-        {user?.role === 'Admin' && (
-          <Button asChild>
-            <Link to="/dashboard/employees/new">Add Employee</Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-md border overflow-hidden">
+            <Button variant={tab === 'list' ? 'default' : 'ghost'} size="sm" className="rounded-none" onClick={() => setTab('list')}>List</Button>
+            {user?.role === 'Admin' && (
+              <Button variant={tab === 'orgchart' ? 'default' : 'ghost'} size="sm" className="rounded-none" onClick={() => setTab('orgchart')}>Org Chart</Button>
+            )}
+          </div>
+          {user?.role === 'Admin' && tab === 'list' && (
+            <Button asChild>
+              <Link to="/dashboard/employees/new">Add Employee</Link>
+            </Button>
+          )}
+        </div>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>All Employees</CardTitle>
-        </CardHeader>
-        <CardContent>
+
+      {tab === 'orgchart' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Organization Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OrgChart />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>All Employees</CardTitle>
+          </CardHeader>
+          <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -83,6 +105,7 @@ export function EmployeesPage() {
           </Table>
         </CardContent>
       </Card>
+      )}
     </div>
   )
 }
