@@ -1,5 +1,6 @@
 import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
+import { createNotification } from '../../lib/notifications'
 import type { RequestUser } from '../../middleware/authenticate'
 import type { CreateEvaluationDTO } from './evaluations.types'
 
@@ -39,20 +40,35 @@ export async function createEvaluation(data: CreateEvaluationDTO, evaluatorId: n
     throw new AppError('VALIDATION_ERROR', 400, 'evaluatee_cand_id is required for Candidate evaluations')
   }
 
-  return prisma.evaluation.create({
-    data: {
-      score: data.score,
-      bonus_amount: data.bonus_amount,
-      comments: data.comments ?? null,
-      type_eval: data.type_eval,
-      evaluator_id: evaluatorId,
-      evaluatee_emp_id: data.evaluatee_emp_id ?? null,
-      evaluatee_cand_id: data.evaluatee_cand_id ?? null,
-    },
-    include: {
-      evaluatee_emp: { select: { name: true } },
-      evaluatee_cand: { select: { name: true } },
-    },
+  return prisma.$transaction(async (tx) => {
+    const evaluation = await tx.evaluation.create({
+      data: {
+        score: data.score,
+        bonus_amount: data.bonus_amount,
+        comments: data.comments ?? null,
+        type_eval: data.type_eval,
+        evaluator_id: evaluatorId,
+        evaluatee_emp_id: data.evaluatee_emp_id ?? null,
+        evaluatee_cand_id: data.evaluatee_cand_id ?? null,
+      },
+      include: {
+        evaluatee_emp: { select: { name: true } },
+        evaluatee_cand: { select: { name: true } },
+      },
+    })
+
+    if (evaluation.type_eval === 'Employee' && evaluation.evaluatee_emp_id) {
+      await createNotification(
+        tx,
+        evaluation.evaluatee_emp_id,
+        'EVALUATION_RECEIVED',
+        `You have received a new evaluation with a score of ${evaluation.score}/100`,
+        'Evaluation',
+        evaluation.id_eval
+      )
+    }
+
+    return evaluation
   })
 }
 

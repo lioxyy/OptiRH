@@ -6,6 +6,10 @@ export type NotificationType =
   | 'LEAVE_APPROVED'
   | 'LEAVE_REJECTED'
   | 'PAYROLL_GENERATED'
+  | 'PAYROLL_PAID'
+  | 'TASK_ASSIGNED'
+  | 'TASK_COMPLETED'
+  | 'EVALUATION_RECEIVED'
 
 export async function createNotification(
   tx: Prisma.TransactionClient,

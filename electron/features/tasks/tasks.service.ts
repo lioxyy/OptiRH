@@ -1,5 +1,6 @@
 import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
+import { createNotification } from '../../lib/notifications'
 import type { RequestUser } from '../../middleware/authenticate'
 import type { CreateTaskDTO, UpdateTaskDTO } from './tasks.types'
 
@@ -38,47 +39,75 @@ export async function getTasks(user: RequestUser) {
 }
 
 export async function createTask(data: CreateTaskDTO, actorId: number) {
-  return prisma.task.create({
-    data: {
-      name: data.name,
-      description: data.description ?? null,
-      priority: data.priority,
-      date_deb: new Date(data.date_deb),
-      date_fin: new Date(data.date_fin),
-      assigned_by: actorId,
-      assigned_to: data.assigned_to,
-      status: 'To Do',
-    },
-    include: {
-      creator: { select: { name: true } },
-      assignee: { select: { name: true } },
-    },
+  return prisma.$transaction(async (tx) => {
+    const task = await tx.task.create({
+      data: {
+        name: data.name,
+        description: data.description ?? null,
+        priority: data.priority,
+        date_deb: new Date(data.date_deb),
+        date_fin: new Date(data.date_fin),
+        assigned_by: actorId,
+        assigned_to: data.assigned_to,
+        status: 'To Do',
+      },
+      include: {
+        creator: { select: { name: true } },
+        assignee: { select: { name: true } },
+      },
+    })
+
+    await createNotification(
+      tx,
+      data.assigned_to,
+      'TASK_ASSIGNED',
+      `You have been assigned a new task: ${task.name}`,
+      'Task',
+      task.id_task
+    )
+
+    return task
   })
 }
 
 export async function updateTask(id: number, data: UpdateTaskDTO, user: RequestUser) {
-  const task = await prisma.task.findUnique({ where: { id_task: id } })
-  if (!task) throw new AppError('TASK_NOT_FOUND', 404)
+  return prisma.$transaction(async (tx) => {
+    const task = await tx.task.findUnique({ where: { id_task: id } })
+    if (!task) throw new AppError('TASK_NOT_FOUND', 404)
 
-  if (user.role === 'Employee' && task.assigned_to !== user.id_emp) {
-    throw new AppError('FORBIDDEN', 403, 'You can only update tasks assigned to you')
-  }
+    if (user.role === 'Employee' && task.assigned_to !== user.id_emp) {
+      throw new AppError('FORBIDDEN', 403, 'You can only update tasks assigned to you')
+    }
 
-  return prisma.task.update({
-    where: { id_task: id },
-    data: {
-      ...(data.name !== undefined && { name: data.name }),
-      ...(data.description !== undefined && { description: data.description }),
-      ...(data.priority !== undefined && { priority: data.priority }),
-      ...(data.status !== undefined && { status: data.status }),
-      ...(data.date_deb !== undefined && { date_deb: new Date(data.date_deb) }),
-      ...(data.date_fin !== undefined && { date_fin: new Date(data.date_fin) }),
-      ...(data.assigned_to !== undefined && { assigned_to: data.assigned_to }),
-    },
-    include: {
-      creator: { select: { name: true } },
-      assignee: { select: { name: true } },
-    },
+    const updated = await tx.task.update({
+      where: { id_task: id },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.priority !== undefined && { priority: data.priority }),
+        ...(data.status !== undefined && { status: data.status }),
+        ...(data.date_deb !== undefined && { date_deb: new Date(data.date_deb) }),
+        ...(data.date_fin !== undefined && { date_fin: new Date(data.date_fin) }),
+        ...(data.assigned_to !== undefined && { assigned_to: data.assigned_to }),
+      },
+      include: {
+        creator: { select: { name: true } },
+        assignee: { select: { name: true } },
+      },
+    })
+
+    if (data.status === 'Done' && task.status !== 'Done') {
+      await createNotification(
+        tx,
+        task.assigned_by,
+        'TASK_COMPLETED',
+        `Task "${task.name}" has been completed by ${user.name}`,
+        'Task',
+        id
+      )
+    }
+
+    return updated
   })
 }
 

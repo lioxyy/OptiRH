@@ -35,4 +35,12 @@ router.patch(
   }),
 )
 
+router.post(
+  '/read-all',
+  asyncHandler(async (req, res) => {
+    await NotificationService.markAllAsRead(req.user.id_emp)
+    res.json(success({ message: 'All notifications marked as read' }))
+  }),
+)
+
 export default router

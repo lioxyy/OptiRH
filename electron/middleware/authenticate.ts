@@ -5,6 +5,7 @@ import { prisma } from '../db/client'
 
 export interface RequestUser {
   id_emp: number
+  name: string
   role: 'Admin' | 'Agent' | 'Employee'
   id_dept: number
 }
@@ -27,7 +28,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
 
   const employee = await prisma.employee.findUnique({
     where: { id_emp: payload.id_emp },
-    select: { id_emp: true, role: true, id_dept: true },
+    select: { id_emp: true, name: true, role: true, id_dept: true },
   })
 
   if (!employee) return next(new AppError('UNAUTHORIZED', 401))

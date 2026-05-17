@@ -98,6 +98,17 @@ export async function updatePayrollStatus(id: number, status: string, actorId: n
       data: { status },
     })
 
+    if (status === 'Paid') {
+      await createNotification(
+        tx,
+        salaire.id_emp,
+        'PAYROLL_PAID',
+        `Your payslip for ${salaire.month_year} has been paid.`,
+        'Salaire',
+        id
+      )
+    }
+
     await writeAuditLog(tx, actorId, 'UPDATE', 'Salaire', id, updated)
     return updated
   })
