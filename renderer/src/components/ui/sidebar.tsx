@@ -224,7 +224,7 @@ const Sidebar = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "group peer relative hidden h-full w-[--sidebar-width] will-change-[width] transition-[width] duration-1000 [transition-timing-function:var(--ease-smooth)] md:block sticky top-0 z-10 text-sidebar-foreground",
+          "group peer relative hidden h-full w-[--sidebar-width] flex-shrink-0 will-change-[width] transition-all duration-1000 [transition-timing-function:var(--ease-smooth)] md:block sticky top-0 z-10 text-sidebar-foreground",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[collapsible=icon]:items-center",
           side === "left" ? "left-0" : "right-0",
