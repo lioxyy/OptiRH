@@ -185,7 +185,9 @@ export function LeavePage() {
           ...(user?.role !== 'Employee' ? [{ id: "employee", label: "Employee Name" }] : []),
           { id: "type", label: "Leave Type" },
           { id: "status", label: "Status" },
-          { id: "approver", label: "Approver Name" }
+          { id: "approver", label: "Approver Name" },
+          { id: "start_date", label: "Start Date" },
+          { id: "end_date", label: "End Date" }
         ]}
       />
 

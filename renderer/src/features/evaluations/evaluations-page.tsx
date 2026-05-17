@@ -93,7 +93,9 @@ export function EvaluationsPage() {
         searchOptions={[
           { id: "evaluatee", label: "Evaluatee Name" },
           { id: "evaluator", label: "Evaluator Name" },
-          { id: "type", label: "Type" }
+          { id: "type", label: "Type" },
+          { id: "score", label: "Score" },
+          { id: "date", label: "Date" }
         ]}
       />
 

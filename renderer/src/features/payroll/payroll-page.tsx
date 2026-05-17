@@ -134,7 +134,8 @@ export function PayrollPage() {
         searchOptions={[
           ...(user?.role !== 'Employee' ? [{ id: "employee", label: "Employee Name" }] : []),
           { id: "period", label: "Period (MM/YYYY)" },
-          { id: "status", label: "Status" }
+          { id: "status", label: "Status" },
+          { id: "net_amount", label: "Net Amount" }
         ]}
       />
 

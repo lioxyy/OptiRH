@@ -88,17 +88,9 @@ export function EmployeesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Employees</h1>
-        <div className="flex space-x-2">
-          {user?.role !== 'Employee' && (
-            <Tabs value={tab} onValueChange={(v) => setTab(v as 'list' | 'orgchart')} className="w-auto">
-              <TabsList className="h-9">
-                <TabsTrigger value="list" className="h-7 px-4">List</TabsTrigger>
-                <TabsTrigger value="orgchart" className="h-7 px-4">Org Chart</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          )}
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Employees</h1>
           {user?.role === 'Admin' && tab === 'list' && (
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger asChild>
@@ -113,6 +105,15 @@ export function EmployeesPage() {
             </Dialog>
           )}
         </div>
+
+        {user?.role !== 'Employee' && (
+          <Tabs value={tab} onValueChange={(v) => setTab(v as 'list' | 'orgchart')} className="w-fit">
+            <TabsList className="h-9">
+              <TabsTrigger value="list" className="h-7 px-4">List</TabsTrigger>
+              <TabsTrigger value="orgchart" className="h-7 px-4">Org Chart</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
       </div>
 
       {tab === 'orgchart' ? (
@@ -132,7 +133,8 @@ export function EmployeesPage() {
             { id: "name", label: "Name" },
             { id: "email", label: "Email" },
             { id: "role", label: "Role" },
-            { id: "department", label: "Department" }
+            { id: "department", label: "Department" },
+            { id: "supervisor", label: "Supervisor" }
           ]}
         />
       )}

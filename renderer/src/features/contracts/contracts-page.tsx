@@ -143,7 +143,9 @@ export function ContractsPage() {
         searchOptions={[
           ...(user?.role !== 'Employee' ? [{ id: "employee", label: "Employee Name" }] : []),
           { id: "type", label: "Contract Type" },
-          { id: "status", label: "Status" }
+          { id: "status", label: "Status" },
+          { id: "start_date", label: "Start Date" },
+          { id: "end_date", label: "End Date" }
         ]}
       />
 

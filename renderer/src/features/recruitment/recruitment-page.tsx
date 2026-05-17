@@ -122,20 +122,21 @@ export function RecruitmentPage() {
   if (isLoading) return <div className="p-6">Loading...</div>
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Recruitment Pipeline</h1>
-        <div className="flex items-center space-x-2">
-          <Tabs value={view} onValueChange={(v) => setView(v as 'kanban' | 'list')} className="w-auto">
-            <TabsList className="h-9">
-              <TabsTrigger value="kanban" className="h-7 px-4">Kanban</TabsTrigger>
-              <TabsTrigger value="list" className="h-7 px-4">List</TabsTrigger>
-            </TabsList>
-          </Tabs>
+    <div>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Recruitment Pipeline</h1>
           {user?.role === 'Admin' && (
             <Button onClick={() => setShowForm(true)}>New Candidate</Button>
           )}
         </div>
+
+        <Tabs value={view} onValueChange={(v) => setView(v as 'kanban' | 'list')} className="w-fit">
+          <TabsList className="h-9">
+            <TabsTrigger value="kanban" className="h-7 px-4">Kanban</TabsTrigger>
+            <TabsTrigger value="list" className="h-7 px-4">List</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {view === 'kanban' ? (
