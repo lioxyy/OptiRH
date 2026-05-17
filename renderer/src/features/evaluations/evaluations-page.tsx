@@ -31,7 +31,7 @@ export function EvaluationsPage() {
     },
   })
 
-  if (isLoading) return <div className="p-6">Loading...</div>
+
 
   const listColumns = React.useMemo<ColumnDef<Evaluation>[]>(() => [
     {
@@ -77,6 +77,8 @@ export function EvaluationsPage() {
       cell: ({ row }) => new Date(row.original.date_eval).toLocaleDateString(),
     }
   ], [])
+
+  if (isLoading) return <div className="p-6">Loading...</div>
 
   return (
     <div className="space-y-6">

@@ -48,7 +48,7 @@ export function PayrollPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['payroll'] }),
   })
 
-  if (isLoading) return <div className="p-6">Loading...</div>
+
 
   const columns = React.useMemo<ColumnDef<Payslip>[]>(() => {
     const baseCols: ColumnDef<Payslip>[] = [
@@ -116,6 +116,8 @@ export function PayrollPage() {
     }
     return baseCols
   }, [user, updateStatus])
+
+  if (isLoading) return <div className="p-6">Loading...</div>
 
   return (
     <div className="space-y-6">

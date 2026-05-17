@@ -60,7 +60,7 @@ export function TasksPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   })
 
-  if (isLoading) return <div className="p-6">Loading...</div>
+
 
   const groupedTasks = columns.map((status) => ({
     status,
@@ -121,6 +121,8 @@ export function TasksPage() {
       )
     }
   ], [updateMutation, deleteMutation])
+
+  if (isLoading) return <div className="p-6">Loading...</div>
 
   return (
     <div className="space-y-6">

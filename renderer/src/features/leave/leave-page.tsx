@@ -148,6 +148,10 @@ export function LeavePage() {
     return baseCols
   }, [user, actionMutation, deleteMutation])
 
+  if (leavesLoading || (user?.role === 'Employee' && balancesLoading)) {
+    return <div className="p-6">Loading...</div>
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

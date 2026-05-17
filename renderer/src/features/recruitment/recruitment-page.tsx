@@ -57,7 +57,7 @@ export function RecruitmentPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recruitment'] }),
   })
 
-  if (isLoading) return <div className="p-6">Loading...</div>
+
 
   const columns = [
     { status: 'Pending', label: 'New Applications' },
@@ -117,6 +117,8 @@ export function RecruitmentPage() {
       )
     }
   ], [statusMutation, user])
+
+  if (isLoading) return <div className="p-6">Loading...</div>
 
   return (
     <div className="space-y-6">

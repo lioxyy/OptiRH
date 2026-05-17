@@ -47,8 +47,6 @@ export function ContractsPage() {
     }
   })
 
-  if (isLoading) return <div className="p-6">Loading...</div>
-
   const isExpiring = (dateFin?: string | null) => {
     if (!dateFin) return false
     const fin = new Date(dateFin)
@@ -127,6 +125,8 @@ export function ContractsPage() {
     }
     return baseCols
   }, [user, terminateMutation])
+
+  if (isLoading) return <div className="p-6">Loading...</div>
 
   return (
     <div className="space-y-6">
