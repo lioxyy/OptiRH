@@ -7,7 +7,7 @@ import { Badge } from '../../components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../../components/ui/table'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Card, CardContent } from '../../components/ui/card'
 import { PayrollForm } from './payroll-form'
 
 interface Payslip {
@@ -59,11 +59,8 @@ export function PayrollPage() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Payslips</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>

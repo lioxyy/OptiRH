@@ -147,11 +147,11 @@ export function TasksPage() {
           ))}
         </div>
       ) : (
-        <Card>
+        <Card className="overflow-hidden">
           <CardContent className="p-0">
             <table className="w-full">
-              <thead>
-                <tr className="border-b text-sm">
+              <thead className="bg-muted/50">
+                <tr className="text-sm">
                   <th className="text-left p-3 font-medium">Name</th>
                   <th className="text-left p-3 font-medium">Assignee</th>
                   <th className="text-left p-3 font-medium">Priority</th>

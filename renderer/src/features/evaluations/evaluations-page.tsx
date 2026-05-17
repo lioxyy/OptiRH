@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Card, CardContent } from '../../components/ui/card'
 import { EvaluationForm } from './evaluation-form'
 
 interface Evaluation {
@@ -38,14 +38,11 @@ export function EvaluationsPage() {
         <Button onClick={() => setShowForm(true)}>New Evaluation</Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Evaluation Records</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
           <table className="w-full">
-            <thead>
-              <tr className="border-b text-sm">
+            <thead className="bg-muted/50">
+              <tr className="text-sm">
                 <th className="text-left p-3 font-medium">Evaluatee</th>
                 <th className="text-left p-3 font-medium">Type</th>
                 <th className="text-left p-3 font-medium">Score</th>

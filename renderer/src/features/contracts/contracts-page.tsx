@@ -7,7 +7,7 @@ import { Badge } from '../../components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../../components/ui/table'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Card, CardContent } from '../../components/ui/card'
 import { ContractForm } from './contract-form'
 
 interface Contract {
@@ -67,11 +67,8 @@ export function ContractsPage() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Employee Contracts</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -105,9 +102,9 @@ export function ContractsPage() {
                     {user?.role === 'Admin' && (
                       <TableCell className="text-right">
                         {contract.status === 'Active' && (
-                          <Button 
-                            size="sm" 
-                            variant="destructive" 
+                          <Button
+                            size="sm"
+                            variant="destructive"
                             onClick={() => {
                               if (confirm('Are you sure you want to terminate this contract?')) {
                                 terminateMutation.mutate(contract.id_contract)

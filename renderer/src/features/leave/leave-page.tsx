@@ -112,11 +112,8 @@ export function LeavePage() {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{user?.role === 'Employee' ? 'My Leave Requests' : 'Leave Requests'}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
