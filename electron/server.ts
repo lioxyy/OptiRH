@@ -3,6 +3,9 @@ import cors from 'cors'
 import { globalErrorHandler } from './lib/errors'
 import { fail } from './lib/response'
 import authRouter from './features/auth/auth.router'
+import formationsRouter from './features/formations/formation.router'
+import agentsRouter from './features/agents/agents.router'
+import adminUsersRouter from './features/admin-users/admin-users.router'
 import employeesRouter from './features/employees/employees.router'
 import notificationsRouter from './features/notifications/notifications.router'
 import auditRouter from './features/audit/audit.router'
@@ -23,7 +26,10 @@ export function createApp() {
   app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
   app.use('/api/auth', authRouter)
+  app.use('/api/admin-users', adminUsersRouter)
   app.use('/api/employees', employeesRouter)
+  app.use('/api/formations', formationsRouter)
+  app.use('/api/agents', agentsRouter)
   app.use('/api/notifications', notificationsRouter)
   app.use('/api/audit', auditRouter)
 

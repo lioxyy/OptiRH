@@ -55,6 +55,13 @@ export function globalErrorHandler(
     if (prismaErr.code === 'P2025') {
       return res.status(404).json(fail('NOT_FOUND', 'Record not found'))
     }
+    if (prismaErr.code === 'P2023') {
+      console.error(
+        '[DB] P2023: DateTime column contains non-ISO value (SQLite CURRENT_TIMESTAMP format).\n' +
+        '     Run: npm run fix-db   to normalise all DATETIME columns.',
+      )
+      return res.status(500).json(fail('INTERNAL_ERROR', 'Database date format error. Run: npm run fix-db'))
+    }
   }
 
   console.error('[Unhandled Error]', err)

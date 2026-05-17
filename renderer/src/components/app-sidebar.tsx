@@ -6,6 +6,7 @@ import {
   Command,
   LayoutDashboardIcon,
   UsersIcon,
+  Building2Icon,
   FileTextIcon,
   WalletIcon,
   ListChecksIcon,
@@ -17,6 +18,8 @@ import {
   DatabaseIcon,
   FileIcon,
   ClipboardListIcon,
+  UserCog2Icon,
+  HeadsetIcon,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -51,6 +54,12 @@ const data = {
       title: "Employees",
       url: "/dashboard/employees",
       icon: UsersIcon,
+      roles: ["Admin", "Agent"],
+    },
+    {
+      title: "Departments",
+      url: "/dashboard/departments",
+      icon: Building2Icon,
       roles: ["Admin", "Agent"],
     },
     {
@@ -94,6 +103,24 @@ const data = {
       url: "/dashboard/analytics",
       icon: BarChart3Icon,
       roles: ["Admin"],
+    },
+    {
+      title: "Agents",
+      url: "/dashboard/agents",
+      icon: HeadsetIcon,
+      roles: ["Admin"],
+    },
+    {
+      title: "Admin Users",
+      url: "/dashboard/admin-users",
+      icon: UserCog2Icon,
+      roles: ["Admin"],
+    },
+    {
+      title: "Formations",
+      url: "/dashboard/formations",
+      icon: CalendarCheckIcon,
+      roles: ["Admin", "Agent"],
     },
   ],
   navSecondary: [

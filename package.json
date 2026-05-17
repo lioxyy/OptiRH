@@ -12,7 +12,8 @@
     "dev:electron": "npm run dev --workspace=electron",
     "start": "electron electron/",
     "build": "npm run build --workspace=renderer && npm run build --workspace=electron",
-    "package": "npm run build && electron-builder"
+    "package": "npm run build && electron-builder",
+    "fix-db": "npx prisma db execute --file=prisma/fix-datetime-format.sql --schema=prisma/schema.prisma"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
