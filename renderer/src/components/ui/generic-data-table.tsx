@@ -154,27 +154,30 @@ export function GenericDataTable<TData, TValue>({
             {/* TOOLBAR */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 {searchOptions && searchOptions.length > 0 ? (
-                    <div className="flex flex-1 items-center space-x-2 w-full">
-                        <Select value={currentSearchKey} onValueChange={handleSearchKeyChange}>
-                            <SelectTrigger className="w-[140px] h-9">
-                                <SelectValue placeholder="Search by..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {searchOptions.map((opt) => (
-                                    <SelectItem key={opt.id} value={opt.id}>
-                                        {opt.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    <div className="relative flex flex-1 items-center w-full sm:max-w-md">
                         <Input
                             placeholder={`Search ${searchOptions.find((o) => o.id === currentSearchKey)?.label.toLowerCase() || ""}...`}
                             value={(table.getColumn(currentSearchKey)?.getFilterValue() as string) ?? ""}
                             onChange={(event) =>
                                 table.getColumn(currentSearchKey)?.setFilterValue(event.target.value)
                             }
-                            className="w-full sm:max-w-xs h-9"
+                            className="w-full h-9 pr-[135px]"
                         />
+                        <div className="absolute right-0 top-0 bottom-0 flex items-center pr-1">
+                            <div className="h-4 w-[1px] bg-border mr-1"></div>
+                            <Select value={currentSearchKey} onValueChange={handleSearchKeyChange}>
+                                <SelectTrigger className="w-[125px] h-7 text-xs border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-muted-foreground shadow-none">
+                                    <SelectValue placeholder="Search by..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {searchOptions.map((opt) => (
+                                        <SelectItem key={opt.id} value={opt.id} className="text-xs">
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 ) : searchKey ? (
                     <Input
