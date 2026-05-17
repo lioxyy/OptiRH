@@ -9,7 +9,15 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../../components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog'
 import { OrgChart } from './org-chart'
+import { EmployeeForm } from './employee-form'
 
 interface Employee {
   id_emp: number
@@ -30,6 +38,7 @@ const roleVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
 export function EmployeesPage() {
   const { user } = useAuth()
   const [tab, setTab] = useState<'list' | 'orgchart'>('list')
+  const [isAddOpen, setIsAddOpen] = useState(false)
 
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
     queryKey: ['employees'],
@@ -53,9 +62,17 @@ export function EmployeesPage() {
             )}
           </div>
           {user?.role === 'Admin' && tab === 'list' && (
-            <Button asChild>
-              <Link to="/dashboard/employees/new">Add Employee</Link>
-            </Button>
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button>Add Employee</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh]">
+                <DialogHeader>
+                  <DialogTitle>Add Employee</DialogTitle>
+                </DialogHeader>
+                <EmployeeForm onSuccess={() => setIsAddOpen(false)} />
+              </DialogContent>
+            </Dialog>
           )}
         </div>
       </div>
@@ -75,36 +92,36 @@ export function EmployeesPage() {
             <CardTitle>All Employees</CardTitle>
           </CardHeader>
           <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Supervisor</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((emp) => (
-                <TableRow key={emp.id_emp}>
-                  <TableCell>
-                    <Link to={`/dashboard/employees/${emp.id_emp}`} className="hover:underline font-medium">
-                      {emp.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{emp.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={roleVariant[emp.role] ?? 'outline'}>{emp.role}</Badge>
-                  </TableCell>
-                  <TableCell>{emp.department?.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{emp.supervisor?.name ?? '—'}</TableCell>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Supervisor</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {employees.map((emp) => (
+                  <TableRow key={emp.id_emp}>
+                    <TableCell>
+                      <Link to={`/dashboard/employees/${emp.id_emp}`} className="hover:underline font-medium">
+                        {emp.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{emp.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={roleVariant[emp.role] ?? 'outline'}>{emp.role}</Badge>
+                    </TableCell>
+                    <TableCell>{emp.department?.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{emp.supervisor?.name ?? '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

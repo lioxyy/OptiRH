@@ -4,7 +4,6 @@ import { DashboardLayout } from './components/layout/dashboard-layout'
 import { OverviewPage } from './features/overview/overview-page'
 import { EmployeesPage } from './features/employees/employees-page'
 import { EmployeeDetail } from './features/employees/employee-detail'
-import { EmployeeForm } from './features/employees/employee-form'
 import { LeavePage } from './features/leave/leave-page'
 import { ContractsPage } from './features/contracts/contracts-page'
 import { RoleGuard } from './components/layout/role-guard'
@@ -31,14 +30,7 @@ export function AppRouter() {
               </RoleGuard>
             }
           />
-          <Route
-            path="employees/new"
-            element={
-              <RoleGuard roles={['Admin']}>
-                <EmployeeForm />
-              </RoleGuard>
-            }
-          />
+
           <Route
             path="employees/:id"
             element={
