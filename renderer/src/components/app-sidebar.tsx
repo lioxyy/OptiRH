@@ -17,6 +17,7 @@ import {
   DatabaseIcon,
   FileIcon,
   ClipboardListIcon,
+  Clock,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -57,6 +58,18 @@ const data = {
       title: "Leave",
       url: "/dashboard/leave",
       icon: CalendarCheckIcon,
+      roles: ["Admin", "Agent", "Employee"],
+    },
+    {
+      title: "Attendance",
+      url: "/dashboard/attendance",
+      icon: Clock,
+      roles: ["Admin", "Agent", "Employee"],
+    },
+    {
+      title: "Salary Advances",
+      url: "/dashboard/massrouf",
+      icon: WalletIcon,
       roles: ["Admin", "Agent", "Employee"],
     },
     {
