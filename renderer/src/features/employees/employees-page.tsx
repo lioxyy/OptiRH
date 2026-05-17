@@ -5,6 +5,7 @@ import { useAuth } from '../../context/auth-context'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
@@ -89,13 +90,15 @@ export function EmployeesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Employees</h1>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-md border overflow-hidden">
-            <Button variant={tab === 'list' ? 'default' : 'ghost'} size="sm" className="rounded-none" onClick={() => setTab('list')}>List</Button>
-            {user?.role === 'Admin' && (
-              <Button variant={tab === 'orgchart' ? 'default' : 'ghost'} size="sm" className="rounded-none" onClick={() => setTab('orgchart')}>Org Chart</Button>
-            )}
-          </div>
+        <div className="flex space-x-2">
+          {user?.role !== 'Employee' && (
+            <Tabs value={tab} onValueChange={(v) => setTab(v as 'list' | 'orgchart')} className="w-auto">
+              <TabsList className="h-9">
+                <TabsTrigger value="list" className="h-7 px-4">List</TabsTrigger>
+                <TabsTrigger value="orgchart" className="h-7 px-4">Org Chart</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
           {user?.role === 'Admin' && tab === 'list' && (
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger asChild>

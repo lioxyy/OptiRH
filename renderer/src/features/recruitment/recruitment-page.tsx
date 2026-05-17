@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
@@ -123,13 +124,17 @@ export function RecruitmentPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Recruitment</h1>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-md border overflow-hidden">
-            <Button variant={view === 'kanban' ? 'default' : 'ghost'} size="sm" className="rounded-none" onClick={() => setView('kanban')}>Kanban</Button>
-            <Button variant={view === 'list' ? 'default' : 'ghost'} size="sm" className="rounded-none" onClick={() => setView('list')}>List</Button>
-          </div>
-          <Button onClick={() => setShowForm(true)}>Add Candidate</Button>
+        <h1 className="text-2xl font-bold">Recruitment Pipeline</h1>
+        <div className="flex items-center space-x-2">
+          <Tabs value={view} onValueChange={(v) => setView(v as 'kanban' | 'list')} className="w-auto">
+            <TabsList className="h-9">
+              <TabsTrigger value="kanban" className="h-7 px-4">Kanban</TabsTrigger>
+              <TabsTrigger value="list" className="h-7 px-4">List</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {user?.role === 'Admin' && (
+            <Button onClick={() => setShowForm(true)}>New Candidate</Button>
+          )}
         </div>
       </div>
 
