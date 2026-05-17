@@ -224,7 +224,7 @@ const Sidebar = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "group peer relative hidden h-full w-[--sidebar-width] flex-shrink-0 will-change-[width] transition-all duration-[2000ms] [transition-timing-function:var(--ease-smooth)] md:block sticky top-0 z-10 text-sidebar-foreground",
+          "group peer relative hidden h-full w-[--sidebar-width] flex-shrink-0 will-change-[width] transition-all duration-300 [transition-timing-function:var(--ease-smooth)] md:block sticky top-0 z-10 text-sidebar-foreground",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[collapsible=icon]:items-center",
           side === "left" ? "left-0" : "right-0",
@@ -239,7 +239,7 @@ const Sidebar = React.forwardRef<
         <div
           data-sidebar="sidebar"
           className={cn(
-            "flex h-full w-full flex-col bg-sidebar transition-[padding] duration-[2000ms] [transition-timing-function:var(--ease-smooth)]",
+            "flex h-full w-full flex-col bg-sidebar transition-[padding] duration-300 [transition-timing-function:var(--ease-smooth)]",
             (variant === "floating" || variant === "inset") ? "p-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-3" : "",
             variant === "floating" ? "rounded-lg border border-sidebar-border shadow" : "",
             variant === "sidebar" && side === "left" ? "border-r" : "",
@@ -317,7 +317,7 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex w-full flex-1 flex-col bg-background transition-all duration-[2000ms] [transition-timing-function:var(--ease-smooth)]",
+        "relative flex w-full flex-1 flex-col bg-background transition-all duration-300 [transition-timing-function:var(--ease-smooth)]",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
