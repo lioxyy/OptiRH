@@ -7,6 +7,12 @@ import employeesRouter from './features/employees/employees.router'
 import notificationsRouter from './features/notifications/notifications.router'
 import auditRouter from './features/audit/audit.router'
 import leavesRouter from './features/leaves/leaves.router'
+import attendanceRouter from './features/attendance/attendance.router'
+import absencesRouter from './features/absences/absences.router'
+import contractsRouter from './features/contracts/contracts.router'
+import massroufRouter from './features/massrouf/massrouf.router'
+import payrollRouter from './features/payroll/payroll.router'
+import settingsRouter from './features/settings/settings.router'
 
 export function createApp() {
   const app = express()
@@ -28,6 +34,12 @@ export function createApp() {
   app.use('/api/leaves', leavesRouter)
   app.use('/api/notifications', notificationsRouter)
   app.use('/api/audit', auditRouter)
+  app.use('/api/attendance', attendanceRouter)
+  app.use('/api/absences', absencesRouter)
+  app.use('/api/contracts', contractsRouter)
+  app.use('/api/massrouf', massroufRouter)
+  app.use('/api/payroll', payrollRouter)
+  app.use('/api/settings', settingsRouter)
 
   app.use('/api/*', (_req, res) => {
     res.status(404).json(fail('NOT_FOUND', 'API route not found'))

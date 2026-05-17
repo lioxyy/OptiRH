@@ -18,7 +18,7 @@ export async function getOfficeStartTime(): Promise<string> {
 }
 
 // Get Real-time Today's Attendance Roster for all active employees
-export async function getTodayAttendanceRoster(deptId?: number) {
+export async function getDailyRoster(deptId?: number) {
   const today = getStartOfDay()
   
   const employees = await prisma.employee.findMany({
@@ -104,7 +104,7 @@ export async function clockIn(employeeId: number, notes?: string) {
 }
 
 // Clock Out for an Employee
-export async function clockOut(employeeId: number) {
+export async function clockOut(employeeId: number, notes?: string) {
   const today = getStartOfDay()
   const now = new Date()
 
@@ -136,13 +136,14 @@ export async function clockOut(employeeId: number) {
     data: {
       clock_out: now,
       work_hours: workHours,
-      status
+      status,
+      notes: notes || attendance.notes
     }
   })
 }
 
 // Manual Override / Attendance Correction (Admin/Agent)
-export async function overrideAttendance(data: {
+export async function manualOverride(data: {
   id_emp: number
   date: string
   clock_in?: string | null
@@ -246,4 +247,20 @@ export async function autoGenerateAbsences() {
 
   console.log(`[Auto-Absences] Checked past week and logged ${count} new absences.`)
   return count
+}
+
+// Get personal history for an employee
+export async function getPersonalHistory(employeeId: number, filters: { startDate?: Date; endDate?: Date } = {}) {
+  const whereClause: any = { id_emp: employeeId }
+  
+  if (filters.startDate || filters.endDate) {
+    whereClause.date = {}
+    if (filters.startDate) whereClause.date.gte = filters.startDate
+    if (filters.endDate) whereClause.date.lte = filters.endDate
+  }
+
+  return prisma.attendance.findMany({
+    where: whereClause,
+    orderBy: { date: 'desc' }
+  })
 }

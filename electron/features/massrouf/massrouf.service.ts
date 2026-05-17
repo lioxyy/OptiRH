@@ -123,3 +123,26 @@ export async function validateMassrouf(massroufId: number, status: 'Approved' | 
     return updated
   })
 }
+
+// Get Massrouf history with optional filters
+export async function getMassroufHistory(filters: { id_emp?: number; status?: string } = {}) {
+  const whereClause: any = {}
+  if (filters.id_emp) whereClause.id_emp = Number(filters.id_emp)
+  if (filters.status) whereClause.status = filters.status
+  
+  return prisma.massrouf.findMany({
+    where: whereClause,
+    include: {
+      employee: {
+        select: {
+          name: true,
+          email: true,
+          role: true,
+          department: { select: { name: true } }
+        }
+      }
+    },
+    orderBy: { date_request: 'desc' }
+  })
+}
+
