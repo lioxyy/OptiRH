@@ -41,7 +41,7 @@ export function EmployeeDetail() {
             </div>
             <div className="flex justify-between">
               <dt className="text-sm text-muted-foreground">Gender</dt>
-              <dd className="text-sm">{employee.gender ?? '—'}</dd>
+              <dd className="text-sm">{employee.gender ? (employee.gender.charAt(0) + employee.gender.slice(1).toLowerCase()) : '—'}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-sm text-muted-foreground">Date of birth</dt>

@@ -4,7 +4,7 @@ export const CreateEmployeeSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
   phone: z.string().optional(),
-  gender: z.string().optional(),
+  gender: z.enum(['MALE', 'FEMALE']).optional(),
   date_birth: z.string().datetime(),
   address: z.string().optional(),
   date_employment: z.string().datetime(),

@@ -29,7 +29,7 @@ const FormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email'),
   phone: z.string().optional(),
-  gender: z.string().min(1, 'Gender is required'),
+  gender: z.enum(['MALE', 'FEMALE'], { required_error: 'Gender is required' }),
   date_birth: z.string().min(1, 'Date of birth is required'),
   date_employment: z.string().min(1, 'Date of employment is required'),
   address: z.string().optional(),
@@ -153,9 +153,8 @@ export function EmployeeForm({ onSuccess }: { onSuccess?: () => void }) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Male">Male</SelectItem>
-                    <SelectItem value="Female">Female</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    <SelectItem value="MALE">Male</SelectItem>
+                    <SelectItem value="FEMALE">Female</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
