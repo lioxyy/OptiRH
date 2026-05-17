@@ -9,12 +9,12 @@ export async function requestMassrouf(employeeId: number, amount: number) {
   const startDate = new Date(currentYear, 0, 1)
   const endDate = new Date(currentYear, 11, 31, 23, 59, 59)
 
-  // 1. Enforce max 2 requests per calendar year
+  // 1. Enforce max 2 requests per calendar year (Pending + Approved count)
   const requestCount = await prisma.massrouf.count({
     where: {
       id_emp: employeeId,
       date_request: { gte: startDate, lte: endDate },
-      status: { in: ['Pending', 'Approved'] } // Include both approved and pending in count
+      status: { in: ['Pending', 'Approved'] }
     }
   })
 
@@ -26,7 +26,34 @@ export async function requestMassrouf(employeeId: number, amount: number) {
     )
   }
 
-  // 2. Log request
+  // 2. Enforce max amount = 50% of base salary from active contract
+  const contract = await prisma.contract.findFirst({
+    where: { id_emp: employeeId, status: 'Active' }
+  })
+
+  if (!contract) {
+    throw new AppError(
+      'NO_ACTIVE_CONTRACT',
+      400,
+      'Cannot request a salary advance: no active contract found.'
+    )
+  }
+
+  const maxAllowed = contract.salaire_base * 0.5
+  if (amount > maxAllowed) {
+    throw new AppError(
+      'FORBIDDEN',
+      400,
+      `Amount exceeds the allowed limit. You can request at most 50% of your base salary (${maxAllowed.toLocaleString()} DZD).`
+    )
+  }
+
+  // 3. Amount must be positive
+  if (amount <= 0) {
+    throw new AppError('FORBIDDEN', 400, 'Amount must be a positive value.')
+  }
+
+  // 4. Create the request
   return prisma.$transaction(async (tx) => {
     const request = await tx.massrouf.create({
       data: {
@@ -47,7 +74,7 @@ export async function requestMassrouf(employeeId: number, amount: number) {
         tx,
         hr.id_emp,
         'LEAVE_PENDING',
-        `New Massrouf (Salary Advance) request of ${amount} DZD submitted by ${request.employee.name}`,
+        `New Massrouf (Salary Advance) request of ${amount.toLocaleString()} DZD submitted by ${request.employee.name}`,
         'Massrouf',
         request.id_massrouf
       )
