@@ -81,9 +81,7 @@ export function LeavePage() {
     }
   })
 
-  if (leavesLoading || (user?.role === 'Employee' && balancesLoading)) {
-    return <div className="p-6">Loading...</div>
-  }
+
 
   const columns = React.useMemo<ColumnDef<LeaveRequest>[]>(() => {
     const baseCols: ColumnDef<LeaveRequest>[] = [
@@ -147,6 +145,7 @@ export function LeavePage() {
     }
     return baseCols
   }, [user, actionMutation, deleteMutation])
+
 
   if (leavesLoading || (user?.role === 'Employee' && balancesLoading)) {
     return <div className="p-6">Loading...</div>
