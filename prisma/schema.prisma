@@ -53,6 +53,8 @@ model Employee {
   interviews_conducted Entretien[]
   notifications   Notification[]
   audit_logs      AuditLog[]
+  attendance_records Attendance[] @relation("EmployeeAttendance")
+  massroufs          Massrouf[]   @relation("EmployeeMassrouf")
 }
 
 model Candidat {
@@ -139,14 +141,16 @@ model CongeBalance {
 }
 
 model Absence {
-  id_absence       Int      @id @default(autoincrement())
-  date_absence     DateTime
-  id_type          Int?
-  is_justified     Boolean  @default(false)
+  id_absence        Int      @id @default(autoincrement())
+  date_absence      DateTime
+  id_type           Int?
+  is_justified      Boolean  @default(false)
   justification_doc String?
-  id_emp           Int
-  recorded_by      Int
-  conge_id         Int?
+  justification_status String @default("None") // 'None' | 'Pending' | 'Approved' | 'Rejected'
+  reject_reason     String?
+  id_emp            Int
+  recorded_by       Int
+  conge_id          Int?
 
   employee    Employee   @relation("AbsenceEmployee", fields: [id_emp], references: [id_emp])
   recorder    Employee   @relation("AbsenceRecorder", fields: [recorded_by], references: [id_emp])
@@ -247,4 +251,36 @@ model AuditLog {
   timestamp    DateTime @default(now())
 
   actor Employee? @relation(fields: [actor_id], references: [id_emp])
+}
+
+model SystemSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model Massrouf {
+  id_massrouf  Int      @id @default(autoincrement())
+  amount       Float
+  date_request DateTime @default(now())
+  status       String   @default("Pending") // 'Pending' | 'Approved' | 'Rejected'
+  id_emp       Int
+  approved_by  Int?
+
+  employee     Employee @relation("EmployeeMassrouf", fields: [id_emp], references: [id_emp])
+}
+
+model Attendance {
+  id_attendance Int      @id @default(autoincrement())
+  id_emp        Int
+  date          DateTime // Stored as YYYY-MM-DD at 00:00:00
+  clock_in      DateTime?
+  clock_out     DateTime?
+  status        String   @default("Present") // 'Present' | 'Late' | 'Absent' | 'Half-Day'
+  work_hours    Float?
+  notes         String?
+
+  employee      Employee @relation("EmployeeAttendance", fields: [id_emp], references: [id_emp])
+
+  @@unique([id_emp, date])
 }
