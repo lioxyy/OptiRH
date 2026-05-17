@@ -125,8 +125,12 @@ export function EmployeesPage() {
         <GenericDataTable
           columns={columns}
           data={employees}
-          searchKey="name"
-          searchPlaceholder="Search employees by name..."
+          searchOptions={[
+            { id: "name", label: "Name" },
+            { id: "email", label: "Email" },
+            { id: "role", label: "Role" },
+            { id: "department", label: "Department" }
+          ]}
         />
       )}
     </div>

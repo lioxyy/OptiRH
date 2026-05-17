@@ -140,8 +140,11 @@ export function ContractsPage() {
       <GenericDataTable
         columns={columns}
         data={contracts}
-        searchKey="type"
-        searchPlaceholder="Filter contracts by type..."
+        searchOptions={[
+          ...(user?.role !== 'Employee' ? [{ id: "employee", label: "Employee Name" }] : []),
+          { id: "type", label: "Contract Type" },
+          { id: "status", label: "Status" }
+        ]}
       />
 
       {showForm && <ContractForm onClose={() => setShowForm(false)} />}

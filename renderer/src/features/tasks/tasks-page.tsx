@@ -210,8 +210,12 @@ export function TasksPage() {
         <GenericDataTable
           columns={listColumns}
           data={tasks}
-          searchKey="name"
-          searchPlaceholder="Filter tasks by name..."
+          searchOptions={[
+            { id: "name", label: "Task Name" },
+            { id: "assignee", label: "Assignee Name" },
+            { id: "priority", label: "Priority" },
+            { id: "status", label: "Status" }
+          ]}
         />
       )}
 

@@ -90,8 +90,11 @@ export function EvaluationsPage() {
       <GenericDataTable
         columns={listColumns}
         data={evaluations}
-        searchKey="evaluatee"
-        searchPlaceholder="Filter evaluations..."
+        searchOptions={[
+          { id: "evaluatee", label: "Evaluatee Name" },
+          { id: "evaluator", label: "Evaluator Name" },
+          { id: "type", label: "Type" }
+        ]}
       />
 
       {showForm && <EvaluationForm onClose={() => setShowForm(false)} />}

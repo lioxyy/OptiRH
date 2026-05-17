@@ -186,8 +186,12 @@ export function RecruitmentPage() {
         <GenericDataTable
           columns={listColumns}
           data={candidates}
-          searchKey="name"
-          searchPlaceholder="Filter candidates by name..."
+          searchOptions={[
+            { id: "name", label: "Candidate Name" },
+            { id: "email", label: "Email" },
+            { id: "position", label: "Position" },
+            { id: "status", label: "Status" }
+          ]}
         />
       )}
 

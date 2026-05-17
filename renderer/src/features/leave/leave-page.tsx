@@ -181,8 +181,12 @@ export function LeavePage() {
       <GenericDataTable
         columns={columns}
         data={leaves}
-        searchKey="type"
-        searchPlaceholder="Filter leaves by type..."
+        searchOptions={[
+          ...(user?.role !== 'Employee' ? [{ id: "employee", label: "Employee Name" }] : []),
+          { id: "type", label: "Leave Type" },
+          { id: "status", label: "Status" },
+          { id: "approver", label: "Approver Name" }
+        ]}
       />
 
       {showForm && <LeaveForm onClose={() => setShowForm(false)} />}

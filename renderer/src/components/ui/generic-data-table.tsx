@@ -25,6 +25,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
@@ -84,22 +91,39 @@ export function DataTableColumnHeader<TData, TValue>({
 // ---------------------------------------------------------------------------
 // MAIN DATA TABLE COMPONENT
 // ---------------------------------------------------------------------------
+export interface SearchOption {
+    id: string
+    label: string
+}
+
 interface GenericDataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
-    searchKey?: string   // Default column to search, e.g. "name"
+    searchKey?: string   // Default column to search if no options provided
     searchPlaceholder?: string
+    searchOptions?: SearchOption[]
 }
 
 export function GenericDataTable<TData, TValue>({
     columns,
     data,
     searchKey,
-    searchPlaceholder = "Search..."
+    searchPlaceholder = "Search...",
+    searchOptions
 }: GenericDataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+
+    const [currentSearchKey, setCurrentSearchKey] = React.useState<string>(
+        searchOptions?.[0]?.id || searchKey || ""
+    )
+
+    React.useEffect(() => {
+        if (searchOptions?.length && !searchOptions.find(o => o.id === currentSearchKey)) {
+            setCurrentSearchKey(searchOptions[0].id)
+        }
+    }, [searchOptions, currentSearchKey])
 
     const table = useReactTable({
         data,
@@ -118,11 +142,41 @@ export function GenericDataTable<TData, TValue>({
         },
     })
 
+    const handleSearchKeyChange = (newKey: string) => {
+        if (currentSearchKey) {
+            table.getColumn(currentSearchKey)?.setFilterValue("")
+        }
+        setCurrentSearchKey(newKey)
+    }
+
     return (
         <div className="space-y-4">
             {/* TOOLBAR */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                {searchKey ? (
+                {searchOptions && searchOptions.length > 0 ? (
+                    <div className="flex flex-1 items-center space-x-2 w-full">
+                        <Select value={currentSearchKey} onValueChange={handleSearchKeyChange}>
+                            <SelectTrigger className="w-[140px] h-9">
+                                <SelectValue placeholder="Search by..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {searchOptions.map((opt) => (
+                                    <SelectItem key={opt.id} value={opt.id}>
+                                        {opt.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Input
+                            placeholder={`Search ${searchOptions.find((o) => o.id === currentSearchKey)?.label.toLowerCase() || ""}...`}
+                            value={(table.getColumn(currentSearchKey)?.getFilterValue() as string) ?? ""}
+                            onChange={(event) =>
+                                table.getColumn(currentSearchKey)?.setFilterValue(event.target.value)
+                            }
+                            className="w-full sm:max-w-xs h-9"
+                        />
+                    </div>
+                ) : searchKey ? (
                     <Input
                         placeholder={searchPlaceholder}
                         value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
@@ -131,7 +185,9 @@ export function GenericDataTable<TData, TValue>({
                         }
                         className="w-full sm:max-w-sm h-9"
                     />
-                ) : <div className="flex-1" />}
+                ) : (
+                    <div className="flex-1" />
+                )}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="ml-auto h-9">

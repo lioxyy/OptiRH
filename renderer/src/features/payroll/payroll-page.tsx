@@ -131,8 +131,11 @@ export function PayrollPage() {
       <GenericDataTable
         columns={columns}
         data={payslips}
-        searchKey="period"
-        searchPlaceholder="Filter by period..."
+        searchOptions={[
+          ...(user?.role !== 'Employee' ? [{ id: "employee", label: "Employee Name" }] : []),
+          { id: "period", label: "Period (MM/YYYY)" },
+          { id: "status", label: "Status" }
+        ]}
       />
 
       {showForm && <PayrollForm onClose={() => setShowForm(false)} />}
