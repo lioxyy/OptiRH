@@ -87,10 +87,7 @@ export function EmployeesPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>All Employees</CardTitle>
-          </CardHeader>
+        <Card className="overflow-hidden p-0">
           <CardContent className="p-0">
             <Table>
               <TableHeader>

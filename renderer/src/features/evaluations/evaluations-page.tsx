@@ -38,7 +38,7 @@ export function EvaluationsPage() {
         <Button onClick={() => setShowForm(true)}>New Evaluation</Button>
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden p-0">
         <CardContent className="p-0">
           <table className="w-full">
             <thead className="bg-muted/50">

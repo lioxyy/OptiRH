@@ -112,7 +112,7 @@ export function LeavePage() {
         </div>
       )}
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden p-0">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
