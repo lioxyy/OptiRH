@@ -29,6 +29,10 @@ const FormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email'),
   phone: z.string().optional(),
+  gender: z.string().min(1, 'Gender is required'),
+  date_birth: z.string().min(1, 'Date of birth is required'),
+  date_employment: z.string().min(1, 'Date of employment is required'),
+  address: z.string().optional(),
   role: z.enum(['Admin', 'Agent', 'Employee']),
   id_dept: z.coerce.number({ invalid_type_error: 'Department is required' }),
   supervisor_id: z.coerce.number().optional(),
@@ -75,9 +79,16 @@ export function EmployeeForm({ onSuccess }: { onSuccess?: () => void }) {
   async function onSubmit(data: FormData) {
     setSubmitting(true)
     try {
-      await api.post('/api/employees', data)
+      // Convert date strings to ISO-8601 for backend Zod validation
+      const payload = {
+        ...data,
+        date_birth: new Date(data.date_birth).toISOString(),
+        date_employment: new Date(data.date_employment).toISOString(),
+      }
+
+      await api.post('/api/employees', payload)
       queryClient.invalidateQueries({ queryKey: ['employees'] })
-      toast.success('Employee created')
+      toast.success('Employee created successfully')
       onSuccess?.()
     } catch {
       toast.error('Failed to create employee')
@@ -128,6 +139,71 @@ export function EmployeeForm({ onSuccess }: { onSuccess?: () => void }) {
             </FormItem>
           )}
         />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Gender</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Address</FormLabel>
+                <FormControl>
+                  <Input placeholder="123 Main St" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="date_birth"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date of Birth</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="date_employment"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Employment Date</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={form.control}
           name="password"
