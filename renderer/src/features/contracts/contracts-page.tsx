@@ -19,8 +19,8 @@ interface Employee {
 
 interface Contract {
   id_contract: number
-  type_contrat: string
-  date_debut: string
+  type: string
+  date_deb: string
   date_fin: string | null
   salaire_base: number
   status: 'Active' | 'Archived'
@@ -114,9 +114,9 @@ export function ContractsPage() {
 
     createMutation.mutate({
       id_emp: Number(employeeId),
-      type_contrat: type,
+      type: type,
       salaire_base: parsedSalary,
-      date_debut: new Date(startDate).toISOString(),
+      date_deb: new Date(startDate).toISOString(),
       date_fin: endDate ? new Date(endDate).toISOString() : null,
     })
   }
@@ -325,11 +325,11 @@ export function ContractsPage() {
                             <span className="text-[10px] text-muted-foreground font-mono">{c.employee?.email}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 px-4 text-sm font-semibold text-muted-foreground">{c.type_contrat}</TableCell>
+                        <TableCell className="py-3 px-4 text-sm font-semibold text-muted-foreground">{c.type}</TableCell>
                         <TableCell className="py-3 px-4 text-sm font-bold text-foreground font-mono">
                           {c.salaire_base.toLocaleString()} DZD
                         </TableCell>
-                        <TableCell className="py-3 px-4 text-sm font-medium">{formatDay(c.date_debut)}</TableCell>
+                        <TableCell className="py-3 px-4 text-sm font-medium">{formatDay(c.date_deb)}</TableCell>
                         <TableCell className="py-3 px-4 text-sm font-medium">{formatDay(c.date_fin)}</TableCell>
                         <TableCell className="py-3 px-4">
                           <Badge variant={cfg.variant} className={`text-[10px] py-0.5 px-2 rounded-full border ${cfg.className}`}>

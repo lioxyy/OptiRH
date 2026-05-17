@@ -20,9 +20,9 @@ export async function requestMassrouf(employeeId: number, amount: number) {
 
   if (requestCount >= 2) {
     throw new AppError(
-      'MASSROUF_LIMIT_REACHED',
-      400,
-      'You have reached the annual limit. Employees can request a salary advance at most twice a year.'
+      'FORBIDDEN',
+      403,
+      'Yearly limit reached'
     )
   }
 
