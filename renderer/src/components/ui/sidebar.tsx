@@ -224,7 +224,7 @@ const Sidebar = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "group peer relative hidden h-full w-[--sidebar-width] will-change-[width] transition-[width] duration-150 ease-out md:block sticky top-0 z-10 text-sidebar-foreground",
+          "group peer relative hidden h-full w-[--sidebar-width] will-change-[width] transition-[width] duration-300 ease-in-out md:block sticky top-0 z-10 text-sidebar-foreground",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[collapsible=icon]:items-center",
           side === "left" ? "left-0" : "right-0",
@@ -317,7 +317,7 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex w-full flex-1 flex-col bg-background",
+        "relative flex w-full flex-1 flex-col bg-background transition-all duration-300 ease-in-out",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
@@ -437,7 +437,7 @@ const SidebarGroupLabel = React.forwardRef<
       ref={ref}
       data-sidebar="group-label"
       className={cn(
-        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] duration-300 ease-in-out focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:opacity-0",
         className
       )}
