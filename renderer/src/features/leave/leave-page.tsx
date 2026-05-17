@@ -1,12 +1,12 @@
+import * as React from 'react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '../../components/ui/table'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { LeaveForm } from './leave-form'
 
@@ -85,6 +85,69 @@ export function LeavePage() {
     return <div className="p-6">Loading...</div>
   }
 
+  const columns = React.useMemo<ColumnDef<LeaveRequest>[]>(() => {
+    const baseCols: ColumnDef<LeaveRequest>[] = [
+      ...((user?.role !== 'Employee' ? [{
+        id: "employee",
+        accessorFn: (row: LeaveRequest) => row.employee?.name ?? '—',
+        header: ({ column }: any) => <DataTableColumnHeader column={column} title="Employee" />,
+      }] : []) as ColumnDef<LeaveRequest>[]),
+      {
+        id: "type",
+        accessorFn: (row) => row.leave_type?.name ?? '—',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+      },
+      {
+        id: "start_date",
+        accessorKey: "date_deb",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Start Date" />,
+        cell: ({ row }) => new Date(row.original.date_deb).toLocaleDateString(),
+      },
+      {
+        id: "end_date",
+        accessorKey: "date_fin",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="End Date" />,
+        cell: ({ row }) => new Date(row.original.date_fin).toLocaleDateString(),
+      },
+      {
+        id: "status",
+        accessorKey: "status",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        cell: ({ row }) => <Badge variant={statusVariant[row.original.status] ?? 'outline'}>{row.original.status}</Badge>,
+      },
+      {
+        id: "approver",
+        accessorFn: (row) => row.approver?.name ?? '—',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Approver" />,
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.approver?.name ?? '—'}</span>,
+      }
+    ]
+
+    if (user?.role === 'Admin' || user?.role === 'Agent') {
+      baseCols.push({
+        id: "actions",
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => (
+          <div className="flex justify-end gap-2">
+            {row.original.status === 'Pending' && (
+              <>
+                <Button size="sm" variant="outline" onClick={() => actionMutation.mutate({ id: row.original.id_conge, action: 'approve' })}>Approve</Button>
+                <Button size="sm" variant="destructive" onClick={() => actionMutation.mutate({ id: row.original.id_conge, action: 'reject' })}>Reject</Button>
+              </>
+            )}
+            {row.original.status === 'Approved' && user?.role === 'Admin' && (
+              <Button size="sm" variant="destructive" onClick={() => actionMutation.mutate({ id: row.original.id_conge, action: 'cancel' })}>Cancel</Button>
+            )}
+            {user?.role === 'Admin' && (
+              <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(row.original.id_conge)}>Delete</Button>
+            )}
+          </div>
+        )
+      })
+    }
+    return baseCols
+  }, [user, actionMutation, deleteMutation])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -112,62 +175,12 @@ export function LeavePage() {
         </div>
       )}
 
-      <Card className="overflow-hidden p-0">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {user?.role !== 'Employee' && <TableHead>Employee</TableHead>}
-                <TableHead>Type</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Approver</TableHead>
-                {(user?.role === 'Admin' || user?.role === 'Agent') && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leaves.map((leave) => (
-                <TableRow key={leave.id_conge}>
-                  {user?.role !== 'Employee' && (
-                    <TableCell className="font-medium">{leave.employee?.name}</TableCell>
-                  )}
-                  <TableCell>{leave.leave_type.name}</TableCell>
-                  <TableCell>{new Date(leave.date_deb).toLocaleDateString()}</TableCell>
-                  <TableCell>{new Date(leave.date_fin).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant[leave.status] ?? 'outline'}>{leave.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{leave.approver?.name ?? '—'}</TableCell>
-                  {(user?.role === 'Admin' || user?.role === 'Agent') && (
-                    <TableCell className="text-right space-x-2">
-                      {leave.status === 'Pending' && (
-                        <>
-                          <Button size="sm" variant="outline" onClick={() => actionMutation.mutate({ id: leave.id_conge, action: 'approve' })}>Approve</Button>
-                          <Button size="sm" variant="destructive" onClick={() => actionMutation.mutate({ id: leave.id_conge, action: 'reject' })}>Reject</Button>
-                        </>
-                      )}
-                      {leave.status === 'Approved' && user?.role === 'Admin' && (
-                        <Button size="sm" variant="destructive" onClick={() => actionMutation.mutate({ id: leave.id_conge, action: 'cancel' })}>Cancel</Button>
-                      )}
-                      {user?.role === 'Admin' && (
-                        <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(leave.id_conge)}>Delete</Button>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {leaves.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={user?.role === 'Employee' ? 5 : 7} className="text-center py-6 text-muted-foreground">
-                    No leave requests found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <GenericDataTable
+        columns={columns}
+        data={leaves}
+        searchKey="type"
+        searchPlaceholder="Filter leaves by type..."
+      />
 
       {showForm && <LeaveForm onClose={() => setShowForm(false)} />}
     </div>

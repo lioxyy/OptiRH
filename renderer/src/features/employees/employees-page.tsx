@@ -5,9 +5,8 @@ import { useAuth } from '../../context/auth-context'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '../../components/ui/table'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import {
   Dialog,
@@ -50,6 +49,42 @@ export function EmployeesPage() {
 
   if (isLoading) return <div className="p-6">Loading...</div>
 
+  const columns: ColumnDef<Employee>[] = [
+    {
+      id: "name",
+      accessorKey: "name",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+      cell: ({ row }) => (
+        <Link to={`/dashboard/employees/${row.original.id_emp}`} className="hover:underline font-medium">
+          {row.original.name}
+        </Link>
+      ),
+    },
+    {
+      id: "email",
+      accessorKey: "email",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.email}</span>,
+    },
+    {
+      id: "role",
+      accessorKey: "role",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Role" />,
+      cell: ({ row }) => <Badge variant={roleVariant[row.original.role] ?? 'outline'}>{row.original.role}</Badge>,
+    },
+    {
+      id: "department",
+      accessorFn: (row) => row.department?.name ?? 'General',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Department" />,
+    },
+    {
+      id: "supervisor",
+      accessorFn: (row) => row.supervisor?.name ?? '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Supervisor" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.supervisor?.name ?? '—'}</span>,
+    },
+  ]
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -87,38 +122,12 @@ export function EmployeesPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="overflow-hidden p-0">
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Supervisor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employees.map((emp) => (
-                  <TableRow key={emp.id_emp}>
-                    <TableCell>
-                      <Link to={`/dashboard/employees/${emp.id_emp}`} className="hover:underline font-medium">
-                        {emp.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{emp.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={roleVariant[emp.role] ?? 'outline'}>{emp.role}</Badge>
-                    </TableCell>
-                    <TableCell>{emp.department?.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{emp.supervisor?.name ?? '—'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <GenericDataTable
+          columns={columns}
+          data={employees}
+          searchKey="name"
+          searchPlaceholder="Search employees by name..."
+        />
       )}
     </div>
   )

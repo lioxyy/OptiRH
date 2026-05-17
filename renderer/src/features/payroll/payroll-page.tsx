@@ -1,13 +1,13 @@
+import * as React from 'react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '../../components/ui/table'
-import { Card, CardContent } from '../../components/ui/card'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
+
 import { PayrollForm } from './payroll-form'
 
 interface Payslip {
@@ -50,6 +50,73 @@ export function PayrollPage() {
 
   if (isLoading) return <div className="p-6">Loading...</div>
 
+  const columns = React.useMemo<ColumnDef<Payslip>[]>(() => {
+    const baseCols: ColumnDef<Payslip>[] = [
+      ...((user?.role !== 'Employee' ? [{
+        id: "employee",
+        accessorFn: (row: Payslip) => row.employee?.name ?? '—',
+        header: ({ column }: any) => <DataTableColumnHeader column={column} title="Employee" />,
+      }] : []) as ColumnDef<Payslip>[]),
+      {
+        id: "period",
+        accessorKey: "month_year",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Period" />,
+      },
+      {
+        id: "base_salary",
+        accessorFn: (row) => row.contract?.salaire_base ?? 0,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Base Salary" />,
+        cell: ({ row }) => `${(row.original.contract?.salaire_base ?? 0).toLocaleString()} DA`,
+      },
+      {
+        id: "bonus",
+        accessorKey: "bonus_amount",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Bonus" />,
+        cell: ({ row }) => <span className="text-green-600">+{row.original.bonus_amount.toLocaleString()} DA</span>,
+      },
+      {
+        id: "deductions",
+        accessorKey: "absence_deductions",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Deductions" />,
+        cell: ({ row }) => <span className="text-destructive">-{row.original.absence_deductions.toLocaleString()} DA</span>,
+      },
+      {
+        id: "net_amount",
+        accessorKey: "amount_final",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Net Amount" />,
+        cell: ({ row }) => <span className="font-bold">{row.original.amount_final.toLocaleString()} DA</span>,
+      },
+      {
+        id: "status",
+        accessorKey: "status",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        cell: ({ row }) => <Badge variant={statusVariant[row.original.status] ?? 'outline'}>{row.original.status}</Badge>,
+      }
+    ]
+
+    if (user?.role === 'Admin') {
+      baseCols.push({
+        id: "actions",
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => (
+          <div className="flex justify-end gap-1">
+            {row.original.status === 'Generated' && (
+              <Button size="sm" onClick={() => updateStatus.mutate({ id: row.original.id_salaire, status: 'Validated' })}>
+                Validate
+              </Button>
+            )}
+            {row.original.status === 'Validated' && (
+              <Button size="sm" onClick={() => updateStatus.mutate({ id: row.original.id_salaire, status: 'Paid' })}>
+                Mark Paid
+              </Button>
+            )}
+          </div>
+        )
+      })
+    }
+    return baseCols
+  }, [user, updateStatus])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -59,62 +126,12 @@ export function PayrollPage() {
         )}
       </div>
 
-      <Card className="overflow-hidden p-0">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {user?.role !== 'Employee' && <TableHead>Employee</TableHead>}
-                <TableHead>Period</TableHead>
-                <TableHead>Base Salary</TableHead>
-                <TableHead>Bonus</TableHead>
-                <TableHead>Deductions</TableHead>
-                <TableHead>Net Amount</TableHead>
-                <TableHead>Status</TableHead>
-                {user?.role === 'Admin' && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payslips.map((slip) => (
-                <TableRow key={slip.id_salaire}>
-                  {user?.role !== 'Employee' && (
-                    <TableCell className="font-medium">{slip.employee?.name}</TableCell>
-                  )}
-                  <TableCell>{slip.month_year}</TableCell>
-                  <TableCell>{slip.contract?.salaire_base?.toLocaleString() ?? '—'} DA</TableCell>
-                  <TableCell className="text-green-600">+{slip.bonus_amount.toLocaleString()} DA</TableCell>
-                  <TableCell className="text-destructive">-{slip.absence_deductions.toLocaleString()} DA</TableCell>
-                  <TableCell className="font-bold">{slip.amount_final.toLocaleString()} DA</TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant[slip.status] ?? 'outline'}>{slip.status}</Badge>
-                  </TableCell>
-                  {user?.role === 'Admin' && (
-                    <TableCell className="text-right space-x-1">
-                      {slip.status === 'Generated' && (
-                        <Button size="sm" onClick={() => updateStatus.mutate({ id: slip.id_salaire, status: 'Validated' })}>
-                          Validate
-                        </Button>
-                      )}
-                      {slip.status === 'Validated' && (
-                        <Button size="sm" onClick={() => updateStatus.mutate({ id: slip.id_salaire, status: 'Paid' })}>
-                          Mark Paid
-                        </Button>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {payslips.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={user?.role === 'Employee' ? 6 : 9} className="text-center py-6 text-muted-foreground">
-                    No payslips found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <GenericDataTable
+        columns={columns}
+        data={payslips}
+        searchKey="period"
+        searchPlaceholder="Filter by period..."
+      />
 
       {showForm && <PayrollForm onClose={() => setShowForm(false)} />}
     </div>

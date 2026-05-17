@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
@@ -5,6 +6,8 @@ import { useAuth } from '../../context/auth-context'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { CandidateForm } from './candidate-form'
 
 interface Interview {
@@ -62,6 +65,58 @@ export function RecruitmentPage() {
     { status: 'Accepted', label: 'Accepted' },
     { status: 'Rejected', label: 'Rejected' },
   ]
+
+  const listColumns = React.useMemo<ColumnDef<Candidate>[]>(() => [
+    {
+      id: "name",
+      accessorKey: "name",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+    },
+    {
+      id: "email",
+      accessorKey: "email",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
+    },
+    {
+      id: "position",
+      accessorFn: (row) => row.post_applied || '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Position" />,
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => <Badge variant={statusVariant[row.original.status] ?? 'outline'}>{row.original.status}</Badge>
+    },
+    {
+      id: "agent",
+      accessorFn: (row) => row.agent?.name || '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Agent" />,
+    },
+    {
+      id: "date",
+      accessorKey: "date_candidature",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
+      cell: ({ row }) => new Date(row.original.date_candidature).toLocaleDateString(),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end space-x-1">
+          {row.original.status === 'Pending' && (
+            <Button size="sm" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: row.original.id_cand, status: 'In Progress' })}>Review</Button>
+          )}
+          {row.original.status === 'In Progress' && user?.role === 'Admin' && (
+            <>
+              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: row.original.id_cand, status: 'Accepted' })}>Accept</Button>
+              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: row.original.id_cand, status: 'Rejected' })}>Reject</Button>
+            </>
+          )}
+        </div>
+      )
+    }
+  ], [statusMutation, user])
 
   return (
     <div className="space-y-6">
@@ -126,46 +181,12 @@ export function RecruitmentPage() {
           })}
         </div>
       ) : (
-        <Card className="overflow-hidden p-0">
-          <CardContent className="p-0">
-            <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr className="text-sm">
-                  <th className="text-left p-3 font-medium">Name</th>
-                  <th className="text-left p-3 font-medium">Email</th>
-                  <th className="text-left p-3 font-medium">Position</th>
-                  <th className="text-left p-3 font-medium">Status</th>
-                  <th className="text-left p-3 font-medium">Agent</th>
-                  <th className="text-left p-3 font-medium">Date</th>
-                  <th className="text-right p-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {candidates.map((candidate) => (
-                  <tr key={candidate.id_cand} className="border-b last:border-0">
-                    <td className="p-3 text-sm font-medium">{candidate.name}</td>
-                    <td className="p-3 text-sm">{candidate.email}</td>
-                    <td className="p-3 text-sm">{candidate.post_applied || '—'}</td>
-                    <td className="p-3"><Badge variant={statusVariant[candidate.status] ?? 'outline'}>{candidate.status}</Badge></td>
-                    <td className="p-3 text-sm">{candidate.agent?.name || '—'}</td>
-                    <td className="p-3 text-sm">{new Date(candidate.date_candidature).toLocaleDateString()}</td>
-                    <td className="p-3 text-right space-x-1">
-                      {candidate.status === 'Pending' && (
-                        <Button size="sm" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: candidate.id_cand, status: 'In Progress' })}>Review</Button>
-                      )}
-                      {candidate.status === 'In Progress' && user?.role === 'Admin' && (
-                        <>
-                          <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: candidate.id_cand, status: 'Accepted' })}>Accept</Button>
-                          <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: candidate.id_cand, status: 'Rejected' })}>Reject</Button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
+        <GenericDataTable
+          columns={listColumns}
+          data={candidates}
+          searchKey="name"
+          searchPlaceholder="Filter candidates by name..."
+        />
       )}
 
       {showForm && <CandidateForm onClose={() => setShowForm(false)} />}

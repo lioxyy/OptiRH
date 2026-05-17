@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
@@ -5,6 +6,8 @@ import { useAuth } from '../../context/auth-context'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { TaskForm } from './task-form'
 
 interface Task {
@@ -63,6 +66,61 @@ export function TasksPage() {
     status,
     tasks: tasks.filter((t) => t.status === status),
   }))
+
+  const listColumns = React.useMemo<ColumnDef<Task>[]>(() => [
+    {
+      id: "name",
+      accessorKey: "name",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+    },
+    {
+      id: "assignee",
+      accessorFn: (row) => row.assignee?.name ?? '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Assignee" />,
+    },
+    {
+      id: "priority",
+      accessorKey: "priority",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Priority" />,
+      cell: ({ row }) => (
+        <Badge variant={priorityVariant[row.original.priority] ?? 'default'} className="text-[10px]">
+          {row.original.priority}
+        </Badge>
+      )
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    },
+    {
+      id: "due_date",
+      accessorKey: "date_fin",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Due Date" />,
+      cell: ({ row }) => new Date(row.original.date_fin).toLocaleDateString(),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end space-x-1">
+          {row.original.status !== 'Done' && (
+            <Button size="sm" variant="outline" className="h-7 text-xs"
+              onClick={() => updateMutation.mutate({
+                id: row.original.id_task,
+                status: row.original.status === 'To Do' ? 'Doing' : 'Done',
+              })}>
+              {row.original.status === 'To Do' ? 'Start' : 'Complete'}
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive"
+            onClick={() => { if (confirm('Delete task?')) deleteMutation.mutate(row.original.id_task) }}>
+            Delete
+          </Button>
+        </div>
+      )
+    }
+  ], [updateMutation, deleteMutation])
 
   return (
     <div className="space-y-6">
@@ -147,52 +205,12 @@ export function TasksPage() {
           ))}
         </div>
       ) : (
-        <Card className="overflow-hidden p-0">
-          <CardContent className="p-0">
-            <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr className="text-sm">
-                  <th className="text-left p-3 font-medium">Name</th>
-                  <th className="text-left p-3 font-medium">Assignee</th>
-                  <th className="text-left p-3 font-medium">Priority</th>
-                  <th className="text-left p-3 font-medium">Status</th>
-                  <th className="text-left p-3 font-medium">Due Date</th>
-                  <th className="text-right p-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((task) => (
-                  <tr key={task.id_task} className="border-b last:border-0">
-                    <td className="p-3 text-sm font-medium">{task.name}</td>
-                    <td className="p-3 text-sm">{task.assignee?.name}</td>
-                    <td className="p-3">
-                      <Badge variant={priorityVariant[task.priority] ?? 'default'} className="text-[10px]">
-                        {task.priority}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-sm">{task.status}</td>
-                    <td className="p-3 text-sm">{new Date(task.date_fin).toLocaleDateString()}</td>
-                    <td className="p-3 text-right space-x-1">
-                      {task.status !== 'Done' && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs"
-                          onClick={() => updateMutation.mutate({
-                            id: task.id_task,
-                            status: task.status === 'To Do' ? 'Doing' : 'Done',
-                          })}>
-                          {task.status === 'To Do' ? 'Start' : 'Complete'}
-                        </Button>
-                      )}
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive"
-                        onClick={() => { if (confirm('Delete task?')) deleteMutation.mutate(task.id_task) }}>
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
+        <GenericDataTable
+          columns={listColumns}
+          data={tasks}
+          searchKey="name"
+          searchPlaceholder="Filter tasks by name..."
+        />
       )}
 
       {showForm && <TaskForm onClose={() => setShowForm(false)} />}

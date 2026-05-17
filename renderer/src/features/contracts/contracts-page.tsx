@@ -1,13 +1,12 @@
+import * as React from 'react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '../../components/ui/table'
-import { Card, CardContent } from '../../components/ui/card'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { ContractForm } from './contract-form'
 
 interface Contract {
@@ -58,6 +57,77 @@ export function ContractsPage() {
     return fin <= thirtyDays && fin >= new Date()
   }
 
+  const columns = React.useMemo<ColumnDef<Contract>[]>(() => {
+    const baseCols: ColumnDef<Contract>[] = [
+      ...((user?.role !== 'Employee' ? [{
+        id: "employee",
+        accessorFn: (row: Contract) => row.employee?.name ?? '—',
+        header: ({ column }: any) => <DataTableColumnHeader column={column} title="Employee" />,
+      }] : []) as ColumnDef<Contract>[]),
+      {
+        id: "type",
+        accessorKey: "type",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+      },
+      {
+        id: "start_date",
+        accessorKey: "date_deb",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Start Date" />,
+        cell: ({ row }) => new Date(row.original.date_deb).toLocaleDateString(),
+      },
+      {
+        id: "end_date",
+        accessorFn: (row) => row.date_fin ? new Date(row.date_fin).toLocaleDateString() : '—',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="End Date" />,
+      },
+      {
+        id: "salary",
+        accessorKey: "salaire_base",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Salary" />,
+        cell: ({ row }) => `${row.original.salaire_base.toLocaleString()} DA`,
+      },
+      {
+        id: "status",
+        accessorKey: "status",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        cell: ({ row }) => {
+          const expiring = row.original.status === 'Active' && isExpiring(row.original.date_fin)
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant={statusVariant[row.original.status] ?? 'outline'}>{row.original.status}</Badge>
+              {expiring && <Badge variant="destructive">Expiring Soon</Badge>}
+            </div>
+          )
+        }
+      }
+    ]
+
+    if (user?.role === 'Admin') {
+      baseCols.push({
+        id: "actions",
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => (
+          <div className="flex justify-end gap-2">
+            {row.original.status === 'Active' && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  if (confirm('Are you sure you want to terminate this contract?')) {
+                    terminateMutation.mutate(row.original.id_contract)
+                  }
+                }}
+              >
+                Terminate
+              </Button>
+            )}
+          </div>
+        )
+      })
+    }
+    return baseCols
+  }, [user, terminateMutation])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -67,69 +137,12 @@ export function ContractsPage() {
         )}
       </div>
 
-      <Card className="overflow-hidden p-0">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {user?.role !== 'Employee' && <TableHead>Employee</TableHead>}
-                <TableHead>Type</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead>Salary</TableHead>
-                <TableHead>Status</TableHead>
-                {user?.role === 'Admin' && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {contracts.map((contract) => {
-                const expiring = contract.status === 'Active' && isExpiring(contract.date_fin)
-                return (
-                  <TableRow key={contract.id_contract} className={expiring ? 'bg-destructive/5 border-l-4 border-l-destructive' : ''}>
-                    {user?.role !== 'Employee' && (
-                      <TableCell className="font-medium">{contract.employee?.name}</TableCell>
-                    )}
-                    <TableCell>{contract.type}</TableCell>
-                    <TableCell>{new Date(contract.date_deb).toLocaleDateString()}</TableCell>
-                    <TableCell>{contract.date_fin ? new Date(contract.date_fin).toLocaleDateString() : '—'}</TableCell>
-                    <TableCell>{contract.salaire_base.toLocaleString()} DA</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={statusVariant[contract.status] ?? 'outline'}>{contract.status}</Badge>
-                        {expiring && <Badge variant="destructive">Expiring Soon</Badge>}
-                      </div>
-                    </TableCell>
-                    {user?.role === 'Admin' && (
-                      <TableCell className="text-right">
-                        {contract.status === 'Active' && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                              if (confirm('Are you sure you want to terminate this contract?')) {
-                                terminateMutation.mutate(contract.id_contract)
-                              }
-                            }}
-                          >
-                            Terminate
-                          </Button>
-                        )}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                )
-              })}
-              {contracts.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={user?.role === 'Employee' ? 5 : 7} className="text-center py-6 text-muted-foreground">
-                    No contracts found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <GenericDataTable
+        columns={columns}
+        data={contracts}
+        searchKey="type"
+        searchPlaceholder="Filter contracts by type..."
+      />
 
       {showForm && <ContractForm onClose={() => setShowForm(false)} />}
     </div>

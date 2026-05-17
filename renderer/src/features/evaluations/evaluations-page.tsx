@@ -1,9 +1,11 @@
+import * as React from 'react'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import { Card, CardContent } from '../../components/ui/card'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { EvaluationForm } from './evaluation-form'
 
 interface Evaluation {
@@ -31,6 +33,51 @@ export function EvaluationsPage() {
 
   if (isLoading) return <div className="p-6">Loading...</div>
 
+  const listColumns = React.useMemo<ColumnDef<Evaluation>[]>(() => [
+    {
+      id: "evaluatee",
+      accessorFn: (row) => row.evaluatee_emp?.name || row.evaluatee_cand?.name || '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Evaluatee" />,
+    },
+    {
+      id: "type",
+      accessorKey: "type_eval",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+      cell: ({ row }) => (
+        <Badge variant={row.original.type_eval === 'Employee' ? 'default' : 'secondary'}>
+          {row.original.type_eval}
+        </Badge>
+      )
+    },
+    {
+      id: "score",
+      accessorKey: "score",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
+      cell: ({ row }) => (
+        <span className={`font-medium ${row.original.score >= 70 ? 'text-green-600' : row.original.score >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>
+          {row.original.score}/100
+        </span>
+      )
+    },
+    {
+      id: "bonus",
+      accessorKey: "bonus_amount",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Bonus" />,
+      cell: ({ row }) => row.original.bonus_amount > 0 ? `${row.original.bonus_amount} DA` : '—',
+    },
+    {
+      id: "evaluator",
+      accessorFn: (row) => row.evaluator?.name ?? '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Evaluator" />,
+    },
+    {
+      id: "date",
+      accessorKey: "date_eval",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
+      cell: ({ row }) => new Date(row.original.date_eval).toLocaleDateString(),
+    }
+  ], [])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -38,49 +85,12 @@ export function EvaluationsPage() {
         <Button onClick={() => setShowForm(true)}>New Evaluation</Button>
       </div>
 
-      <Card className="overflow-hidden p-0">
-        <CardContent className="p-0">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr className="text-sm">
-                <th className="text-left p-3 font-medium">Evaluatee</th>
-                <th className="text-left p-3 font-medium">Type</th>
-                <th className="text-left p-3 font-medium">Score</th>
-                <th className="text-left p-3 font-medium">Bonus</th>
-                <th className="text-left p-3 font-medium">Evaluator</th>
-                <th className="text-left p-3 font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {evaluations.map((evalItem) => (
-                <tr key={evalItem.id_eval} className="border-b last:border-0">
-                  <td className="p-3 text-sm font-medium">
-                    {evalItem.evaluatee_emp?.name || evalItem.evaluatee_cand?.name || '—'}
-                  </td>
-                  <td className="p-3">
-                    <Badge variant={evalItem.type_eval === 'Employee' ? 'default' : 'secondary'}>
-                      {evalItem.type_eval}
-                    </Badge>
-                  </td>
-                  <td className="p-3">
-                    <span className={`font-medium ${evalItem.score >= 70 ? 'text-green-600' : evalItem.score >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>
-                      {evalItem.score}/100
-                    </span>
-                  </td>
-                  <td className="p-3 text-sm">{evalItem.bonus_amount > 0 ? `${evalItem.bonus_amount} DA` : '—'}</td>
-                  <td className="p-3 text-sm">{evalItem.evaluator?.name}</td>
-                  <td className="p-3 text-sm">{new Date(evalItem.date_eval).toLocaleDateString()}</td>
-                </tr>
-              ))}
-              {evaluations.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-6 text-muted-foreground text-sm">No evaluations found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+      <GenericDataTable
+        columns={listColumns}
+        data={evaluations}
+        searchKey="evaluatee"
+        searchPlaceholder="Filter evaluations..."
+      />
 
       {showForm && <EvaluationForm onClose={() => setShowForm(false)} />}
     </div>
