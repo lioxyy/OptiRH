@@ -1,4 +1,3 @@
-import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -47,10 +46,7 @@ export function OverviewPage() {
   // Fetch unified operational data
   const { data, isLoading, error } = useQuery<any>({
     queryKey: ["unifiedDashboard"],
-    queryFn: async () => {
-      const res = await api.get("/api/analytics/dashboard/unified")
-      return res.data.data
-    }
+    queryFn: () => api.get("/api/analytics/dashboard/unified").then(res => res.data.data)
   })
 
   // Leave approval mutation
@@ -86,7 +82,8 @@ export function OverviewPage() {
       <div className="flex h-64 flex-col items-center justify-center text-center p-4">
         <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
         <span className="font-semibold text-sm">Failed to load operational dashboard</span>
-        <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
+        <p className="text-xs text-muted-foreground mt-2 max-w-xs">{error instanceof Error ? error.message : "Possible network or session error"}</p>
+        <Button variant="outline" size="sm" className="mt-4" onClick={() => queryClient.invalidateQueries({ queryKey: ["unifiedDashboard"] })}>Retry</Button>
       </div>
     )
   }

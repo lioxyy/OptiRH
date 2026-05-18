@@ -8,113 +8,114 @@ import * as AnalyticsService from './analytics.service'
 const router = Router()
 
 router.use(authenticate)
-router.use(authorize('Admin'))
 
-router.get('/summary', asyncHandler(async (_req, res) => {
+// Admin-only analytics routes
+router.get('/summary', authorize('Admin'), asyncHandler(async (_req, res) => {
   const summary = await AnalyticsService.getSummary()
   res.json(success(summary))
 }))
 
-router.get('/diversity', asyncHandler(async (_req, res) => {
+router.get('/diversity', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getDiversity()
   res.json(success(data))
 }))
 
-router.get('/absentee-rates', asyncHandler(async (_req, res) => {
+router.get('/absentee-rates', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getAbsenteeRates()
   res.json(success(data))
 }))
 
-router.get('/recruitment', asyncHandler(async (_req, res) => {
+router.get('/recruitment', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getRecruitmentStats()
   res.json(success(data))
 }))
 
-router.get('/top-performers', asyncHandler(async (_req, res) => {
+router.get('/top-performers', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getTopPerformers()
   res.json(success(data))
 }))
 
-router.get('/payroll-trend', asyncHandler(async (_req, res) => {
+router.get('/payroll-trend', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getPayrollTrend()
   res.json(success(data))
 }))
 
-router.get('/score-distribution', asyncHandler(async (_req, res) => {
+router.get('/score-distribution', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getScoreDistribution()
   res.json(success(data))
 }))
 
-router.get('/headcount-trend', asyncHandler(async (_req, res) => {
+router.get('/headcount-trend', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getHeadcountTrend()
   res.json(success(data))
 }))
 
-router.get('/department-stats', asyncHandler(async (_req, res) => {
+router.get('/department-stats', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getDepartmentStats()
   res.json(success(data))
 }))
 
-router.get('/demographics', asyncHandler(async (_req, res) => {
+router.get('/demographics', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getDemographics()
   res.json(success(data))
 }))
 
-router.get('/tenure-stats', asyncHandler(async (_req, res) => {
+router.get('/tenure-stats', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getTenureStats()
   res.json(success(data))
 }))
 
-router.get('/supervision-stats', asyncHandler(async (_req, res) => {
+router.get('/supervision-stats', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getSupervisionStats()
   res.json(success(data))
 }))
 
-router.get('/absence-deep-dive', asyncHandler(async (_req, res) => {
+router.get('/absence-deep-dive', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getAbsenceDeepDive()
   res.json(success(data))
 }))
 
-router.get('/leave-utilization', asyncHandler(async (_req, res) => {
+router.get('/leave-utilization', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getLeaveUtilization()
   res.json(success(data))
 }))
 
-router.get('/payroll-deep-dive', asyncHandler(async (_req, res) => {
+router.get('/payroll-deep-dive', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getPayrollDeepDive()
   res.json(success(data))
 }))
 
-router.get('/department-payroll', asyncHandler(async (_req, res) => {
+router.get('/department-payroll', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getDepartmentPayroll()
   res.json(success(data))
 }))
 
-router.get('/role-payroll', asyncHandler(async (_req, res) => {
+router.get('/role-payroll', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getRolePayrollStats()
   res.json(success(data))
 }))
 
-router.get('/recruitment-velocity', asyncHandler(async (_req, res) => {
+router.get('/recruitment-velocity', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getRecruitmentVelocity()
   res.json(success(data))
 }))
 
-router.get('/performance-trends', asyncHandler(async (_req, res) => {
+router.get('/performance-trends', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getPerformanceTrends()
   res.json(success(data))
 }))
 
-router.get('/task-stats', asyncHandler(async (_req, res) => {
+router.get('/task-stats', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getTaskStats()
   res.json(success(data))
 }))
 
-router.get('/formation-stats', asyncHandler(async (_req, res) => {
+router.get('/formation-stats', authorize('Admin'), asyncHandler(async (_req, res) => {
   const data = await AnalyticsService.getFormationStats()
   res.json(success(data))
 }))
 
+// Dashboard endpoints for Admin/Agent
 router.get('/dashboard/admin', authorize('Admin'), asyncHandler(async (req, res) => {
   const data = await AnalyticsService.getAdminDashboard(req.user.id_emp)
   res.json(success(data))
@@ -126,10 +127,12 @@ router.get('/dashboard/agent', authorize('Admin', 'Agent'), asyncHandler(async (
 }))
 
 router.get('/dashboard/unified', authorize('Admin', 'Agent'), asyncHandler(async (req, res) => {
-  const data = await AnalyticsService.getUnifiedDashboard(req.user.id_emp)
-  res.json(success(data))
+  const actorId = req.user?.id_emp
+  const dashboard = await AnalyticsService.getUnifiedDashboard(actorId)
+  res.json(success(dashboard))
 }))
 
+// Personal dashboard
 router.get('/dashboard/employee', asyncHandler(async (req, res) => {
   const data = await AnalyticsService.getEmployeeDashboard(req.user.id_emp)
   res.json(success(data))

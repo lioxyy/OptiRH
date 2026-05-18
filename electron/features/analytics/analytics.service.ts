@@ -859,14 +859,14 @@ export async function getUnifiedDashboard(actorId: number) {
     }),
 
     // Current user's pending tasks
-    prisma.task.findMany({
+    actorId ? prisma.task.findMany({
       where: {
         assigned_to: actorId,
-        status: { not: 'Done' }
+        status: { notIn: ['Done', 'Completed'] }
       },
       orderBy: { date_fin: 'asc' },
       take: 10
-    })
+    }) : Promise.resolve([])
   ])
 
   return {
