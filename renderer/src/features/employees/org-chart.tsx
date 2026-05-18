@@ -41,7 +41,7 @@ function TreeNode({ node, depth = 0 }: { node: OrgNode; depth?: number }) {
         </div>
         <span className="text-sm font-medium">{node.name}</span>
         {node.department && (
-          <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full bg-muted/50 border border-muted-foreground/20">
+          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/80 px-2 py-0.5 rounded-sm border border-muted-foreground/10">
             {node.department.name}
           </span>
         )}
