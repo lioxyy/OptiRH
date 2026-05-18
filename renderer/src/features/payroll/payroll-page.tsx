@@ -6,10 +6,11 @@ import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { toast } from 'sonner'
-import { Wallet, Printer, FileCheck2, Calculator, Users, AlertCircle, FileText, Landmark } from 'lucide-react'
+import { Columns, Wallet, Printer, FileCheck2, Calculator, Users, AlertCircle, FileText, Landmark, History } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
 
 interface Employee {
   id_emp: number
@@ -239,117 +240,149 @@ export function PayrollPage() {
         <h1 className="text-2xl font-bold">Payroll Administration</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Generate payroll form */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Calculator className="h-4.5 w-4.5 text-muted-foreground" />
-                Calculate Salary
-              </CardTitle>
-              <CardDescription>
-                Run automated payroll generation applying the legal formula.
-              </CardDescription>
-            </CardHeader>
+      <Tabs defaultValue="history" className="w-full">
+        <div className="flex items-center justify-between mb-4">
+          <TabsList>
+            <TabsTrigger value="history" className="gap-2">
+              <History className="h-4 w-4" />
+              Payroll History
+            </TabsTrigger>
+            <TabsTrigger value="calculate" className="gap-2">
+              <Calculator className="h-4 w-4" />
+              Calculate Salary
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-            <CardContent className="space-y-4">
-              <form onSubmit={handleGenerate} className="space-y-4">
-                {/* Employee Select */}
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5" />
-                    Target Employee
-                  </label>
-                  <Select value={employeeId} onValueChange={setEmployeeId}>
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Select Employee..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((emp) => (
-                        <SelectItem key={emp.id_emp} value={String(emp.id_emp)}>
-                          {emp.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+        <TabsContent value="history" className="space-y-4">
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => <Card key={i} className="h-14 w-full" />)}
+              </div>
+            ) : (
+              <GenericDataTable
+                columns={columns}
+                data={payHistory}
+                searchOptions={[
+                  { id: "employee", label: "Employee" },
+                  { id: "month_year", label: "Period" },
+                  { id: "status", label: "Status" }
+                ]}
+              />
+            )}
+          </div>
+        </TabsContent>
 
-                {/* Target Period */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground font-semibold">Month</label>
-                    <Select value={targetMonth} onValueChange={setTargetMonth}>
-                      <SelectTrigger className="h-9 text-xs">
-                        <SelectValue />
+        <TabsContent value="calculate">
+          <div className="max-w-xl">
+            <Card className="border-2 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <Calculator className="h-5 w-5 text-indigo-500" />
+                  Salary Calculation Engine
+                </CardTitle>
+                <CardDescription>
+                  Generate high-fidelity payroll records for individual employees applying legal proration and deduction formulas.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                <form onSubmit={handleGenerate} className="space-y-6">
+                  {/* Employee Select */}
+                  <div className="space-y-2.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-1">
+                      <Users className="h-3.5 w-3.5" />
+                      1. Select Target Employee
+                    </label>
+                    <Select value={employeeId} onValueChange={setEmployeeId}>
+                      <SelectTrigger className="h-11 shadow-none transition-all focus:ring-2 focus:ring-indigo-500/20">
+                        <SelectValue placeholder="Search or select employee..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((m) => (
-                          <SelectItem key={m} value={m}>
-                            {new Date(2026, Number(m) - 1).toLocaleString('en-US', { month: 'short' })}
+                        {employees.map((emp) => (
+                          <SelectItem key={emp.id_emp} value={String(emp.id_emp)} className="py-2.5">
+                            <div className="flex flex-col">
+                              <span className="font-semibold">{emp.name}</span>
+                              <span className="text-[10px] opacity-70 font-mono italic">{emp.email}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground font-semibold">Year</label>
-                    <Select value={targetYear} onValueChange={setTargetYear}>
-                      <SelectTrigger className="h-9 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['2025', '2026', '2027'].map((y) => (
-                          <SelectItem key={y} value={y}>
-                            {y}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {/* Target Period */}
+                  <div className="space-y-2.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-1">
+                      <Columns className="h-3.5 w-3.5" />
+                      2. Define Payment Period
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] text-muted-foreground ml-1">Month</span>
+                        <Select value={targetMonth} onValueChange={setTargetMonth}>
+                          <SelectTrigger className="h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((m) => (
+                              <SelectItem key={m} value={m}>
+                                {new Date(2026, Number(m) - 1).toLocaleString('en-US', { month: 'long' })}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] text-muted-foreground ml-1">Year</span>
+                        <Select value={targetYear} onValueChange={setTargetYear}>
+                          <SelectTrigger className="h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['2025', '2026', '2027'].map((y) => (
+                              <SelectItem key={y} value={y}>
+                                {y}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Formula warning */}
-                <div className="flex gap-2.5 p-3 rounded-lg bg-muted/40 text-[10px] text-muted-foreground leading-normal border">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-foreground block mb-0.5">Deduction Service Formula</span>
-                    {"$Salaire = Base - (Absences \\times \\frac{Base}{30}) - ApprovedMassroufs$"}
+                  {/* Formula warning */}
+                  <div className="flex gap-4 p-4 rounded-xl bg-indigo-50/10 border border-indigo-500/20 text-xs text-muted-foreground leading-relaxed">
+                    <div className="bg-indigo-500/10 h-8 w-8 rounded-lg flex items-center justify-center shrink-0">
+                      <AlertCircle className="h-5 w-5 text-indigo-500" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-foreground block mb-1 text-sm">Automated Deduction Formula</span>
+                      <p className="opacity-80">
+                        The system will automatically calculate pro-rated days based on contract status, apply deductions for unjustified absences, and settle approved massrouf advances.
+                      </p>
+                      <code className="block mt-2 font-mono text-[10px] bg-background/50 p-2 rounded border text-indigo-400">
+                        {"$Salaire = Base - (Absences \\times \\frac{Base}{WorkingDays}) - Massrouf$"}
+                      </code>
+                    </div>
                   </div>
-                </div>
 
-                <Button
-                  type="submit"
-                  className="w-full h-9"
-                  disabled={generateMutation.isPending}
-                >
-                  {generateMutation.isPending ? 'Calculating...' : 'Run Payroll Run'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* History of salary sheets */}
-        <div className="lg:col-span-2 space-y-4">
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => <Card key={i} className="h-14 w-full" />)}
-            </div>
-          ) : (
-            <GenericDataTable
-              columns={columns}
-              data={payHistory}
-              searchOptions={[
-                { id: "employee", label: "Employee" },
-                { id: "month_year", label: "Period" },
-                { id: "status", label: "Status" }
-              ]}
-            />
-          )}
-        </div>
-      </div>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-500/20"
+                    disabled={generateMutation.isPending}
+                  >
+                    {generateMutation.isPending ? 'Executing Engine...' : 'Run Payroll Run'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* ── High-Fidelity Payslip (Bulletin de Paie) Modal ───────── */}
       {selectedPayslip && (
