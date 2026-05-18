@@ -1,10 +1,20 @@
 import axios from 'axios'
 
 function getBackendPort(): string {
-  if (typeof window !== 'undefined' && (window as any).electronAPI?.backendPort) {
-    return (window as any).electronAPI.backendPort
+  if (typeof window !== 'undefined') {
+    if ((window as any).electronAPI?.backendPort) {
+      return (window as any).electronAPI.backendPort
+    }
+    const params = new URLSearchParams(window.location.search)
+    const queryPort = params.get('port')
+    if (queryPort) {
+      localStorage.setItem('optirh_backend_port', queryPort)
+      return queryPort
+    }
+    const storedPort = localStorage.getItem('optirh_backend_port')
+    if (storedPort) return storedPort
   }
-  return '5173'
+  return '3001'
 }
 
 export const api = axios.create()
