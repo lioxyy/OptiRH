@@ -6,6 +6,7 @@ export interface CreateFormationDTO {
     duration_days: number
     id_instructor?: number
     external_instructor?: string
+    participant_ids?: number[]
 }
 
 export interface UpdateFormationDTO extends Partial<CreateFormationDTO> { }

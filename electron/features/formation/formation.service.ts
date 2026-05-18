@@ -37,10 +37,20 @@ export async function createFormation(data: CreateFormationDTO, actorId: number)
                 location: data.location,
                 date_deb: parsedDate,
                 duration_days: data.duration_days,
-                id_instructor: data.id_instructor,
+                instructor: data.id_instructor ? { connect: { id_emp: data.id_instructor } } : undefined,
                 external_instructor: data.external_instructor,
             },
         })
+
+        if (data.participant_ids && data.participant_ids.length > 0) {
+            await tx.participationFormation.createMany({
+                data: data.participant_ids.map(id_emp => ({
+                    id_emp,
+                    id_formation: created.id_formation
+                }))
+            })
+        }
+
         await writeAuditLog(tx, actorId, 'CREATE', 'Formation', created.id_formation, created)
         return created
     })
@@ -58,7 +68,7 @@ export async function updateFormation(id: number, data: UpdateFormationDTO, acto
                 ...(data.location !== undefined ? { location: data.location } : {}),
                 ...(data.date_deb !== undefined ? { date_deb: toDate(data.date_deb)! } : {}),
                 ...(data.duration_days !== undefined ? { duration_days: data.duration_days } : {}),
-                ...(data.id_instructor !== undefined ? { id_instructor: data.id_instructor } : {}),
+                ...(data.id_instructor !== undefined ? { instructor: { connect: { id_emp: data.id_instructor } } } : {}),
                 ...(data.external_instructor !== undefined ? { external_instructor: data.external_instructor } : {}),
             },
         })
@@ -84,7 +94,10 @@ export async function assignInstructor(id: number, id_instructor: number, actorI
     return prisma.$transaction(async (tx) => {
         const updated = await tx.formation.update({
             where: { id_formation: id },
-            data: { id_instructor, external_instructor: null },
+            data: {
+                instructor: { connect: { id_emp: id_instructor } },
+                external_instructor: null
+            },
         })
         await writeAuditLog(tx, actorId, 'UPDATE', 'Formation', id, { id_instructor })
         return updated

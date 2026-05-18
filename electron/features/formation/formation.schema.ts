@@ -17,6 +17,7 @@ const BaseFormationSchema = z.object({
     duration_days: z.coerce.number().int().positive(),
     id_instructor: z.coerce.number().int().positive().optional(),
     external_instructor: z.string().optional(),
+    participant_ids: z.array(z.coerce.number()).optional(),
 })
 
 export const CreateFormationSchema = BaseFormationSchema.refine(data => data.id_instructor || data.external_instructor, {
