@@ -40,6 +40,15 @@ export async function createEmployee(data: CreateEmployeeDTO, actorId: number) {
     const existing = await tx.employee.findUnique({ where: { email: rest.email } })
     if (existing) throw new AppError('EMAIL_ALREADY_EXISTS', 409)
 
+    if (rest.role === 'Agent') {
+      const existingAgentInDept = await tx.employee.findFirst({
+        where: { id_dept: rest.id_dept, role: 'Agent' }
+      })
+      if (existingAgentInDept) {
+        throw new AppError('DEPARTMENT_HAS_AGENT', 400, 'This department already has an agent assigned')
+      }
+    }
+
     const employee = await tx.employee.create({
       data: { ...rest, password_hash },
     })
@@ -74,6 +83,22 @@ export async function updateEmployee(id: number, data: UpdateEmployeeDTO, reques
     : rest
 
   return prisma.$transaction(async (tx) => {
+    const finalRole = updateData.role !== undefined ? updateData.role : employee.role
+    const finalIdDept = updateData.id_dept !== undefined ? updateData.id_dept : employee.id_dept
+
+    if (finalRole === 'Agent') {
+      const existingAgentInDept = await tx.employee.findFirst({
+        where: {
+          id_dept: finalIdDept,
+          role: 'Agent',
+          id_emp: { not: id }
+        }
+      })
+      if (existingAgentInDept) {
+        throw new AppError('DEPARTMENT_HAS_AGENT', 400, 'This department already has an agent assigned')
+      }
+    }
+
     const updated = await tx.employee.update({
       where: { id_emp: id },
       data: updateData,

@@ -161,6 +161,21 @@ export function EmployeeForm({
   async function onSubmit(data: FormData) {
     setSubmitting(true)
     try {
+      if (data.role === 'Agent') {
+        const existingAgent = allEmployees.find(
+          (emp: any) =>
+            emp.id_dept === Number(data.id_dept) &&
+            emp.role === 'Agent' &&
+            emp.id_emp !== initialData?.id_emp
+        )
+        if (existingAgent) {
+          const deptName = departments.find((d) => d.id_dept === Number(data.id_dept))?.name || 'selected'
+          toast.error(`This department (${deptName}) already has an agent assigned`)
+          setSubmitting(false)
+          return
+        }
+      }
+
       const payload: any = {
         ...data,
         date_birth: new Date(data.date_birth).toISOString(),
@@ -188,8 +203,9 @@ export function EmployeeForm({
       queryClient.invalidateQueries({ queryKey: ['employees'] })
       queryClient.invalidateQueries({ queryKey: ['employee', initialData?.id_emp?.toString()] })
       onSuccess?.()
-    } catch {
-      toast.error(initialData ? 'Failed to update employee' : 'Failed to create employee')
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || (initialData ? 'Failed to update employee' : 'Failed to create employee')
+      toast.error(errMsg)
     } finally {
       setSubmitting(false)
     }

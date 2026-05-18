@@ -83,6 +83,9 @@ export async function createDepartment(data: CreateDepartmentDTO & { employee_id
         },
         select: { id_emp: true }
       })
+      if (assignedAgents.length > 1) {
+        throw new AppError('DEPARTMENT_HAS_AGENT', 400, 'A department can have at most one agent assigned')
+      }
       if (assignedAgents.length > 0) {
         finalManagerId = assignedAgents[0].id_emp
       }
@@ -156,6 +159,10 @@ export async function updateDepartment(id: number, data: UpdateDepartmentDTO & {
         },
         select: { id_emp: true }
       })
+
+      if (assignedAgents.length > 1) {
+        throw new AppError('DEPARTMENT_HAS_AGENT', 400, 'A department can have at most one agent assigned')
+      }
 
       if (assignedAgents.length > 0) {
         finalManagerId = assignedAgents[0].id_emp

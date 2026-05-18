@@ -64,24 +64,10 @@ export function DepartmentForm({
     },
   })
 
-  const { data: departments = [] } = useQuery<any[]>({
-    queryKey: ['departments'],
-    queryFn: async () => {
-      const res = await api.get('/api/departments')
-      return res.data.data
-    },
-  })
 
-  // Enforce integrity rule: an employee can only manage ONE department
-  // Get all manager IDs of departments OTHER than the one currently being edited
-  const activeManagerIds = departments
-    .filter((d) => d.id_dept !== initialData?.id_dept)
-    .map((d) => d.manager_id)
-    .filter(Boolean)
-
-  // Filter out employees already managing other departments
+  // Filter for potential managers (Admin or Agent roles)
   const potentialManagers = employees.filter(
-    (e) => (e.role === 'Admin' || e.role === 'Agent') && !activeManagerIds.includes(e.id_emp)
+    (e) => e.role === 'Admin' || e.role === 'Agent'
   )
 
   const filteredEmployees = employees.filter((emp) =>

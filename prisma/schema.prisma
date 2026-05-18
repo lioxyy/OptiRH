@@ -11,7 +11,7 @@ model Department {
   id_dept     Int        @id @default(autoincrement())
   name        String
   description String?
-  manager_id  Int?    @unique
+  manager_id  Int?
 
   manager     Employee?  @relation("DeptManager", fields: [manager_id], references: [id_emp])
   employees   Employee[] @relation("DeptEmployees")
@@ -34,7 +34,7 @@ model Employee {
   department      Department       @relation("DeptEmployees", fields: [id_dept], references: [id_dept])
   supervisor      Employee?        @relation("Supervision", fields: [supervisor_id], references: [id_emp])
   subordinates    Employee[]       @relation("Supervision")
-  managed_dept    Department?      @relation("DeptManager")
+  managed_depts   Department[]     @relation("DeptManager")
 
   contracts       Contract[]
   absences_logged Absence[]        @relation("AbsenceEmployee")
