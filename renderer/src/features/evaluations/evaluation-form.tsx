@@ -1,8 +1,45 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import { toast } from 'sonner'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '../../components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '../../components/ui/select'
+import { Input } from '../../components/ui/input'
+import { Textarea } from '../../components/ui/textarea'
 import { Button } from '../../components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
+import { X, Calculator, Target } from 'lucide-react'
+
+const EvaluationSchema = z.object({
+  type_eval: z.enum(['Employee', 'Candidate']),
+  evaluatee_id: z.number({ required_error: 'Please select an individual' }),
+  campaign_id: z.number({ required_error: 'Please select a campaign' }),
+  bonus_amount: z.number().min(0).default(0),
+  comments: z.string().optional(),
+  scores: z.array(z.object({
+    criteria_id: z.number(),
+    score: z.number().min(0),
+    comment: z.string().optional(),
+  })).min(1, 'At least one criteria is required'),
+})
+
+type EvaluationFormValues = z.infer<typeof EvaluationSchema>
 
 interface EvaluationFormProps {
   onClose: () => void
@@ -10,105 +47,277 @@ interface EvaluationFormProps {
 
 export function EvaluationForm({ onClose }: EvaluationFormProps) {
   const queryClient = useQueryClient()
-  const [type, setType] = useState<'Employee' | 'Candidate'>('Employee')
-  const [evaluateeId, setEvaluateeId] = useState<number | ''>('')
-  const [score, setScore] = useState('70')
-  const [bonus, setBonus] = useState('0')
-  const [comments, setComments] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [selectedType, setSelectedType] = useState<'Employee' | 'Candidate'>('Employee')
 
-  const { data: employees = [] } = useQuery({
-    queryKey: ['employees'],
-    queryFn: async () => {
-      const res = await api.get('/api/employees')
-      return res.data.data
+  // Fetch Data
+  const { data: employees = [] } = useQuery<any[]>({ queryKey: ['employees'], queryFn: async () => (await api.get('/api/employees')).data.data })
+  const { data: candidates = [] } = useQuery<any[]>({ queryKey: ['candidates'], queryFn: async () => (await api.get('/api/recruitment')).data.data })
+  const { data: campaigns = [] } = useQuery<any[]>({ queryKey: ['campaigns'], queryFn: async () => (await api.get('/api/evaluations/campaigns')).data.data })
+  const { data: criteria = [] } = useQuery<any[]>({
+    queryKey: ['criteria'],
+    queryFn: async () => (await api.get('/api/evaluations/criteria')).data.data,
+  })
+
+  const form = useForm<EvaluationFormValues>({
+    resolver: zodResolver(EvaluationSchema),
+    defaultValues: {
+      type_eval: 'Employee',
+      bonus_amount: 0,
+      scores: [],
     }
   })
 
-  const { data: candidates = [] } = useQuery({
-    queryKey: ['recruitment'],
-    queryFn: async () => {
-      const res = await api.get('/api/recruitment')
-      return res.data.data
+  // Pre-populate scores when criteria are loaded and form is empty
+  useEffect(() => {
+    if (criteria.length > 0 && form.getValues('scores').length === 0) {
+      form.setValue('scores', criteria.map((c: any) => ({
+        criteria_id: c.id_criteria,
+        score: 0,
+        comment: '',
+      })))
     }
+  }, [criteria, form])
+
+  const { fields } = useFieldArray({
+    control: form.control,
+    name: "scores"
   })
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      await api.post('/api/evaluations', {
-        score: Number(score),
-        bonus_amount: Number(bonus),
-        comments: comments || undefined,
-        type_eval: type,
-        ...(type === 'Employee' ? { evaluatee_emp_id: Number(evaluateeId) } : { evaluatee_cand_id: Number(evaluateeId) }),
-      })
+    mutationFn: (values: EvaluationFormValues) => {
+      const payload = {
+        ...values,
+        evaluatee_emp_id: values.type_eval === 'Employee' ? values.evaluatee_id : undefined,
+        evaluatee_cand_id: values.type_eval === 'Candidate' ? values.evaluatee_id : undefined,
+      }
+      return api.post('/api/evaluations', payload)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['evaluations'] })
+      queryClient.invalidateQueries({ queryKey: ['eval-stats'] })
+      toast.success('Evaluation submitted successfully')
       onClose()
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message || 'Failed to create evaluation')
+      toast.error(err.response?.data?.message || 'Failed to submit evaluation')
     }
   })
 
+  const currentScores = form.watch('scores')
+
+  const calculateLiveScore = () => {
+    if (!criteria || criteria.length === 0 || currentScores.length === 0) return 0
+    let totalWeighted = 0
+    let totalWeight = 0
+    currentScores.forEach(s => {
+      const crit = criteria.find((c: any) => c.id_criteria === s.criteria_id)
+      if (crit) {
+        totalWeighted += (s.score / crit.max_score) * 100 * crit.weight
+        totalWeight += crit.weight
+      }
+    })
+    return totalWeight > 0 ? Math.round(totalWeighted / totalWeight) : 0
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>New Evaluation</CardTitle>
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border-primary/20">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+          <div>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              <Calculator className="h-6 w-6 text-primary" />
+              Performance Evaluation
+            </CardTitle>
+            <CardDescription>Structured assessment with weighted performance metrics.</CardDescription>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+            <X className="h-4 w-4" />
+          </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {error && <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md font-medium">{error}</div>}
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Evaluation Type</label>
-            <select value={type} onChange={(e) => { setType(e.target.value as 'Employee' | 'Candidate'); setEvaluateeId('') }}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-              <option value="Employee">Employee</option>
-              <option value="Candidate">Candidate</option>
-            </select>
-          </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-6">
+            <CardContent className="space-y-8">
+              {/* SECTION: Selection */}
+              <div className="grid grid-cols-2 gap-6 p-4 bg-muted/30 rounded-xl border border-primary/5">
+                <FormField
+                  control={form.control}
+                  name="type_eval"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-wider font-semibold opacity-70">Assessment For</FormLabel>
+                      <Select
+                        onValueChange={(val) => {
+                          field.onChange(val)
+                          setSelectedType(val as any)
+                          form.setValue('evaluatee_id', undefined as any)
+                        }}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-background border-primary/10">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Employee">Active Employee</SelectItem>
+                          <SelectItem value="Candidate">Job Candidate</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{type === 'Employee' ? 'Employee' : 'Candidate'}</label>
-            <select value={evaluateeId} onChange={(e) => setEvaluateeId(e.target.value ? Number(e.target.value) : '')}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-              <option value="">Select...</option>
-              {(type === 'Employee' ? employees : candidates).map((item: any) => (
-                <option key={item.id_emp ?? item.id_cand} value={item.id_emp ?? item.id_cand}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="evaluatee_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-wider font-semibold opacity-70">
+                        {selectedType === 'Employee' ? 'Select Employee' : 'Select Candidate'}
+                      </FormLabel>
+                      <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value?.toString()}>
+                        <FormControl>
+                          <SelectTrigger className="bg-background border-primary/10">
+                            <SelectValue placeholder="Begin search..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(selectedType === 'Employee' ? employees : candidates).map((item: any) => (
+                            <SelectItem key={item.id_emp ?? item.id_cand} value={(item.id_emp ?? item.id_cand).toString()}>
+                              {item.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Score (0-100)</label>
-              <input type="number" min="0" max="100" value={score} onChange={(e) => setScore(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                <FormField
+                  control={form.control}
+                  name="campaign_id"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel className="text-xs uppercase tracking-wider font-semibold opacity-70">Evaluation Campaign</FormLabel>
+                      <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value?.toString()}>
+                        <FormControl>
+                          <SelectTrigger className="bg-background border-primary/10">
+                            <SelectValue placeholder="Assign to campaign (e.g. Annual Review)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {campaigns.map((c: any) => (
+                            <SelectItem key={c.id_campaign} value={c.id_campaign.toString()}>
+                              {c.title} ({c.type})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* SECTION: Scoring */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    Performance Scoring
+                  </h3>
+                  <div className="px-3 py-1 bg-primary/10 rounded-full text-xs font-bold text-primary">
+                    Live Total: {calculateLiveScore()}/100
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {fields.map((field, index) => {
+                    const crit = criteria.find((c: any) => c.id_criteria === field.criteria_id)
+                    return (
+                      <div key={field.id} className="grid grid-cols-1 gap-3 p-4 rounded-lg bg-card border border-primary/5 hover:border-primary/20 transition-all group">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-bold text-sm text-primary/90">{crit?.name || 'Loading...'}</p>
+                            <p className="text-xs text-muted-foreground">{crit?.description || 'No description provided.'}</p>
+                          </div>
+                          <div className="text-[10px] font-black uppercase bg-muted px-2 py-0.5 rounded">Weight: {crit?.weight}x</div>
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-4 items-center">
+                          <div className="col-span-1 space-y-1">
+                            <label className="text-[10px] uppercase font-bold opacity-50">Score (/{crit?.max_score})</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={crit?.max_score}
+                              className="h-9 font-mono"
+                              {...form.register(`scores.${index}.score`, { valueAsNumber: true })}
+                            />
+                          </div>
+                          <div className="col-span-3 space-y-1">
+                            <label className="text-[10px] uppercase font-bold opacity-50">Optional Notes</label>
+                            <Input
+                              placeholder="Specific evidence or observations..."
+                              className="h-9 text-sm"
+                              {...form.register(`scores.${index}.comment`)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* SECTION: General */}
+              <div className="space-y-4 pt-4 border-t border-dashed">
+                <div className="grid grid-cols-4 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="bonus_amount"
+                    render={({ field }) => (
+                      <FormItem className="col-span-1">
+                        <FormLabel className="text-xs font-bold uppercase opacity-70">Merit Bonus (DA)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" {...field} onChange={e => field.onChange(Number(e.target.value))} className="bg-green-50/10 border-green-500/20" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="comments"
+                    render={({ field }) => (
+                      <FormItem className="col-span-3">
+                        <FormLabel className="text-xs font-bold uppercase opacity-70">Director's Summary Remarks</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="High-level feedback for the employee record..."
+                            className="min-h-[80px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </CardContent>
+
+            <div className="flex justify-end gap-3 p-6 bg-muted/50 border-t sticky bottom-0 rounded-b-2xl">
+              <Button type="button" variant="outline" onClick={onClose}>Discard Change</Button>
+              <Button type="submit" disabled={mutation.isPending} className="px-8 shadow-lg shadow-primary/20">
+                {mutation.isPending ? 'Finalizing...' : 'Commit Evaluation'}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Bonus (DA)</label>
-              <input type="number" min="0" value={bonus} onChange={(e) => setBonus(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Comments</label>
-            <textarea value={comments} onChange={(e) => setComments(e.target.value)}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px]" placeholder="Optional comments" />
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>Cancel</Button>
-            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !evaluateeId || !score}>
-              {mutation.isPending ? 'Saving...' : 'Create Evaluation'}
-            </Button>
-          </div>
-        </CardContent>
+          </form>
+        </Form>
       </Card>
     </div>
   )
