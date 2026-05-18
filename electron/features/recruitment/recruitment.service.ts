@@ -1,6 +1,7 @@
 import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
 import { writeAuditLog } from '../../lib/audit'
+import { createNotification } from '../../lib/notifications'
 import type { RequestUser } from '../../middleware/authenticate'
 import type {
   CreateCandidateDTO,
@@ -20,6 +21,28 @@ export async function getCandidates(user: RequestUser) {
     })
   }
 
+  if (user.role === 'Agent') {
+    const managedDepts = await prisma.department.findMany({
+      where: { manager_id: user.id_emp },
+      select: { id_dept: true }
+    })
+    const managedDeptIds = managedDepts.map(d => d.id_dept)
+
+    return prisma.candidat.findMany({
+      where: {
+        OR: [
+          { agent_in_charge: user.id_emp },
+          { id_dept: { in: managedDeptIds } },
+        ],
+      },
+      include: {
+        agent: { select: { name: true } },
+        entretiens: { include: { agent: { select: { name: true } } } },
+      },
+      orderBy: { date_candidature: 'desc' },
+    })
+  }
+
   return prisma.candidat.findMany({
     where: { agent_in_charge: user.id_emp },
     include: {
@@ -30,19 +53,35 @@ export async function getCandidates(user: RequestUser) {
   })
 }
 
-export async function createCandidate(data: CreateCandidateDTO) {
-  return prisma.candidat.create({
-    data: {
-      name: data.name,
-      email: data.email,
-      date_birth: data.date_birth ? new Date(data.date_birth) : null,
-      address: data.address ?? null,
-      post_applied: data.post_applied ?? null,
-      id_dept: data.id_dept ?? null,
-      agent_in_charge: data.agent_in_charge ?? null,
-      status: 'Pending',
-    },
-    include: { agent: { select: { name: true } } },
+export async function createCandidate(data: CreateCandidateDTO, actorId: number) {
+  return prisma.$transaction(async (tx) => {
+    const candidate = await tx.candidat.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        date_birth: data.date_birth ? new Date(data.date_birth) : null,
+        address: data.address ?? null,
+        post_applied: data.post_applied ?? null,
+        id_dept: data.id_dept ?? null,
+        agent_in_charge: data.agent_in_charge ?? null,
+        status: 'Pending',
+      },
+      include: { agent: { select: { name: true } } },
+    })
+
+    if (data.agent_in_charge) {
+      await createNotification(
+        tx,
+        data.agent_in_charge,
+        'CANDIDATE_ASSIGNED',
+        `A new candidate "${candidate.name}" has been assigned to you.`,
+        'Recruitment',
+        candidate.id_cand
+      )
+    }
+
+    await writeAuditLog(tx, actorId, 'CREATE', 'Candidat', candidate.id_cand, candidate)
+    return candidate
   })
 }
 
@@ -67,15 +106,29 @@ export async function updateCandidateStatus(id: number, data: UpdateCandidateSta
   return updated
 }
 
-export async function scheduleInterview(data: ScheduleInterviewDTO) {
-  return prisma.entretien.create({
-    data: {
-      id_cand: data.id_cand,
-      date_heure: new Date(data.date_heure),
-      id_agent: data.id_agent,
-      status: 'Scheduled',
-    },
-    include: { candidat: { select: { name: true } }, agent: { select: { name: true } } },
+export async function scheduleInterview(data: ScheduleInterviewDTO, actorId: number) {
+  return prisma.$transaction(async (tx) => {
+    const interview = await tx.entretien.create({
+      data: {
+        id_cand: data.id_cand,
+        date_heure: new Date(data.date_heure),
+        id_agent: data.id_agent,
+        status: 'Scheduled',
+      },
+      include: { candidat: { select: { name: true } }, agent: { select: { name: true } } },
+    })
+
+    await createNotification(
+      tx,
+      data.id_agent,
+      'INTERVIEW_SCHEDULED',
+      `You have an interview scheduled with "${interview.candidat.name}" on ${interview.date_heure.toLocaleString()}.`,
+      'Recruitment',
+      data.id_cand
+    )
+
+    await writeAuditLog(tx, actorId, 'CREATE', 'Entretien', interview.id_entretien, interview)
+    return interview
   })
 }
 
@@ -102,6 +155,7 @@ export async function submitInterviewResult(id: number, data: SubmitInterviewRes
       },
     })
 
+    await writeAuditLog(tx, agentId, 'UPDATE', 'Entretien', id, { ...updated, action: 'Interview result submitted' })
     return updated
   })
 }
