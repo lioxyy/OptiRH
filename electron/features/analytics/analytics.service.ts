@@ -96,21 +96,84 @@ export async function getRecruitmentStats() {
   const twelveMonthsAgo = new Date()
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
 
-  const candidates = await prisma.candidat.findMany({
+  const candidatesStatus = await prisma.candidat.groupBy({
+    by: ['status'],
+    _count: { _all: true },
+  })
+
+  const monthlyEvolution = await prisma.candidat.findMany({
     where: { date_candidature: { gte: twelveMonthsAgo } },
     select: { date_candidature: true, status: true },
   })
 
   const monthly: Record<string, Record<string, number>> = {}
-  for (const c of candidates) {
+  for (const c of monthlyEvolution) {
     const key = c.date_candidature.toISOString().slice(0, 7)
-    if (!monthly[key]) monthly[key] = { Pending: 0, Accepted: 0, Rejected: 0, 'In Progress': 0 }
+    if (!monthly[key]) monthly[key] = { Total: 0, Pending: 0, Accepted: 0, Rejected: 0, 'In Progress': 0 }
     monthly[key][c.status] = (monthly[key][c.status] || 0) + 1
+    monthly[key].Total++
   }
 
-  return Object.entries(monthly)
+  const trend = Object.entries(monthly)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, counts]) => ({ month, ...counts }))
+
+  return {
+    funnel: candidatesStatus.map(s => ({ status: s.status, count: s._count._all })),
+    trend
+  }
+}
+
+export async function getPayrollTrend() {
+  const generateMonths = () => {
+    const months = []
+    const d = new Date()
+    for (let i = 11; i >= 0; i--) {
+      const m = new Date(d.getFullYear(), d.getMonth() - i, 1)
+      months.push(m.toISOString().slice(0, 7))
+    }
+    return months
+  }
+
+  const months = generateMonths()
+  const payrollData = await prisma.salaire.groupBy({
+    by: ['month_year'],
+    where: { month_year: { in: months } },
+    _sum: { amount_final: true },
+  })
+
+  const dataMap = new Map(payrollData.map(d => [d.month_year, d._sum.amount_final ?? 0]))
+
+  return months.map(m => ({
+    month: m,
+    amount: dataMap.get(m) ?? 0
+  }))
+}
+
+export async function getScoreDistribution() {
+  const evaluations = await prisma.evaluation.findMany({
+    where: { type_eval: 'Employee' },
+    select: { score: true },
+  })
+
+  const buckets = [
+    { range: '0-20', count: 0 },
+    { range: '21-40', count: 0 },
+    { range: '41-60', count: 0 },
+    { range: '61-80', count: 0 },
+    { range: '81-100', count: 0 },
+  ]
+
+  evaluations.forEach(e => {
+    const s = e.score
+    if (s <= 20) buckets[0].count++
+    else if (s <= 40) buckets[1].count++
+    else if (s <= 60) buckets[2].count++
+    else if (s <= 80) buckets[3].count++
+    else buckets[4].count++
+  })
+
+  return buckets
 }
 
 export async function getTopPerformers() {
