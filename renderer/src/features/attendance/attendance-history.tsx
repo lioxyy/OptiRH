@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { format } from 'date-fns'
-import { History as HistoryIcon, Calendar as CalendarIcon } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
+import { Calendar as CalendarIcon } from 'lucide-react'
 import { Badge } from '../../components/ui/badge'
 import { cn } from '@/lib/utils'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
@@ -96,47 +95,34 @@ export function AttendanceHistory() {
   ]
 
   return (
-    <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg overflow-hidden">
-      <CardHeader className="border-b border-primary/5 bg-muted/20 pb-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <HistoryIcon className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-semibold">Attendance History</CardTitle>
-              <CardDescription className="text-xs">Review your historical clock-in/out records and productivity patterns</CardDescription>
-            </div>
+    <div className="space-y-4 pt-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 bg-background/50 p-1 rounded-lg border border-primary/5 w-fit">
+          <div className="flex items-center gap-1 px-2">
+            <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[10px] font-bold text-muted-foreground uppercase">Range</span>
           </div>
-          <div className="flex items-center gap-2 bg-background/50 p-1 rounded-lg border border-primary/5">
-            <div className="flex items-center gap-1 px-2">
-              <CalendarIcon className="h-3 w-3 text-muted-foreground" />
-              <span className="text-[10px] font-bold text-muted-foreground uppercase">Range</span>
-            </div>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="h-8 w-[130px] text-[11px] bg-transparent border-0 focus-visible:ring-0"
-            />
-            <span className="text-muted-foreground opacity-30 text-xs">—</span>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="h-8 w-[130px] text-[11px] bg-transparent border-0 focus-visible:ring-0"
-            />
-          </div>
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="h-8 w-[130px] text-[11px] bg-transparent border-0 focus-visible:ring-0"
+          />
+          <span className="text-muted-foreground opacity-30 text-xs">—</span>
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="h-8 w-[130px] text-[11px] bg-transparent border-0 focus-visible:ring-0"
+          />
         </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <GenericDataTable
-          columns={columns}
-          data={history}
-          searchKey="status"
-          searchPlaceholder="Filter by status..."
-        />
-      </CardContent>
-    </Card>
+      </div>
+      <GenericDataTable
+        columns={columns}
+        data={history}
+        searchKey="status"
+        searchPlaceholder="Filter by status..."
+      />
+    </div>
   )
 }

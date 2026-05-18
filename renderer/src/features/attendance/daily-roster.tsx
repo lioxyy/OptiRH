@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { Users, Clock, Calendar, TrendingUp, Edit3 } from 'lucide-react'
 import { format } from 'date-fns'
@@ -195,31 +195,18 @@ export function DailyRoster() {
         </Card>
       </div>
 
-      <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg overflow-hidden">
-        <CardHeader className="border-b border-primary/5 bg-muted/20 pb-4">
-          <div className="flex items-center gap-4">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Users className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-semibold">Daily Roster</CardTitle>
-              <CardDescription className="text-xs">Real-time attendance and leave status for all personnel</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <GenericDataTable
-            columns={columns}
-            data={roster}
-            searchKey="name"
-            searchPlaceholder="Search employees..."
-            searchOptions={[
-              { id: 'name', label: 'Employee Name' },
-              { id: 'departmentName', label: 'Department' }
-            ]}
-          />
-        </CardContent>
-      </Card>
+      <div className="pt-4">
+        <GenericDataTable
+          columns={columns}
+          data={roster}
+          searchKey="name"
+          searchPlaceholder="Search employees..."
+          searchOptions={[
+            { id: 'name', label: 'Employee Name' },
+            { id: 'departmentName', label: 'Department' }
+          ]}
+        />
+      </div>
 
       {selectedEmployee && (
         <OverrideModal
