@@ -2,6 +2,7 @@ import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
 import { writeAuditLog } from '../../lib/audit'
 import { createNotification } from '../../lib/notifications'
+import * as EvaluationService from '../evaluations/evaluations.service'
 import type { RequestUser } from '../../middleware/authenticate'
 import type {
   CreateCandidateDTO,
@@ -145,15 +146,28 @@ export async function submitInterviewResult(id: number, data: SubmitInterviewRes
       },
     })
 
-    await tx.evaluation.create({
-      data: {
+    // Use unified evaluation service for consistency
+    // Note: In a real scenario, we would select a specific recruitment campaign/criteria here.
+    // For now, we'll use a single "General" score entry.
+
+    // Check for a default criteria
+    let criteria = await tx.evaluationCriteria.findFirst({ where: { name: 'Interview General' } })
+    if (!criteria) {
+      criteria = await tx.evaluationCriteria.create({
+        data: { name: 'Interview General', weight: 1, max_score: 100 }
+      })
+    }
+
+    await EvaluationService.createEvaluationInternal(tx as any, {
+      type_eval: 'Candidate',
+      evaluatee_cand_id: interview.id_cand,
+      comments: data.notes ?? undefined,
+      scores: [{
+        criteria_id: criteria.id_criteria,
         score: data.score,
-        comments: data.notes ?? null,
-        type_eval: 'Candidate',
-        evaluator_id: agentId,
-        evaluatee_cand_id: interview.id_cand,
-      },
-    })
+        comment: 'Standard Interview Score'
+      }]
+    }, agentId)
 
     await writeAuditLog(tx, agentId, 'UPDATE', 'Entretien', id, { ...updated, action: 'Interview result submitted' })
     return updated
