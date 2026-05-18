@@ -18,6 +18,7 @@ interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
     date: DateRange | undefined
     onDateChange: (date: DateRange | undefined) => void
     placeholder?: string
+    borderless?: boolean
 }
 
 export function DateRangePicker({
@@ -25,6 +26,7 @@ export function DateRangePicker({
     date,
     onDateChange,
     placeholder = "Pick a date",
+    borderless = false,
 }: DateRangePickerProps) {
     return (
         <div className={cn("grid gap-2", className)}>
@@ -35,7 +37,8 @@ export function DateRangePicker({
                         variant={"outline"}
                         size="sm"
                         className={cn(
-                            "w-[260px] h-9 justify-start text-left font-normal text-xs rounded-lg border-muted-foreground/20 bg-muted/10 hover:bg-muted/20 transition-colors",
+                            "w-[260px] h-9 justify-start text-left font-normal text-xs rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors shadow-none",
+                            borderless ? "border-0" : "border-muted-foreground/20",
                             !date && "text-muted-foreground"
                         )}
                     >

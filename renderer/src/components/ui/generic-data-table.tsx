@@ -213,7 +213,7 @@ export function GenericDataTable<TData, TValue>({
                     {extraActions}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="ml-auto h-9">
+                            <Button variant="outline" size="sm" className="ml-auto h-9 bg-muted/50 hover:bg-muted/80 border-0 shadow-none font-medium">
                                 Columns <ChevronDownIcon className="ml-2 h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>

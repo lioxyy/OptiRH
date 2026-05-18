@@ -225,7 +225,7 @@ export function LogsPage() {
               extraActions={
                 <div className="flex items-center gap-2 no-print mr-2">
                   <Select value={targetModel} onValueChange={(v) => { setTargetModel(v); setPage(1); }}>
-                    <SelectTrigger className="w-40 h-9 text-xs rounded-lg border-muted-foreground/20 bg-muted/10">
+                    <SelectTrigger className="w-40 h-9 text-xs rounded-lg border-0 bg-muted/10 shadow-none">
                       <SelectValue placeholder="All Models" />
                     </SelectTrigger>
                     <SelectContent>
@@ -246,6 +246,7 @@ export function LogsPage() {
                   <DateRangePicker
                     date={dateRange}
                     onDateChange={(range) => { setDateRange(range); setPage(1); }}
+                    borderless={true}
                   />
                 </div>
               }
