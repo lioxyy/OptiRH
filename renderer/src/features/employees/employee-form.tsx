@@ -167,10 +167,10 @@ export function EmployeeForm({
         date_employment: new Date(data.date_employment).toISOString(),
       }
 
-      // Remove password/confirm_password if empty during edit
+      // Remove password/confirm_password as they are handled specially
+      delete payload.confirm_password
       if (initialData && !data.password) {
         delete payload.password
-        delete payload.confirm_password
       } else if (!data.password && !initialData) {
         toast.error('Password is required for new employees')
         setSubmitting(false)
@@ -178,7 +178,7 @@ export function EmployeeForm({
       }
 
       if (initialData?.id_emp) {
-        await api.put(`/api/employees/${initialData.id_emp}`, payload)
+        await api.patch(`/api/employees/${initialData.id_emp}`, payload)
         toast.success('Employee updated successfully')
       } else {
         await api.post('/api/employees', payload)
