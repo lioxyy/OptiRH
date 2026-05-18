@@ -62,13 +62,16 @@ async function start() {
 
   process.env.DATABASE_URL = `file:${dbPath}`
 
-  if (app.isPackaged) {
-    try {
-      execSync('npx prisma migrate deploy', {
-        env: { ...process.env },
-        cwd: path.join(__dirname, '../..'),
-      })
-    } catch (err) {
+  // Automatically apply migrations on startup to ensure DB is always in sync
+  try {
+    console.log('🔄 Checking database migrations...')
+    execSync('npx prisma migrate deploy', {
+      env: { ...process.env },
+      cwd: path.join(__dirname, '../..'),
+    })
+  } catch (err) {
+    console.error('Migration Error:', err)
+    if (app.isPackaged) {
       dialog.showErrorBox('Migration Error', `Database migration failed:\n${String(err)}`)
       app.quit()
       return

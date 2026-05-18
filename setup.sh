@@ -4,7 +4,7 @@ echo "🚀 Starting OptiRH Professional Installation..."
 # Create .env if missing
 if [ ! -f .env ]; then
   echo "🔧 Creating default .env file..."
-  echo 'DATABASE_URL="file:./prisma/dev.db"' > .env
+  echo 'DATABASE_URL="file:../prisma/dev.db"' > .env
 fi
 
 # Install Root dependencies
