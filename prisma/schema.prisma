@@ -46,6 +46,8 @@ model Employee {
   tasks_created   Task[]           @relation("TaskCreator")
   evaluations_given     Evaluation[] @relation("Evaluator")
   evaluations_received  Evaluation[] @relation("EvaluateeEmp")
+  perf_evals_given      EmployeeEvaluation[] @relation("EvaluationManager")
+  perf_evals_received   EmployeeEvaluation[] @relation("EvaluatedEmployee")
   salaires        Salaire[]
   formations_instructed Formation[]
   participations  ParticipationFormation[]
@@ -55,34 +57,69 @@ model Employee {
   audit_logs      AuditLog[]
 }
 
-model Candidat {
-  id_cand         Int      @id @default(autoincrement())
-  name            String
-  email           String   @unique
-  date_birth      DateTime?
-  address         String?
-  date_candidature DateTime @default(now())
-  cv_doc_path     String?
-  post_applied    String?
-  id_dept         Int?
-  status          String   @default("Pending")
-  agent_in_charge Int?
+model JobOffer {
+  id_offer        Int      @id @default(autoincrement())
+  title           String
+  description     String
+  department      String
+  contract_type   String   // CDI, CDD, Stage, Freelance
+  salary          String?
+  location        String?
+  date_publication DateTime?
+  date_expiration  DateTime?
+  status          String   @default("Draft") // Draft, Published, Closed
+  created_by      Int?
 
-  agent           Employee?    @relation(fields: [agent_in_charge], references: [id_emp])
+  applications    Application[]
+}
+
+model Candidat {
+  id_cand          Int      @id @default(autoincrement())
+  nom              String
+  prenom           String
+  email            String   @unique
+  telephone        String?
+  date_birth       DateTime?
+  address          String?
+  date_inscription DateTime @default(now())
+  cv_path          String?
+  lettre_path      String?
+  status           String   @default("Actif")
+  agent_in_charge  Int?
+
+  agent           Employee?     @relation(fields: [agent_in_charge], references: [id_emp])
+  applications    Application[]
   entretiens      Entretien[]
-  evaluations     Evaluation[] @relation("EvaluateeCand")
+  evaluations     Evaluation[]  @relation("EvaluateeCand")
+}
+
+model Application {
+  id_application  Int      @id @default(autoincrement())
+  id_cand         Int
+  id_offer        Int
+  date_postulation DateTime @default(now())
+  status          String   @default("Reçue") // Reçue, EnCours, Entretien, Acceptée, Rejetée
+  notes           String?
+
+  candidat        Candidat  @relation(fields: [id_cand], references: [id_cand])
+  offer           JobOffer  @relation(fields: [id_offer], references: [id_offer])
+  entretiens      Entretien[]
 }
 
 model Entretien {
-  id_entretien Int      @id @default(autoincrement())
-  date_heure   DateTime
-  status       String   @default("Scheduled")
-  result_notes String?
-  id_cand      Int
-  id_agent     Int
+  id_entretien    Int      @id @default(autoincrement())
+  date_heure      DateTime
+  lieu            String?
+  status          String   @default("Planifié") // Planifié, Terminé, Annulé
+  feedback        String?
+  result          String?  // Validé, Rejeté, SecondEntretien
+  id_cand         Int
+  id_application  Int?
+  id_agent        Int
 
-  candidat     Candidat @relation(fields: [id_cand], references: [id_cand])
-  agent        Employee @relation(fields: [id_agent], references: [id_emp])
+  candidat        Candidat     @relation(fields: [id_cand], references: [id_cand])
+  application     Application? @relation(fields: [id_application], references: [id_application])
+  agent           Employee     @relation(fields: [id_agent], references: [id_emp])
 }
 
 model Contract {
@@ -247,4 +284,53 @@ model AuditLog {
   timestamp    DateTime @default(now())
 
   actor Employee? @relation(fields: [actor_id], references: [id_emp])
+}
+
+model EvaluationCampaign {
+  id_campaign Int      @id @default(autoincrement())
+  title       String
+  type        String   // e.g., "Annuelle", "Semestrielle"
+  date_start  DateTime
+  date_end    DateTime
+  description String?
+  status      String   @default("Draft") // Draft, Active, Closed
+
+  evaluations EmployeeEvaluation[]
+}
+
+model EvaluationCriteria {
+  id_criteria Int      @id @default(autoincrement())
+  name        String
+  description String?
+  weight      Float    // Poids en % (ex: 20.0 pour 20%)
+  max_score   Int      // Note max (ex: 20)
+
+  scores      EvaluationScore[]
+}
+
+model EmployeeEvaluation {
+  id_emp_eval   Int      @id @default(autoincrement())
+  id_emp        Int
+  evaluator_id  Int
+  campaign_id   Int
+  date_eval     DateTime @default(now())
+  general_cmt   String?
+  final_score   Float    // Calculé automatiquement
+  decision      String   // e.g., "Excellent", "Bon", "Moyen", "Faible"
+
+  employee      Employee            @relation("EvaluatedEmployee", fields: [id_emp], references: [id_emp])
+  evaluator     Employee            @relation("EvaluationManager", fields: [evaluator_id], references: [id_emp])
+  campaign      EvaluationCampaign  @relation(fields: [campaign_id], references: [id_campaign])
+  scores        EvaluationScore[]
+}
+
+model EvaluationScore {
+  id_score      Int      @id @default(autoincrement())
+  eval_id       Int
+  criteria_id   Int
+  score         Float
+  comment       String?
+
+  evaluation    EmployeeEvaluation  @relation(fields: [eval_id], references: [id_emp_eval], onDelete: Cascade)
+  criteria      EvaluationCriteria  @relation(fields: [criteria_id], references: [id_criteria])
 }

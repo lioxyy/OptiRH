@@ -12,6 +12,7 @@ import {
   UserPlusIcon,
   StarIcon,
   BarChart3Icon,
+  GlobeIcon,
   LifeBuoy,
   Send,
   DatabaseIcon,
@@ -84,10 +85,22 @@ const data = {
       roles: ["Admin", "Agent"],
     },
     {
+      title: "Careers (Public)",
+      url: "/careers",
+      icon: GlobeIcon,
+      roles: ["Admin", "Agent"],
+    },
+    {
       title: "Evaluations",
       url: "/dashboard/evaluations",
       icon: StarIcon,
       roles: ["Admin", "Agent"],
+    },
+    {
+      title: "My Evaluations",
+      url: "/dashboard/my-evaluations",
+      icon: StarIcon,
+      roles: ["Admin", "Agent", "Employee"],
     },
     {
       title: "Analytics",

@@ -23,5 +23,9 @@
     "electron-builder": "^24.13.3",
     "tsx": "^4.22.0",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@types/multer": "^2.1.0",
+    "multer": "^2.1.1"
   }
 }

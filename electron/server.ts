@@ -6,6 +6,8 @@ import authRouter from './features/auth/auth.router'
 import employeesRouter from './features/employees/employees.router'
 import notificationsRouter from './features/notifications/notifications.router'
 import auditRouter from './features/audit/audit.router'
+import evaluationsRouter from './features/evaluations/evaluations.router'
+import recruitmentRouter from './features/recruitment/recruitment.router'
 
 export function createApp() {
   const app = express()
@@ -26,6 +28,8 @@ export function createApp() {
   app.use('/api/employees', employeesRouter)
   app.use('/api/notifications', notificationsRouter)
   app.use('/api/audit', auditRouter)
+  app.use('/api/evaluations', evaluationsRouter)
+  app.use('/api/recruitment', recruitmentRouter)
 
   app.use('/api/*', (_req, res) => {
     res.status(404).json(fail('NOT_FOUND', 'API route not found'))
