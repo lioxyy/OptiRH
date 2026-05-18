@@ -12,7 +12,8 @@ import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/gen
 import { CandidateForm } from './candidate-form'
 import { InterviewForm } from './interview-form'
 import { InterviewResultForm } from './interview-result-form'
-import { Calendar, ClipboardCheck, Star } from 'lucide-react'
+import { HireDialog } from './hire-dialog'
+import { Calendar, ClipboardCheck, Star, UserPlus } from 'lucide-react'
 
 interface Interview {
   id_entretien: number
@@ -39,6 +40,7 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destr
   'In Progress': 'default',
   Accepted: 'outline',
   Rejected: 'destructive',
+  Hired: 'default',
 }
 
 export function RecruitmentPage() {
@@ -49,6 +51,7 @@ export function RecruitmentPage() {
 
   const [schedulingCandidate, setSchedulingCandidate] = useState<Candidate | null>(null)
   const [resultInterview, setResultInterview] = useState<{ id: number; name: string } | null>(null)
+  const [hiringCandidate, setHiringCandidate] = useState<Candidate | null>(null)
 
   const { data: candidates = [], isLoading } = useQuery<Candidate[]>({
     queryKey: ['recruitment'],
@@ -127,6 +130,11 @@ export function RecruitmentPage() {
               const interview = row.original.entretiens!.find(i => i.status === 'Scheduled')!
               setResultInterview({ id: interview.id_entretien, name: row.original.name })
             }}>Result</Button>
+          )}
+          {row.original.status === 'Accepted' && (
+            <Button size="sm" variant="default" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => setHiringCandidate(row.original)}>
+              <UserPlus className="mr-1 h-3 w-3" /> Hire
+            </Button>
           )}
         </div>
       )
@@ -216,6 +224,11 @@ export function RecruitmentPage() {
                               <ClipboardCheck className="mr-1 h-3 w-3" /> Result
                             </Button>
                           )}
+                          {status === 'Accepted' && (
+                            <Button size="sm" className="h-7 text-xs flex-1 bg-green-600 hover:bg-green-700" onClick={() => setHiringCandidate(candidate)}>
+                              <UserPlus className="mr-1 h-3 w-3" /> Hire
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </Card>
@@ -256,6 +269,18 @@ export function RecruitmentPage() {
           interviewId={resultInterview.id}
           candidateName={resultInterview.name}
           onClose={() => setResultInterview(null)}
+        />
+      )}
+
+      {hiringCandidate && (
+        <HireDialog
+          candidate={hiringCandidate}
+          onClose={() => setHiringCandidate(null)}
+          onSuccess={() => {
+            statusMutation.mutate({ id: hiringCandidate.id_cand, status: 'Hired' })
+            queryClient.invalidateQueries({ queryKey: ['recruitment'] })
+            queryClient.invalidateQueries({ queryKey: ['employees'] })
+          }}
         />
       )}
     </div>
