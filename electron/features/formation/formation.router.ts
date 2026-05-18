@@ -50,8 +50,8 @@ router.delete('/:id', authorize('Admin'), validate('params', FormationParamsSche
 
 router.post('/:id/assign-instructor', authorize('Admin'), validate('params', FormationParamsSchema), validate('body', AssignInstructorSchema), asyncHandler(async (req, res) => {
     const { id } = req.params as unknown as { id: number }
-    const { instructor_id } = req.body as { instructor_id: number }
-    const updated = await FormationService.assignInstructor(id, instructor_id, req.user.id_emp)
+    const { id_instructor } = req.body as { id_instructor: number }
+    const updated = await FormationService.assignInstructor(id, id_instructor, req.user.id_emp)
     res.json(success(updated))
 }))
 
