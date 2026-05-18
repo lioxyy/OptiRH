@@ -33,7 +33,12 @@ export const CreateEmployeeSchema = BaseEmployeeSchema.superRefine((data, ctx) =
   }
 
   // 2. Date of employment <= today's date
-  if (employmentDate > today) {
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const empDateStart = new Date(employmentDate)
+  empDateStart.setHours(0, 0, 0, 0)
+
+  if (empDateStart > todayStart) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Employment date cannot be in the future",

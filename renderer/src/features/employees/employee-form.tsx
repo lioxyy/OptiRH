@@ -56,7 +56,12 @@ const FormSchema = z.object({
   }
 
   // 2. Date of employment <= today's date
-  if (employmentDate > today) {
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const empDateStart = new Date(employmentDate)
+  empDateStart.setHours(0, 0, 0, 0)
+
+  if (empDateStart > todayStart) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Employment date cannot be in the future",
@@ -88,9 +93,16 @@ interface Department {
 interface Employee {
   id_emp: number
   name: string
+  role: string
 }
 
-export function EmployeeForm({ onSuccess }: { onSuccess?: () => void }) {
+export function EmployeeForm({
+  onSuccess,
+  initialData,
+}: {
+  onSuccess?: () => void
+  initialData?: any
+}) {
   const queryClient = useQueryClient()
   const [submitting, setSubmitting] = useState(false)
 
@@ -112,25 +124,37 @@ export function EmployeeForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
-    defaultValues: { role: 'Employee' },
+    defaultValues: initialData
+      ? {
+        ...initialData,
+        date_birth: initialData.date_birth?.split('T')[0],
+        date_employment: initialData.date_employment?.split('T')[0],
+      }
+      : { role: 'Employee' },
   })
 
   async function onSubmit(data: FormData) {
     setSubmitting(true)
     try {
-      // Convert date strings to ISO-8601 for backend Zod validation
       const payload = {
         ...data,
         date_birth: new Date(data.date_birth).toISOString(),
         date_employment: new Date(data.date_employment).toISOString(),
       }
 
-      await api.post('/api/employees', payload)
+      if (initialData?.id_emp) {
+        await api.put(`/api/employees/${initialData.id_emp}`, payload)
+        toast.success('Employee updated successfully')
+      } else {
+        await api.post('/api/employees', payload)
+        toast.success('Employee created successfully')
+      }
+
       queryClient.invalidateQueries({ queryKey: ['employees'] })
-      toast.success('Employee created successfully')
+      queryClient.invalidateQueries({ queryKey: ['employee', initialData?.id_emp?.toString()] })
       onSuccess?.()
     } catch {
-      toast.error('Failed to create employee')
+      toast.error(initialData ? 'Failed to update employee' : 'Failed to create employee')
     } finally {
       setSubmitting(false)
     }
@@ -314,11 +338,13 @@ export function EmployeeForm({ onSuccess }: { onSuccess?: () => void }) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {allEmployees.map((e) => (
-                    <SelectItem key={e.id_emp} value={e.id_emp.toString()}>
-                      {e.name}
-                    </SelectItem>
-                  ))}
+                  {allEmployees
+                    .filter((e) => e.role === 'Admin' || e.role === 'Agent')
+                    .map((e) => (
+                      <SelectItem key={e.id_emp} value={e.id_emp.toString()}>
+                        {e.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -326,7 +352,7 @@ export function EmployeeForm({ onSuccess }: { onSuccess?: () => void }) {
           )}
         />
         <Button type="submit" disabled={submitting} className="w-full">
-          {submitting ? 'Creating...' : 'Create Employee'}
+          {submitting ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Employee' : 'Create Employee')}
         </Button>
       </form>
     </Form>
