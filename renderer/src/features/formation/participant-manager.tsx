@@ -70,7 +70,7 @@ export function ParticipantManager({ formation, onClose }: ParticipantManagerPro
         const isAlreadyParticipant = participants.some((p: any) => p.id_emp === emp.id_emp)
         const matchesSearch = emp.name.toLowerCase().includes(search.toLowerCase()) ||
             emp.email.toLowerCase().includes(search.toLowerCase())
-        return !isAlreadyParticipant && matchesSearch && emp.id_emp !== formation.instructor_id
+        return !isAlreadyParticipant && matchesSearch && emp.id_emp !== formation.id_instructor
     })
 
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase()

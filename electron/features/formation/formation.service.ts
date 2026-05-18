@@ -37,7 +37,8 @@ export async function createFormation(data: CreateFormationDTO, actorId: number)
                 location: data.location,
                 date_deb: parsedDate,
                 duration_days: data.duration_days,
-                instructor: { connect: { id_emp: data.instructor_id } },
+                id_instructor: data.id_instructor,
+                external_instructor: data.external_instructor,
             },
         })
         await writeAuditLog(tx, actorId, 'CREATE', 'Formation', created.id_formation, created)
@@ -57,9 +58,8 @@ export async function updateFormation(id: number, data: UpdateFormationDTO, acto
                 ...(data.location !== undefined ? { location: data.location } : {}),
                 ...(data.date_deb !== undefined ? { date_deb: toDate(data.date_deb)! } : {}),
                 ...(data.duration_days !== undefined ? { duration_days: data.duration_days } : {}),
-                ...(data.instructor_id !== undefined
-                    ? { instructor: { connect: { id_emp: data.instructor_id } } }
-                    : {}),
+                ...(data.id_instructor !== undefined ? { id_instructor: data.id_instructor } : {}),
+                ...(data.external_instructor !== undefined ? { external_instructor: data.external_instructor } : {}),
             },
         })
         await writeAuditLog(tx, actorId, 'UPDATE', 'Formation', id, updated)
@@ -76,17 +76,17 @@ export async function deleteFormation(id: number, actorId: number) {
     })
 }
 
-export async function assignInstructor(id: number, instructor_id: number, actorId: number) {
+export async function assignInstructor(id: number, id_instructor: number, actorId: number) {
     const existing = await prisma.formation.findUnique({ where: { id_formation: id } })
     if (!existing) throw new AppError('NOT_FOUND', 404)
-    const instructor = await prisma.employee.findUnique({ where: { id_emp: instructor_id } })
+    const instructor = await prisma.employee.findUnique({ where: { id_emp: id_instructor } })
     if (!instructor) throw new AppError('EMPLOYEE_NOT_FOUND', 404)
     return prisma.$transaction(async (tx) => {
         const updated = await tx.formation.update({
             where: { id_formation: id },
-            data: { instructor: { connect: { id_emp: instructor_id } } },
+            data: { id_instructor, external_instructor: null },
         })
-        await writeAuditLog(tx, actorId, 'UPDATE', 'Formation', id, { instructor_id })
+        await writeAuditLog(tx, actorId, 'UPDATE', 'Formation', id, { id_instructor })
         return updated
     })
 }

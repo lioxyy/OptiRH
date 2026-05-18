@@ -18,7 +18,7 @@ export interface Formation {
     location?: string | null
     date_deb: string
     duration_days: number
-    instructor_id: number
+    id_instructor: number
     instructor: {
         id_emp: number
         name: string
@@ -168,7 +168,7 @@ export function FormationPage() {
                 )}
             </div>
 
-            <div className="bg-card rounded-lg border shadow-sm">
+            <div className="bg-card rounded-lg">
                 <GenericDataTable
                     columns={columns}
                     data={formations}

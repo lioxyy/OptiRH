@@ -163,8 +163,8 @@ export function FormationForm({ initialData, onClose }: FormationFormProps) {
                             <div className="space-y-2">
                                 <Label htmlFor="instructor">Instructor</Label>
                                 <Select
-                                    value={watch('instructor_id')?.toString()}
-                                    onValueChange={(val) => setValue('instructor_id', parseInt(val))}
+                                    value={watch('id_instructor')?.toString()}
+                                    onValueChange={(val) => setValue('id_instructor', parseInt(val))}
                                 >
                                     <SelectTrigger className="w-full pl-9 relative">
                                         <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -178,7 +178,7 @@ export function FormationForm({ initialData, onClose }: FormationFormProps) {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {errors.instructor_id && <p className="text-xs text-destructive">Please select an instructor</p>}
+                                {errors.id_instructor && <p className="text-xs text-destructive">Please select an instructor</p>}
                             </div>
                         </TabsContent>
                     </Tabs>

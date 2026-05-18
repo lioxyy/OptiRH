@@ -1,19 +1,25 @@
 import { z } from 'zod'
 
-export const CreateFormationSchema = z.object({
+const BaseFormationSchema = z.object({
     name: z.string().min(1, "Name is required"),
     description: z.string().optional(),
     location: z.string().optional(),
     date_deb: z.string().min(1, "Start date is required"),
     duration_days: z.coerce.number().int().positive("Duration must be positive"),
-    instructor_id: z.coerce.number().int().positive("Please select an instructor"),
+    id_instructor: z.coerce.number().int().positive().optional(),
+    external_instructor: z.string().optional(),
 })
 
-export const UpdateFormationSchema = CreateFormationSchema.partial()
+export const CreateFormationSchema = BaseFormationSchema.refine(data => data.id_instructor || data.external_instructor, {
+    message: "Either a local instructor or an external instructor must be provided",
+    path: ["id_instructor"]
+})
+
+export const UpdateFormationSchema = BaseFormationSchema.partial()
 
 export const FormationParamsSchema = z.object({ id: z.coerce.number() })
 
-export const AssignInstructorSchema = z.object({ instructor_id: z.coerce.number() })
+export const AssignInstructorSchema = z.object({ id_instructor: z.coerce.number() })
 
 export const ScheduleFormationSchema = z.object({
     date_deb: z.string().optional(),

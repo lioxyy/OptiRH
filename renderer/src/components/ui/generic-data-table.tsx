@@ -170,7 +170,7 @@ export function GenericDataTable<TData, TValue>({
                             onChange={(event) =>
                                 table.getColumn(currentSearchKey)?.setFilterValue(event.target.value)
                             }
-                            className="w-full h-9 pr-[135px]"
+                            className="w-full h-9 pr-[135px] border-0 focus-visible:ring-0 shadow-none bg-muted/20"
                         />
                         <div className="absolute right-0 top-0 bottom-0 flex items-center pr-1">
                             <div className="h-4 w-[1px] bg-border mr-1"></div>
@@ -202,7 +202,7 @@ export function GenericDataTable<TData, TValue>({
                 )}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="ml-auto h-9">
+                        <Button variant="ghost" size="sm" className="ml-auto h-9">
                             Columns <ChevronDownIcon className="ml-2 h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -229,7 +229,7 @@ export function GenericDataTable<TData, TValue>({
             {/* TABLE DATA */}
             <Card className="overflow-hidden p-0 border-0 shadow-none">
                 <CardContent className="p-0 border-0">
-                    <div className="rounded-md border">
+                    <div className="rounded-md">
                         <Table>
                             <TableHeader className="bg-muted/50">
                                 {table.getHeaderGroups().map((headerGroup) => (
@@ -294,7 +294,7 @@ export function GenericDataTable<TData, TValue>({
                                 table.setPageSize(Number(value))
                             }}
                         >
-                            <SelectTrigger className="h-8 w-[70px]">
+                            <SelectTrigger className="h-8 w-[70px] border-0 bg-transparent shadow-none">
                                 <SelectValue placeholder={table.getState().pagination.pageSize} />
                             </SelectTrigger>
                             <SelectContent align="end">
@@ -312,7 +312,7 @@ export function GenericDataTable<TData, TValue>({
                     </div>
                     <div className="flex items-center space-x-2">
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             className="hidden h-8 w-8 p-0 lg:flex"
                             onClick={() => table.setPageIndex(0)}
                             disabled={!table.getCanPreviousPage()}
@@ -321,7 +321,7 @@ export function GenericDataTable<TData, TValue>({
                             <ChevronsLeftIcon className="h-4 w-4" />
                         </Button>
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             className="h-8 w-8 p-0"
                             onClick={() => table.previousPage()}
                             disabled={!table.getCanPreviousPage()}
@@ -330,7 +330,7 @@ export function GenericDataTable<TData, TValue>({
                             <ChevronLeftIcon className="h-4 w-4" />
                         </Button>
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             className="h-8 w-8 p-0"
                             onClick={() => table.nextPage()}
                             disabled={!table.getCanNextPage()}
@@ -339,7 +339,7 @@ export function GenericDataTable<TData, TValue>({
                             <ChevronRightIcon className="h-4 w-4" />
                         </Button>
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             className="hidden h-8 w-8 p-0 lg:flex"
                             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                             disabled={!table.getCanNextPage()}

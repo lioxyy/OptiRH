@@ -1,10 +1,11 @@
-export type CreateFormationDTO = {
+export interface CreateFormationDTO {
     name: string
     description?: string
     location?: string
-    date_deb: string
+    date_deb: string | Date
     duration_days: number
-    instructor_id: number
+    id_instructor?: number
+    external_instructor?: string
 }
 
-export type UpdateFormationDTO = Partial<CreateFormationDTO>
+export interface UpdateFormationDTO extends Partial<CreateFormationDTO> { }

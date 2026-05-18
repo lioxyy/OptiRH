@@ -192,9 +192,10 @@ model Formation {
   location      String?
   date_deb      DateTime
   duration_days Int
-  instructor_id Int
+  id_instructor Int?
+  external_instructor String?
 
-  instructor     Employee               @relation(fields: [instructor_id], references: [id_emp])
+  instructor     Employee?              @relation(fields: [id_instructor], references: [id_emp])
   participations ParticipationFormation[]
 }
 
