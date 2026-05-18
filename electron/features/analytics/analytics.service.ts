@@ -833,7 +833,7 @@ export async function getUnifiedDashboard(actorId: number) {
       where: {
         status: 'Active',
         date_fin: { lte: thirtyDaysFromNow, gte: today },
-        ...(isAgent && { employee: { departments: { some: { id_dept: { in: id_depts } } } } })
+        ...(isAgent && { employee: { departments: { some: { id_dept: { in: deptIds } } } } } as any)
       }
     }),
     prisma.salaire.count({ where: { status: 'Generated' } }),
@@ -841,7 +841,7 @@ export async function getUnifiedDashboard(actorId: number) {
       where: {
         date: { gte: today, lte: endOfToday },
         status: 'Present',
-        ...(isAgent && { employee: { departments: { some: { id_dept: { in: id_depts } } } } })
+        ...(isAgent && { employee: { departments: { some: { id_dept: { in: deptIds } } } } } as any)
       }
     })
   ])
@@ -865,7 +865,7 @@ export async function getUnifiedDashboard(actorId: number) {
     }),
 
     // Today's System Logs
-    prisma.auditLog.findMany({
+    isAdmin ? prisma.auditLog.findMany({
       where: { timestamp: { gte: today } },
       include: { actor: { select: { name: true } } },
       orderBy: { timestamp: 'desc' },

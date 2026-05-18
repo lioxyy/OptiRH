@@ -44,7 +44,7 @@ const navGroups = [
     items: [
       { title: "Employees", url: "/dashboard/employees" },
       { title: "Departments", url: "/dashboard/departments" },
-      { title: "Recruitment", url: "/dashboard/recruitment" },
+      { title: "Recruitment", url: "/dashboard/recruitment", roles: ["Admin"] },
       { title: "Evaluations", url: "/dashboard/evaluations" },
     ],
   },

@@ -18,7 +18,13 @@ import {
   History,
   AlertTriangle
 } from "lucide-react"
-import { format } from "date-fns"
+import { format, isValid } from "date-fns"
+
+function safeFormat(dateVal: any, fmt: string, fallback = '—') {
+  if (!dateVal) return fallback
+  const d = new Date(dateVal)
+  return isValid(d) ? format(d, fmt) : fallback
+}
 
 // --- Minimalist KPI Card ---
 function OperationalKpi({ title, value, icon: Icon, description }: {
@@ -159,7 +165,7 @@ export function OverviewPage() {
                           <div className="opacity-60 text-[9px]">{l.employee.role}</div>
                         </td>
                         <td className="py-3 px-1 font-mono">
-                          {format(new Date(l.date_deb), "MMM dd")} - {format(new Date(l.date_fin), "MMM dd")}
+                          {safeFormat(l.date_deb, "MMM dd")} – {safeFormat(l.date_fin, "MMM dd")}
                         </td>
                         <td className="py-3 px-1">
                           <Badge variant="outline" className="text-[9px] font-normal px-2 py-0">{l.leave_type.name}</Badge>
@@ -280,7 +286,7 @@ export function OverviewPage() {
                       }`} />
                     <div className="flex-1 min-w-0">
                       <span className="text-[11px] font-semibold block truncate group-hover:text-primary transition-colors">{t.name}</span>
-                      <span className="text-[9px] text-muted-foreground block truncate">Deadline: {format(new Date(t.date_fin), "MMM dd, yyyy")}</span>
+                      <span className="text-[9px] text-muted-foreground block truncate">Deadline: {safeFormat(t.date_fin, "MMM dd, yyyy")}</span>
                     </div>
                     <Badge variant="secondary" className="text-[8px] tracking-tight">{t.status}</Badge>
                   </div>
