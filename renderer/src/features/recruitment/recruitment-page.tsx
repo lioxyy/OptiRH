@@ -363,7 +363,7 @@ export function RecruitmentPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight">Recruitment Pipeline</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground/90">Recruitment Pipeline</h1>
           <p className="text-sm text-muted-foreground font-medium">Track and manage candidates through the hiring workflow.</p>
         </div>
         {user?.role === 'Admin' && (

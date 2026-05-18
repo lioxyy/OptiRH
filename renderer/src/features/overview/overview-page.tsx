@@ -94,8 +94,8 @@ export function OverviewPage() {
     <div className="space-y-6 pb-8">
       {/* Header section with minimal greeting */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold tracking-tight">Operations Command</h1>
-        <p className="text-xs text-muted-foreground">System overview for {format(new Date(), "eeee, MMMM do, yyyy")}</p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground/90">Operations Command</h1>
+        <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">System insight for {format(new Date(), "eeee, MMMM do, yyyy")}</p>
       </div>
 
       {/* 4 Minimal KPI Cards */}

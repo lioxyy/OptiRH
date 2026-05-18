@@ -339,7 +339,7 @@ export function TasksPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight">Project Tasks</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground/90">Project Tasks</h1>
           <p className="text-sm text-muted-foreground font-medium">Manage and track your operational activities.</p>
         </div>
         {(user?.role === 'Admin' || user?.role === 'Agent') && (
