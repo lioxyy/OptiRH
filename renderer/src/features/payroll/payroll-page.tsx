@@ -18,7 +18,7 @@ interface Payslip {
   amount_final: number
   status: string
   id_emp: number
-  employee?: { name: string; id_dept: number }
+  employee?: { name: string; departments: { id_dept: number }[] }
   contract?: { type: string; salaire_base: number }
 }
 

@@ -6,7 +6,7 @@ interface User {
   name: string
   email: string
   role: 'Admin' | 'Agent' | 'Employee'
-  id_dept: number
+  id_depts: number[]
 }
 
 interface AuthContextValue {

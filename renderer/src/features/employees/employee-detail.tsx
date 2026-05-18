@@ -126,8 +126,8 @@ export function EmployeeDetail() {
                 <dd className="text-sm">{employee.date_employment?.split('T')[0]}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-sm text-muted-foreground">Dept ID</dt>
-                <dd className="text-sm">{employee.id_dept}</dd>
+                <dt className="text-sm text-muted-foreground">Departments</dt>
+                <dd className="text-sm">{employee.departments?.map((d: any) => d.name).join(', ') || 'None'}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-muted-foreground">Supervisor ID</dt>

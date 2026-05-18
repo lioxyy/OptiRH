@@ -17,7 +17,7 @@ interface Contract {
   date_fin?: string | null
   salaire_base: number
   status: string
-  employee?: { name: string, id_dept: number }
+  employee?: { name: string, departments?: { id_dept: number }[] }
 }
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
