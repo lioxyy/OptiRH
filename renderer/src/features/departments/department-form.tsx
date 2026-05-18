@@ -42,7 +42,7 @@ interface Employee {
   id_emp: number
   name: string
   role: string
-  id_dept?: number
+  departments?: { id_dept: number }[]
 }
 
 export function DepartmentForm({
@@ -88,7 +88,7 @@ export function DepartmentForm({
   useEffect(() => {
     if (employees.length > 0 && initialData?.id_dept) {
       const deptEmpIds = employees
-        .filter((emp) => emp.id_dept === initialData.id_dept)
+        .filter((emp) => emp.departments?.some((d: any) => d.id_dept === initialData.id_dept))
         .map((emp) => emp.id_emp)
 
       form.reset({

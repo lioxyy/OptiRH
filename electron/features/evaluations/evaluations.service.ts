@@ -16,11 +16,17 @@ export async function getEvaluations(user: RequestUser) {
     })
   }
 
+  const managedDepts = await prisma.department.findMany({
+    where: { manager_id: user.id_emp },
+    select: { id_dept: true }
+  })
+  const managedDeptIds = managedDepts.map(d => d.id_dept)
+
   return prisma.evaluation.findMany({
     where: {
       OR: [
         { evaluator_id: user.id_emp },
-        { evaluatee_emp: { id_dept: user.id_dept } },
+        { evaluatee_emp: { departments: { some: { id_dept: { in: managedDeptIds } } } } },
       ],
     },
     include: {

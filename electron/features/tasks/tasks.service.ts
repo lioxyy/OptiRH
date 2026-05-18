@@ -16,11 +16,17 @@ export async function getTasks(user: RequestUser) {
   }
 
   if (user.role === 'Agent') {
+    const managedDepts = await prisma.department.findMany({
+      where: { manager_id: user.id_emp },
+      select: { id_dept: true }
+    })
+    const managedDeptIds = managedDepts.map(d => d.id_dept)
+
     return prisma.task.findMany({
       where: {
         OR: [
           { assigned_by: user.id_emp },
-          { assignee: { id_dept: user.id_dept } },
+          { assignee: { departments: { some: { id_dept: { in: managedDeptIds } } } } },
         ],
       },
       include: {

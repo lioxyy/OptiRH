@@ -14,8 +14,7 @@ const BaseEmployeeSchema = z.object({
   address: z.string().optional(),
   date_employment: z.string().datetime(),
   role: z.enum(['Admin', 'Agent', 'Employee']),
-  id_dept: z.number().int().positive(),
-  supervisor_id: z.number().int().positive().optional(),
+  id_depts: z.array(z.number().int().positive()),
 })
 
 export const CreateEmployeeSchema = BaseEmployeeSchema.extend({

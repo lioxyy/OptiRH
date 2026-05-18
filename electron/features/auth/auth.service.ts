@@ -5,13 +5,17 @@ import { createNotification } from '../../lib/notifications'
 import bcrypt from 'bcryptjs'
 
 export async function login(email: string, password: string) {
-  const employee = await prisma.employee.findUnique({ where: { email } })
+  const employee = await prisma.employee.findUnique({
+    where: { email },
+    include: { departments: { select: { id_dept: true } } }
+  })
   if (!employee) throw new AppError('UNAUTHORIZED', 401)
 
   const valid = await bcrypt.compare(password, employee.password_hash)
   if (!valid) throw new AppError('UNAUTHORIZED', 401)
 
-  const payload = { id_emp: employee.id_emp, role: employee.role as 'Admin' | 'Agent' | 'Employee', id_dept: employee.id_dept }
+  const id_depts = employee.departments.map(d => d.id_dept)
+  const payload = { id_emp: employee.id_emp, role: employee.role as 'Admin' | 'Agent' | 'Employee', id_depts }
 
   await checkExpiringContracts(employee.id_emp, employee.role)
 
@@ -23,7 +27,7 @@ export async function login(email: string, password: string) {
       name: employee.name,
       email: employee.email,
       role: employee.role as 'Admin' | 'Agent' | 'Employee',
-      id_dept: employee.id_dept,
+      id_depts,
     },
   }
 }
@@ -32,11 +36,16 @@ export async function refresh(refreshToken: string) {
   const payload = verifyToken(refreshToken)
   if (!payload) throw new AppError('INVALID_TOKEN', 401)
 
-  const employee = await prisma.employee.findUnique({ where: { id_emp: payload.id_emp } })
+  const employee = await prisma.employee.findUnique({
+    where: { id_emp: payload.id_emp },
+    include: { departments: { select: { id_dept: true } } }
+  })
   if (!employee) throw new AppError('UNAUTHORIZED', 401)
 
+  const id_depts = employee.departments.map(d => d.id_dept)
+
   return {
-    access_token: signToken({ id_emp: employee.id_emp, role: employee.role as 'Admin' | 'Agent' | 'Employee', id_dept: employee.id_dept }),
+    access_token: signToken({ id_emp: employee.id_emp, role: employee.role as 'Admin' | 'Agent' | 'Employee', id_depts }),
   }
 }
 
@@ -46,7 +55,7 @@ export async function getMe(employeeId: number) {
     select: {
       id_emp: true, name: true, email: true, phone: true,
       gender: true, date_birth: true, address: true,
-      date_employment: true, role: true, id_dept: true,
+      date_employment: true, role: true, departments: { select: { id_dept: true } },
       supervisor_id: true,
     },
   })

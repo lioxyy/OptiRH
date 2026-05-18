@@ -99,32 +99,29 @@ export async function createDepartment(data: CreateDepartmentDTO & { employee_id
       if (!managerEmp || (managerEmp.role !== 'Agent' && managerEmp.role !== 'Admin')) {
         throw new AppError('VALIDATION_ERROR', 400, 'Only agents and admins can be department managers')
       }
-
-      await tx.department.updateMany({
-        where: { manager_id: finalManagerId },
-        data: { manager_id: null },
-      })
     }
 
     const dept = await tx.department.create({
       data: {
         ...deptData,
         manager_id: finalManagerId,
+        ...(employee_ids && employee_ids.length > 0 && {
+          employees: {
+            connect: employee_ids.map(id => ({ id_emp: id }))
+          }
+        })
       },
     })
 
-    if (employee_ids && employee_ids.length > 0) {
-      await tx.employee.updateMany({
-        where: { id_emp: { in: employee_ids } },
-        data: { id_dept: dept.id_dept },
+    if (finalManagerId) {
+      await tx.department.update({
+        where: { id_dept: dept.id_dept },
+        data: {
+          employees: {
+            connect: { id_emp: finalManagerId }
+          }
+        }
       })
-
-      if (finalManagerId) {
-        await tx.employee.update({
-          where: { id_emp: finalManagerId },
-          data: { id_dept: dept.id_dept },
-        })
-      }
     }
 
     await writeAuditLog(tx, actorId, 'CREATE', 'Department', dept.id_dept, dept)
@@ -156,13 +153,9 @@ export async function updateDepartment(id: number, data: UpdateDepartmentDTO & {
     let finalManagerId = deptData.manager_id !== undefined ? deptData.manager_id : dept.manager_id
 
     if (employee_ids !== undefined) {
-      const currentEmpIds = dept.employees.map((e) => e.id_emp)
-      const toConnect = employee_ids
-      const toDisconnect = currentEmpIds.filter((empId) => !toConnect.includes(empId))
-
       const assignedAgents = await tx.employee.findMany({
         where: {
-          id_emp: { in: toConnect },
+          id_emp: { in: employee_ids },
           role: 'Agent'
         },
         select: { id_emp: true }
@@ -175,32 +168,11 @@ export async function updateDepartment(id: number, data: UpdateDepartmentDTO & {
       if (assignedAgents.length > 0) {
         finalManagerId = assignedAgents[0].id_emp
       } else {
-        if (dept.manager_id && toDisconnect.includes(dept.manager_id)) {
+        if (dept.manager_id && !employee_ids.includes(dept.manager_id)) {
           if (finalManagerId === dept.manager_id) {
             finalManagerId = null
           }
         }
-      }
-
-      if (toDisconnect.length > 0) {
-        const disconnectManagerIds = toDisconnect.filter((empId) => empId === dept.manager_id)
-        if (disconnectManagerIds.length > 0) {
-          if (finalManagerId === dept.manager_id) {
-            finalManagerId = null
-          }
-        }
-
-        await tx.employee.updateMany({
-          where: { id_emp: { in: toDisconnect } },
-          data: { id_dept: 1 },
-        })
-      }
-
-      if (toConnect.length > 0) {
-        await tx.employee.updateMany({
-          where: { id_emp: { in: toConnect } },
-          data: { id_dept: id },
-        })
       }
     }
 
@@ -212,19 +184,6 @@ export async function updateDepartment(id: number, data: UpdateDepartmentDTO & {
       if (!managerEmp || (managerEmp.role !== 'Agent' && managerEmp.role !== 'Admin')) {
         throw new AppError('VALIDATION_ERROR', 400, 'Only agents and admins can be department managers')
       }
-
-      await tx.department.updateMany({
-        where: {
-          manager_id: finalManagerId,
-          id_dept: { not: id }
-        },
-        data: { manager_id: null },
-      })
-
-      await tx.employee.update({
-        where: { id_emp: finalManagerId },
-        data: { id_dept: id },
-      })
     }
 
     const updated = await tx.department.update({
@@ -232,8 +191,25 @@ export async function updateDepartment(id: number, data: UpdateDepartmentDTO & {
       data: {
         ...deptData,
         manager_id: finalManagerId,
+        ...(employee_ids !== undefined && {
+          employees: {
+            set: [],
+            connect: employee_ids.map(eid => ({ id_emp: eid }))
+          }
+        })
       },
     })
+
+    if (finalManagerId) {
+      await tx.department.update({
+        where: { id_dept: id },
+        data: {
+          employees: {
+            connect: { id_emp: finalManagerId }
+          }
+        }
+      })
+    }
 
     await writeAuditLog(tx, actorId, 'UPDATE', 'Department', id, updated)
     return updated
@@ -255,7 +231,7 @@ export async function deleteDepartment(id: number, actorId: number) {
       throw new AppError('DEPARTMENT_NOT_FOUND', 404)
     }
 
-    // Business rule: Cannot delete a department if there are employees still assigned to it to prevent orphaned employee records.
+    // Business rule: Cannot delete a department if there are employees still assigned to it.
     if (dept._count.employees > 0) {
       throw new AppError('DEPARTMENT_NOT_EMPTY', 400, 'Cannot delete a department that contains employees')
     }

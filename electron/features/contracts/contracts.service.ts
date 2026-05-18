@@ -7,17 +7,27 @@ import type { CreateContractDTO } from './contracts.types'
 export async function getContracts(user: RequestUser) {
   if (user.role === 'Admin') {
     return prisma.contract.findMany({
-      include: { employee: { select: { name: true, id_dept: true } } },
+      include: { employee: { select: { name: true, departments: { select: { id_dept: true } } } } },
       orderBy: { date_deb: 'desc' },
     })
   }
 
   if (user.role === 'Agent') {
+    const managedDepts = await prisma.department.findMany({
+      where: { manager_id: user.id_emp },
+      select: { id_dept: true }
+    })
+    const managedDeptIds = managedDepts.map(d => d.id_dept)
+
     return prisma.contract.findMany({
       where: {
-        employee: { id_dept: user.id_dept }
+        employee: {
+          departments: {
+            some: { id_dept: { in: managedDeptIds } }
+          }
+        }
       },
-      include: { employee: { select: { name: true, id_dept: true } } },
+      include: { employee: { select: { name: true, departments: { select: { id_dept: true } } } } },
       orderBy: { date_deb: 'desc' },
     })
   }

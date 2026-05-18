@@ -10,7 +10,7 @@ export async function getPayslips(user: RequestUser) {
   if (user.role === 'Admin') {
     return prisma.salaire.findMany({
       include: {
-        employee: { select: { name: true, id_dept: true } },
+        employee: { select: { name: true, departments: { select: { id_dept: true } } } },
         contract: { select: { type: true, salaire_base: true } },
       },
       orderBy: { month_year: 'desc' },
@@ -18,10 +18,22 @@ export async function getPayslips(user: RequestUser) {
   }
 
   if (user.role === 'Agent') {
+    const managedDepts = await prisma.department.findMany({
+      where: { manager_id: user.id_emp },
+      select: { id_dept: true }
+    })
+    const managedDeptIds = managedDepts.map(d => d.id_dept)
+
     return prisma.salaire.findMany({
-      where: { employee: { id_dept: user.id_dept } },
+      where: {
+        employee: {
+          departments: {
+            some: { id_dept: { in: managedDeptIds } }
+          }
+        }
+      },
       include: {
-        employee: { select: { name: true, id_dept: true } },
+        employee: { select: { name: true, departments: { select: { id_dept: true } } } },
         contract: { select: { type: true, salaire_base: true } },
       },
       orderBy: { month_year: 'desc' },

@@ -36,15 +36,10 @@ const FormSchema = z.object({
   date_employment: z.string().min(1, 'Date of employment is required'),
   address: z.string().optional(),
   role: z.enum(['Admin', 'Agent', 'Employee']),
-  id_dept: z.coerce.number({ invalid_type_error: 'Department is required' }),
-  supervisor_id: z.coerce.number().optional(),
+  id_depts: z.array(z.number()).min(1, 'At least one department is required'),
   password: z.string().optional(),
   confirm_password: z.string().optional(),
 }).superRefine((data, ctx) => {
-  // Password validation logic:
-  // If editing: password can be empty.
-  // If creating: password is required (checked in onSubmit, but good to add hint here or use a flag)
-
   if (data.password) {
     if (data.password.length < 8) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least 8 characters", path: ["password"] })
@@ -64,7 +59,6 @@ const FormSchema = z.object({
   const employmentDate = new Date(data.date_employment)
   const today = new Date()
 
-  // 1. Employee must be at least 18
   const age = today.getFullYear() - birthDate.getFullYear()
   const m = today.getMonth() - birthDate.getMonth()
   const is18 = age > 18 || (age === 18 && (m > 0 || (m === 0 && today.getDate() >= birthDate.getDate())))
@@ -77,7 +71,6 @@ const FormSchema = z.object({
     })
   }
 
-  // 2. Date of employment <= today's date
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
   const empDateStart = new Date(employmentDate)
@@ -91,7 +84,6 @@ const FormSchema = z.object({
     })
   }
 
-  // 3. Employee can't have a date of employment where his age is < 18
   const ageAtEmp = employmentDate.getFullYear() - birthDate.getFullYear()
   const mAtEmp = employmentDate.getMonth() - birthDate.getMonth()
   const is18AtEmp = ageAtEmp > 18 || (ageAtEmp === 18 && (mAtEmp > 0 || (mAtEmp === 0 && employmentDate.getDate() >= birthDate.getDate())))
@@ -110,12 +102,14 @@ type FormData = z.infer<typeof FormSchema>
 interface Department {
   id_dept: number
   name: string
+  manager_id: number | null
 }
 
 interface Employee {
   id_emp: number
   name: string
   role: string
+  departments?: { id_dept: number }[]
 }
 
 export function EmployeeForm({
@@ -152,25 +146,27 @@ export function EmployeeForm({
         ...initialData,
         date_birth: initialData.date_birth?.split('T')[0],
         date_employment: initialData.date_employment?.split('T')[0],
+        id_depts: initialData.departments?.map((d: any) => d.id_dept) || [],
         password: '',
         confirm_password: '',
       }
-      : { role: 'Employee', password: '', confirm_password: '' },
+      : { role: 'Employee', id_depts: [], password: '', confirm_password: '' },
   })
 
   async function onSubmit(data: FormData) {
     setSubmitting(true)
     try {
       if (data.role === 'Agent') {
-        const existingAgent = allEmployees.find(
-          (emp: any) =>
-            emp.id_dept === Number(data.id_dept) &&
-            emp.role === 'Agent' &&
+        const deptWithAgent = departments.find(d => 
+          data.id_depts.includes(d.id_dept) && 
+          allEmployees.some(emp => 
+            emp.role === 'Agent' && 
+            emp.departments?.some((ed: any) => ed.id_dept === d.id_dept) &&
             emp.id_emp !== initialData?.id_emp
+          )
         )
-        if (existingAgent) {
-          const deptName = departments.find((d) => d.id_dept === Number(data.id_dept))?.name || 'selected'
-          toast.error(`This department (${deptName}) already has an agent assigned`)
+        if (deptWithAgent) {
+          toast.error(`Department "${deptWithAgent.name}" already has an agent assigned`)
           setSubmitting(false)
           return
         }
@@ -182,7 +178,6 @@ export function EmployeeForm({
         date_employment: new Date(data.date_employment).toISOString(),
       }
 
-      // Remove password/confirm_password as they are handled specially
       delete payload.confirm_password
       if (initialData && !data.password) {
         delete payload.password
@@ -201,6 +196,7 @@ export function EmployeeForm({
       }
 
       queryClient.invalidateQueries({ queryKey: ['employees'] })
+      queryClient.invalidateQueries({ queryKey: ['departments'] })
       queryClient.invalidateQueries({ queryKey: ['employee', initialData?.id_emp?.toString()] })
       onSuccess?.()
     } catch (error: any) {
@@ -223,7 +219,7 @@ export function EmployeeForm({
 
   const handleContinueToAccount = async () => {
     const fieldsToValidate: (keyof FormData)[] = [
-      'role', 'id_dept', 'supervisor_id'
+      'role', 'id_depts'
     ]
     const isValid = await form.trigger(fieldsToValidate)
     if (isValid) {
@@ -366,58 +362,48 @@ export function EmployeeForm({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="id_dept"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Department</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select dept" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {departments.map((d) => (
-                          <SelectItem key={d.id_dept} value={d.id_dept.toString()}>
-                            {d.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="supervisor_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Supervisor</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="None" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {allEmployees
-                          .filter((e) => e.role === 'Admin' || e.role === 'Agent')
-                          .map((e) => (
-                            <SelectItem key={e.id_emp} value={e.id_emp.toString()}>
-                              {e.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="id_depts"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold">Assigned Departments</FormLabel>
+                  <FormControl>
+                    <div className="grid grid-cols-2 gap-3 mt-1.5 border rounded-lg p-4 bg-muted/20 border-border">
+                      {departments.map((d) => {
+                        const checked = field.value?.includes(d.id_dept)
+                        return (
+                          <label
+                            key={d.id_dept}
+                            className={`flex items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/40 cursor-pointer transition-all duration-150 ${
+                              checked
+                                ? "border-primary bg-primary/5 text-primary font-medium"
+                                : "border-muted text-muted-foreground"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
+                              onChange={(e) => {
+                                const val = field.value || []
+                                if (e.target.checked) {
+                                  field.onChange([...val, d.id_dept])
+                                } else {
+                                  field.onChange(val.filter((id) => id !== d.id_dept))
+                                }
+                              }}
+                            />
+                            <span className="text-sm">{d.name}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {form.watch('role') === 'Agent' && initialData && (
               <div className="space-y-2 border rounded-md p-4 bg-muted/40 border-border">

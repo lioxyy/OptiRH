@@ -33,7 +33,9 @@ async function main() {
       role: 'Admin',
       date_birth: new Date('1990-01-01'),
       date_employment: new Date(),
-      id_dept: dept.id_dept,
+      departments: {
+        connect: { id_dept: dept.id_dept }
+      },
     },
   })
 

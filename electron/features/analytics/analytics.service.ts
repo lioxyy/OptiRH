@@ -36,21 +36,40 @@ export async function getSummary() {
 }
 
 export async function getDiversity() {
-  const data = await prisma.employee.groupBy({
-    by: ['gender', 'id_dept'],
-    _count: true,
+  const employees = await prisma.employee.findMany({
+    select: {
+      gender: true,
+      departments: {
+        select: {
+          id_dept: true,
+          name: true
+        }
+      }
+    }
   })
 
-  const departments = await prisma.department.findMany({
-    select: { id_dept: true, name: true },
-  })
-  const deptMap = new Map(departments.map(d => [d.id_dept, d.name]))
+  const resultsMap = new Map<string, { gender: string, department: string, count: number }>()
 
-  return data.map(item => ({
-    gender: item.gender ?? 'Unknown',
-    department: deptMap.get(item.id_dept) ?? 'Unknown',
-    count: item._count,
-  }))
+  for (const emp of employees) {
+    const gender = emp.gender ?? 'Unknown'
+    if (emp.departments.length === 0) {
+      const key = `${gender}-Unknown`
+      if (!resultsMap.has(key)) {
+        resultsMap.set(key, { gender, department: 'Unknown', count: 0 })
+      }
+      resultsMap.get(key)!.count++
+    } else {
+      for (const dept of emp.departments) {
+        const key = `${gender}-${dept.name}`
+        if (!resultsMap.has(key)) {
+          resultsMap.set(key, { gender, department: dept.name, count: 0 })
+        }
+        resultsMap.get(key)!.count++
+      }
+    }
+  }
+
+  return Array.from(resultsMap.values())
 }
 
 export async function getAbsenteeRates() {

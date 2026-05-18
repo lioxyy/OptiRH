@@ -5,7 +5,7 @@ const SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production'
 export interface JwtPayload {
   id_emp: number
   role: 'Admin' | 'Agent' | 'Employee'
-  id_dept: number
+  id_depts: number[]
 }
 
 export function signToken(payload: JwtPayload): string {
