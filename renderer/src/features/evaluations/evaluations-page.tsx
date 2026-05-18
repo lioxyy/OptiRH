@@ -35,7 +35,6 @@ import {
   Settings2,
   Trophy,
   Users,
-  Search,
   Trash2,
   TrendingUp
 } from 'lucide-react'
@@ -200,20 +199,16 @@ export function EvaluationsPage() {
                 Record History
               </TabsTrigger>
             </TabsList>
-            <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-full text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              <Search className="h-3 w-3" />
-              Global Audit Active
-            </div>
           </div>
 
           <TabsContent value="analysis" className="space-y-8 outline-none animate-in slide-in-from-bottom-2 duration-400">
             {/* KPI GRID */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[
-                { label: 'Reviews', val: stats?.totalEvaluations || 0, icon: FileText, color: 'text-blue-500' },
-                { label: 'Avg Score', val: `${Math.round(evaluations.reduce((acc: number, cur: any) => acc + cur.score, 0) / (evaluations.length || 1))}%`, icon: TrendingUp, color: 'text-green-500' },
-                { label: 'Campaigns', val: queryClient.getQueryData(['campaigns']) ? (queryClient.getQueryData(['campaigns']) as any[]).length : '—', icon: History, color: 'text-orange-500' },
-                { label: 'Top Dimension', val: 'Technical', icon: Trophy, color: 'text-purple-500' },
+                { label: 'Reviews', val: stats?.totalEvaluations || 0, icon: FileText },
+                { label: 'Avg Score', val: `${Math.round(evaluations.reduce((acc: number, cur: any) => acc + cur.score, 0) / (evaluations.length || 1))}%`, icon: TrendingUp },
+                { label: 'Campaigns', val: queryClient.getQueryData(['campaigns']) ? (queryClient.getQueryData(['campaigns']) as any[]).length : '—', icon: History },
+                { label: 'Top Dimension', val: 'Technical', icon: Trophy },
               ].map((kpi, i) => (
                 <Card key={i} className="border-primary/5 shadow-sm overflow-hidden group hover:border-primary/20 transition-all">
                   <CardContent className="p-6">
@@ -222,7 +217,7 @@ export function EvaluationsPage() {
                         <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider opacity-60 transition-opacity">{kpi.label}</p>
                         <p className="text-2xl font-bold tracking-tight">{kpi.val}</p>
                       </div>
-                      <kpi.icon className={`h-5 w-5 ${kpi.color} opacity-80`} />
+                      <kpi.icon className="h-5 w-5 text-muted-foreground opacity-50" />
                     </div>
                   </CardContent>
                 </Card>
@@ -234,8 +229,8 @@ export function EvaluationsPage() {
               <Card className="col-span-4 border-primary/5 shadow-lg bg-card/50 backdrop-blur-sm">
                 <CardHeader className="pb-0">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-blue-500/10 rounded-2xl flex items-center justify-center">
-                      <Users className="h-5 w-5 text-blue-600" />
+                    <div className="h-9 w-9 bg-muted rounded flex items-center justify-center">
+                      <Users className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
                       <CardTitle className="text-xl font-bold tracking-tight">Department Benchmarks</CardTitle>
@@ -267,11 +262,10 @@ export function EvaluationsPage() {
 
               {/* TOP PERFORMERS LIST */}
               <Card className="col-span-3 border-primary/5 shadow-lg relative overflow-hidden">
-                <div className="absolute top-0 right-0 h-32 w-32 bg-yellow-500/5 rounded-full -mr-16 -mt-16 blur-3xl" />
                 <CardHeader>
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-yellow-500/10 rounded-2xl flex items-center justify-center">
-                      <Trophy className="h-5 w-5 text-yellow-600" />
+                    <div className="h-9 w-9 bg-muted rounded flex items-center justify-center">
+                      <Trophy className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
                       <CardTitle className="text-xl font-bold tracking-tight">Vanguard Performers</CardTitle>
