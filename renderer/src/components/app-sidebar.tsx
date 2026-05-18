@@ -18,6 +18,7 @@ import {
   FileIcon,
   ClipboardListIcon,
   Clock,
+  ReceiptText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -83,6 +84,12 @@ const data = {
       url: "/dashboard/payroll",
       icon: WalletIcon,
       roles: ["Admin"],
+    },
+    {
+      title: "My Payslips",
+      url: "/dashboard/payslips",
+      icon: ReceiptText,
+      roles: ["Admin", "Agent", "Employee"],
     },
     {
       title: "Tasks",

@@ -8,9 +8,11 @@ import { EmployeeForm } from './features/employees/employee-form'
 import { RoleGuard } from './components/layout/role-guard'
 import { LeavePage } from './features/leaves/leave-page'
 import { AttendancePage } from './features/attendance/attendance-page'
+import { ProfilePage } from './features/employees/profile-page'
 import { MassroufPage } from './features/massrouf/massrouf-page'
 import { ContractsPage } from './features/contracts/contracts-page'
 import { PayrollPage } from './features/payroll/payroll-page'
+import { PayslipPage } from './features/payroll/payslip-page'
 
 function PlaceholderPage({ title }: { title: string }) {
   return <div className="p-6"><h1 className="text-xl font-bold">{title}</h1></div>
@@ -58,6 +60,10 @@ export function AppRouter() {
             element={<AttendancePage />}
           />
           <Route
+            path="profile"
+            element={<ProfilePage />}
+          />
+          <Route
             path="massrouf"
             element={<MassroufPage />}
           />
@@ -76,6 +82,10 @@ export function AppRouter() {
                 <PayrollPage />
               </RoleGuard>
             }
+          />
+          <Route
+            path="payslips"
+            element={<PayslipPage />}
           />
           <Route
             path="tasks"

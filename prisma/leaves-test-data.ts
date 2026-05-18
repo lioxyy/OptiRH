@@ -266,6 +266,70 @@ async function main() {
     data: { manager_id: admin.id_emp },
   })
 
+  // ─── 7. Contracts & Payslips ──────────────────────────────────────────
+  console.log('📄 Seeding contracts and payslips...')
+  
+  const adminContract = await prisma.contract.upsert({
+    where: { id_contract: 9901 },
+    update: { salaire_base: 150000, type: 'CDI', status: 'Active' },
+    create: {
+      id_contract: 9901, id_emp: admin.id_emp, type: 'CDI',
+      salaire_base: 150000, start_date: new Date('2015-01-01'), status: 'Active'
+    }
+  })
+
+  const aliceContract = await prisma.contract.upsert({
+    where: { id_contract: 9902 },
+    update: { salaire_base: 85000, type: 'CDI', status: 'Active' },
+    create: {
+      id_contract: 9902, id_emp: alice.id_emp, type: 'CDI',
+      salaire_base: 85000, start_date: new Date('2021-03-01'), status: 'Active'
+    }
+  })
+
+  const agentContract = await prisma.contract.upsert({
+    where: { id_contract: 9903 },
+    update: { salaire_base: 110000, type: 'CDI', status: 'Active' },
+    create: {
+      id_contract: 9903, id_emp: agent.id_emp, type: 'CDI',
+      salaire_base: 110000, start_date: new Date('2018-06-01'), status: 'Active'
+    }
+  })
+
+  // Generate 4 months of payslips for Admin
+  const months = ['01-2026', '02-2026', '03-2026', '04-2026']
+  let bonus = 0
+  for (const m of months) {
+    bonus += 5000 // Increasing bonus for visual chart differences
+    await prisma.salaire.upsert({
+      where: { id_emp_month_year: { id_emp: admin.id_emp, month_year: m } },
+      update: { amount_final: 150000 + bonus, bonus_amount: bonus, status: 'Paid' },
+      create: {
+        id_emp: admin.id_emp, id_contract: adminContract.id_contract,
+        month_year: m, bonus_amount: bonus, absence_deductions: 0,
+        amount_final: 150000 + bonus, status: 'Paid'
+      }
+    })
+  }
+
+  // Generate 4 months for Alice (with some deductions)
+  await prisma.salaire.upsert({
+    where: { id_emp_month_year: { id_emp: alice.id_emp, month_year: '01-2026' } },
+    update: {}, create: { id_emp: alice.id_emp, id_contract: aliceContract.id_contract, month_year: '01-2026', bonus_amount: 0, absence_deductions: 0, amount_final: 85000, status: 'Paid' }
+  })
+  await prisma.salaire.upsert({
+    where: { id_emp_month_year: { id_emp: alice.id_emp, month_year: '02-2026' } },
+    update: {}, create: { id_emp: alice.id_emp, id_contract: aliceContract.id_contract, month_year: '02-2026', bonus_amount: 15000, absence_deductions: 0, amount_final: 100000, status: 'Paid' }
+  })
+  await prisma.salaire.upsert({
+    where: { id_emp_month_year: { id_emp: alice.id_emp, month_year: '03-2026' } },
+    update: {}, create: { id_emp: alice.id_emp, id_contract: aliceContract.id_contract, month_year: '03-2026', bonus_amount: 0, absence_deductions: 12000, amount_final: 73000, status: 'Validated' }
+  })
+  await prisma.salaire.upsert({
+    where: { id_emp_month_year: { id_emp: alice.id_emp, month_year: '04-2026' } },
+    update: {}, create: { id_emp: alice.id_emp, id_contract: aliceContract.id_contract, month_year: '04-2026', bonus_amount: 0, absence_deductions: 0, amount_final: 85000, status: 'Generated' }
+  })
+
   // ─── Summary ────────────────────────────────────────────────────────────────
   console.log('\n✅ Database seeded successfully!\n')
   console.log('═══════════════════════════════════════════════════════════')
