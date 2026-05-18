@@ -11,7 +11,7 @@ import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { Checkbox } from '../../components/ui/checkbox'
 import { TaskForm } from './task-form'
-import { AlertCircle, Clock, Trash2, MoreHorizontal, Plus, Tag } from 'lucide-react'
+import { Clock, Trash2, MoreHorizontal, Plus, Tag } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { format } from 'date-fns'
 import {
@@ -106,8 +106,8 @@ function TaskCard({ task, isOverlay = false }: { task: Task; isOverlay?: boolean
       {...attributes}
       {...listeners}
       className={cn(
-        "group relative p-4 bg-muted/30 border-none hover:bg-muted/40 transition-all cursor-grab active:cursor-grabbing rounded-2xl shadow-sm mb-3",
-        isOverlay && "cursor-grabbing shadow-2xl scale-105 ring-2 ring-primary/20 bg-muted/50"
+        "group relative p-4 bg-[#18181b] border-none hover:bg-[#222226] transition-all cursor-grab active:cursor-grabbing rounded-2xl shadow-sm mb-3",
+        isOverlay && "cursor-grabbing shadow-2xl scale-105 ring-2 ring-primary/20 bg-[#1e1e21]"
       )}
     >
       <div className="space-y-3">
