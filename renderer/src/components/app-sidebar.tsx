@@ -12,6 +12,7 @@ import {
   UserPlusIcon,
   StarIcon,
   BarChart3Icon,
+  Building2,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -45,6 +46,13 @@ const navItems = [
     icon: UsersIcon,
     roles: ["Admin", "Agent"],
   },
+  {
+    title: "Departments",
+    url: "/dashboard/departments",
+    icon: Building2,
+    roles: ["Admin", "Agent"],
+  },
+
   {
     title: "Leave",
     url: "/dashboard/leave",

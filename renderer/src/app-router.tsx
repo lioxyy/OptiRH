@@ -12,6 +12,9 @@ import { TasksPage } from './features/tasks/tasks-page'
 import { RecruitmentPage } from './features/recruitment/recruitment-page'
 import { EvaluationsPage } from './features/evaluations/evaluations-page'
 import { AnalyticsPage } from './features/analytics/analytics-page'
+import { DepartmentsPage } from './features/departments/departments-page'
+import { DepartmentDetail } from './features/departments/department-detail'
+
 
 import { RootLayout } from './components/layout/root-layout'
 
@@ -39,6 +42,23 @@ export function AppRouter() {
               </RoleGuard>
             }
           />
+          <Route
+            path="departments"
+            element={
+              <RoleGuard roles={['Admin', 'Agent']}>
+                <DepartmentsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="departments/:id"
+            element={
+              <RoleGuard roles={['Admin', 'Agent']}>
+                <DepartmentDetail />
+              </RoleGuard>
+            }
+          />
+
           <Route
             path="leave"
             element={<LeavePage />}
