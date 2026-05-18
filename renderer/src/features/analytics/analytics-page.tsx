@@ -3,29 +3,23 @@ import { api } from '../../lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area,
-  LineChart, Line, FunnelChart, Funnel, LabelList, Cell,
-  PieChart, Pie, ResponsiveContainer
+  LineChart, Line, FunnelChart, Funnel, Cell,
+  PieChart, Pie, ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis,
+  PolarRadiusAxis
 } from 'recharts'
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartConfig,
-  ChartLegend,
-  ChartLegendContent
+  ChartConfig
 } from '../../components/ui/chart'
 import {
   Users,
-  Briefcase,
   Activity,
   DollarSign,
   TrendingUp,
-  UserCheck,
-  AlertCircle,
   Clock,
-  MapPin,
-  ShieldCheck,
-  Globe
+  PieChart as PieChartIcon
 } from 'lucide-react'
 import { Skeleton } from '../../components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -45,18 +39,19 @@ const headcountConfig: ChartConfig = {
   count: { label: "Headcount", color: "hsl(var(--chart-1))" },
 }
 
-const deptConfig: ChartConfig = {
-  count: { label: "Employees", color: "hsl(var(--chart-2))" },
+const absenceConfig: ChartConfig = {
+  rate: { label: "Absence Rate (%)", color: "hsl(var(--destructive))" },
+  justified: { label: "Justified", color: "hsl(var(--chart-2))" },
+  unjustified: { label: "Unjustified", color: "hsl(var(--destructive))" },
 }
 
-const genderConfig: ChartConfig = {
-  Male: { label: "Male", color: "hsl(var(--chart-1))" },
-  Female: { label: "Female", color: "hsl(var(--chart-2))" },
-  Other: { label: "Other", color: "hsl(var(--chart-3))" },
+const utilizationConfig: ChartConfig = {
+  consumed: { label: "Consumed", color: "hsl(var(--primary))" },
+  allocated: { label: "Allocated", color: "hsl(var(--muted-foreground))" },
 }
 
 export function AnalyticsPage() {
-  // Phase 1 Queries
+  // Phase 1 & 2 Queries
   const { data: summary, isLoading: isSummaryLoading } = useQuery<Summary>({
     queryKey: ['analytics', 'summary'],
     queryFn: async () => (await api.get('/api/analytics/summary')).data.data,
@@ -77,26 +72,12 @@ export function AnalyticsPage() {
     queryFn: async () => (await api.get('/api/analytics/score-distribution')).data.data,
   })
 
-  const { data: topPerformers } = useQuery({
-    queryKey: ['analytics', 'top-performers'],
-    queryFn: async () => (await api.get('/api/analytics/top-performers')).data.data,
-  })
 
-  const { data: absenteeRates } = useQuery({
-    queryKey: ['analytics', 'absentee-rates'],
-    queryFn: async () => (await api.get('/api/analytics/absentee-rates')).data.data,
-  })
-
-  // Phase 2 Queries
   const { data: headcountTrend } = useQuery({
     queryKey: ['analytics', 'headcount-trend'],
     queryFn: async () => (await api.get('/api/analytics/headcount-trend')).data.data,
   })
 
-  const { data: deptStats } = useQuery({
-    queryKey: ['analytics', 'department-stats'],
-    queryFn: async () => (await api.get('/api/analytics/department-stats')).data.data,
-  })
 
   const { data: demographics } = useQuery({
     queryKey: ['analytics', 'demographics'],
@@ -113,6 +94,17 @@ export function AnalyticsPage() {
     queryFn: async () => (await api.get('/api/analytics/supervision-stats')).data.data,
   })
 
+  // Phase 3 Queries
+  const { data: absenceDeepDive } = useQuery({
+    queryKey: ['analytics', 'absence-deep-dive'],
+    queryFn: async () => (await api.get('/api/analytics/absence-deep-dive')).data.data,
+  })
+
+  const { data: leaveUtilization } = useQuery({
+    queryKey: ['analytics', 'leave-utilization'],
+    queryFn: async () => (await api.get('/api/analytics/leave-utilization')).data.data,
+  })
+
   const kpis = [
     { title: 'Total Workforce', value: summary?.total_employees, icon: Users, color: 'text-primary', desc: 'Active personnel' },
     { title: 'Avg Tenure', value: tenureStats ? `${tenureStats.average_months} Mo` : null, icon: Clock, color: 'text-amber-500', desc: 'Organizational loyalty' },
@@ -120,13 +112,13 @@ export function AnalyticsPage() {
     { title: 'Leave Load', value: summary ? `${summary.leave_rate}%` : null, icon: Activity, color: 'text-indigo-500', desc: 'Staff on leave' },
   ]
 
-  if (isSummaryLoading) return <div className="p-8 space-y-4 shadow-none"><Skeleton className="h-10 w-48" /><div className="grid grid-cols-4 gap-4"><LoaderCard /><LoaderCard /><LoaderCard /><LoaderCard /></div></div>
+  if (isSummaryLoading) return <div className="p-8 space-y-4"><Skeleton className="h-10 w-48" /><div className="grid grid-cols-4 gap-4"><LoaderCard /><LoaderCard /><LoaderCard /><LoaderCard /></div></div>
 
   return (
     <div className="space-y-8 p-6 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
       <div className="flex flex-col gap-2">
         <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-br from-foreground via-foreground/80 to-foreground/40 bg-clip-text text-transparent">HR Intelligence</h1>
-        <p className="text-muted-foreground text-sm font-medium">Global workforce trends and operational KPIs.</p>
+        <p className="text-muted-foreground text-sm font-medium uppercase tracking-[0.2em] opacity-80">Phase 3: Deep-Dive Absence & Leaves</p>
       </div>
 
       {/* KPI Section */}
@@ -153,257 +145,196 @@ export function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Headcount Trend (Phase 2) */}
-        <Card className="lg:col-span-2 border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl overflow-hidden border border-white/5">
+        {/* Absence Rate Trend (Phase 3) */}
+        <Card className="lg:col-span-2 border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
           <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" /> Growth trajectory
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-destructive">
+              <Activity className="h-4 w-4" /> Absenteeism Rate Trend
             </CardTitle>
-            <CardDescription className="text-xs">12-month headcount evolution</CardDescription>
+            <CardDescription className="text-xs">Percentage of total workforce absences vs capacity</CardDescription>
           </CardHeader>
           <CardContent className="pt-8">
-            <ChartContainer config={headcountConfig} className="min-h-[300px] w-full">
-              <LineChart data={headcountTrend}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="count" stroke="var(--color-count)" strokeWidth={3} dot={{ r: 4, fill: "var(--color-count)" }} />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Supervision Insights (Phase 2) */}
-        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5 flex flex-col">
-          <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-500" /> Organizational Span
-            </CardTitle>
-            <CardDescription className="text-xs">Employee distribution per supervisor</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0 flex-1">
-            <div className="divide-y divide-primary/5 max-h-[380px] overflow-y-auto">
-              {supervisionStats?.map((s: any, i: number) => (
-                <div key={i} className="px-5 py-4 flex items-center justify-between hover:bg-primary/[0.03] transition-colors">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold">{s.name}</span>
-                    <span className="text-[10px] text-muted-foreground">Manager</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-xs font-black bg-primary/10 text-primary px-2 py-0.5 rounded-md">{s.count}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Department Distribution (Phase 2) */}
-        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
-          <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-amber-500" /> Department Density
-            </CardTitle>
-            <CardDescription className="text-xs">Current headcount allocation by department</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-8">
-            <ChartContainer config={deptConfig} className="min-h-[300px] w-full">
-              <BarChart data={deptStats} layout="vertical">
-                <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                <YAxis dataKey="department" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} width={100} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="var(--color-count)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Gender Distribution (Phase 2) */}
-        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
-          <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Globe className="h-4 w-4 text-indigo-500" /> Demographics
-            </CardTitle>
-            <CardDescription className="text-xs">Gender and contract type breakdown</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 pt-6">
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase mb-4 tracking-tighter">Gender</span>
-              <div className="h-[200px] w-full">
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={demographics?.gender}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {demographics?.gender?.map((_entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${index + 1}))`} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase mb-4 tracking-tighter">Contract Type</span>
-              <div className="h-[200px] w-full">
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={demographics?.contracts}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {demographics?.contracts?.map((_entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${index + 3}))`} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gender by Department (Stacked Bar - Phase 2) */}
-      <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
-        <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <Activity className="h-4 w-4 text-primary" /> Diversity Mapping
-          </CardTitle>
-          <CardDescription className="text-xs">Gender distribution across company departments</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-8">
-          <ChartContainer config={genderConfig} className="min-h-[350px] w-full">
-            <BarChart data={demographics?.genderByDept}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-              <XAxis dataKey="department" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <ChartLegend content={<ChartLegendContent />} />
-              <Bar dataKey="Male" stackId="a" fill="var(--color-Male)" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="Female" stackId="a" fill="var(--color-Female)" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="Other" stackId="a" fill="var(--color-Other)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      {/* Phase 1 Elements (Preserved and Integrated) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
-          <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-emerald-500" /> Payroll Burn
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-8">
-            <ChartContainer config={payrollConfig} className="min-h-[250px] w-full">
-              <AreaChart data={payrollTrend}>
+            <ChartContainer config={absenceConfig} className="min-h-[300px] w-full">
+              <AreaChart data={absenceDeepDive}>
                 <defs>
-                  <linearGradient id="colorAmountPhase2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-amount)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--color-amount)" stopOpacity={0} />
+                  <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-rate)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--color-rate)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => `${v / 1000}k`} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Area type="monotone" dataKey="amount" fill="url(#colorAmountPhase2)" stroke="var(--color-amount)" strokeWidth={2} />
+                <Area type="monotone" dataKey="rate" fill="url(#colorRate)" stroke="var(--color-rate)" strokeWidth={3} />
               </AreaChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
+        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5 flex flex-col">
           <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-destructive" /> Absence Pulse
+              <Activity className="h-4 w-4 text-emerald-500" /> Justification Analysis
             </CardTitle>
+            <CardDescription className="text-xs">Historical validation of absences</CardDescription>
           </CardHeader>
-          <CardContent className="pt-8">
-            <ChartContainer config={{}} className="min-h-[250px] w-full">
-              <BarChart data={absenteeRates}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+          <CardContent className="pt-8 flex-1">
+            <ChartContainer config={absenceConfig} className="min-h-[250px] w-full">
+              <BarChart data={absenceDeepDive}>
+                <XAxis dataKey="month" hide />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="justified" stackId="a" fill="var(--color-justified)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="unjustified" stackId="a" fill="var(--color-unjustified)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Sub-panels Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1 border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
           <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Briefcase className="h-4 w-4 text-amber-500" /> Pipeline
+              <PieChartIcon className="h-4 w-4 text-indigo-500" /> Leave Balance Utilization
             </CardTitle>
+            <CardDescription className="text-xs">Proportional consumption of allocated leave types</CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <FunnelChart>
-                <Funnel dataKey="count" data={recruitmentData?.funnel || []} isAnimationActive>
-                  <LabelList position="right" fill="hsl(var(--foreground))" stroke="none" dataKey="status" />
-                  {recruitmentData?.funnel?.map((_e: any, i: number) => (
-                    <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />
-                  ))}
-                </Funnel>
-              </FunnelChart>
-            </ResponsiveContainer>
+          <CardContent className="h-[350px] pt-6">
+            <ChartContainer config={utilizationConfig} className="h-full w-full">
+              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={leaveUtilization}>
+                <PolarGrid stroke="hsl(var(--border))" opacity={0.3} />
+                <PolarAngleAxis dataKey="type" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} hide />
+                <Radar name="Consumed (%)" dataKey="utilization" stroke="var(--color-consumed)" fill="var(--color-consumed)" fillOpacity={0.6} />
+                <Tooltip />
+              </RadarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-1 border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
-          <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <UserCheck className="h-4 w-4 text-primary" /> Performance
-            </CardTitle>
+        <div className="grid grid-cols-1 gap-6">
+          <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
+            <CardHeader className="py-3 px-5 border-b border-primary/5">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest opacity-70">Workforce Growth</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <ChartContainer config={headcountConfig} className="h-[200px] w-full">
+                <LineChart data={headcountTrend}>
+                  <XAxis dataKey="month" hide />
+                  <YAxis hide />
+                  <Line type="stepAfter" dataKey="count" stroke="var(--color-count)" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
+            <CardHeader className="py-3 px-5 border-b border-primary/5">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest opacity-70">Global Diversity</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-3 pt-4">
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase mb-2">Gender</span>
+                <div className="h-24 w-24">
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie data={demographics?.gender} cx="50%" cy="50%" innerRadius={25} outerRadius={35} dataKey="value">
+                        {demographics?.gender?.map((_e: any, i: number) => <Cell key={i} fill={`hsl(var(--chart-${i + 1}))`} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase mb-2">Contracts</span>
+                <div className="h-24 w-24">
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie data={demographics?.contracts} cx="50%" cy="50%" innerRadius={25} outerRadius={35} dataKey="value">
+                        {demographics?.contracts?.map((_e: any, i: number) => <Cell key={i} fill={`hsl(var(--chart-${i + 3}))`} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase mb-2">Roles</span>
+                <div className="h-24 w-24">
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie data={demographics?.roles} cx="50%" cy="50%" innerRadius={25} outerRadius={35} dataKey="value">
+                        {demographics?.roles?.map((_e: any, i: number) => <Cell key={i} fill={`hsl(var(--chart-${i + 1}))`} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Phase 1 & 2 Refined Elements Footer */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5 overflow-hidden">
+          <CardHeader className="py-2 border-b border-primary/5 bg-primary/[0.01]">
+            <CardTitle className="text-[10px] font-bold uppercase opacity-60">Financial Evolution</CardTitle>
           </CardHeader>
-          <CardContent className="pt-8">
-            <ChartContainer config={{}} className="h-[200px] w-full">
+          <CardContent className="p-4">
+            <ChartContainer config={payrollConfig} className="h-24 w-full">
+              <AreaChart data={payrollTrend}>
+                <Area dataKey="amount" stroke="var(--color-amount)" fill="var(--color-amount)" fillOpacity={0.1} />
+              </AreaChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5 overflow-hidden">
+          <CardHeader className="py-2 border-b border-primary/5 bg-primary/[0.01]">
+            <CardTitle className="text-[10px] font-bold uppercase opacity-60">Performance Profile</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <ChartContainer config={{}} className="h-24 w-full">
               <BarChart data={scoreDistribution}>
-                <XAxis dataKey="range" hide />
-                <YAxis hide />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 4, 4]} />
+                <Bar dataKey="count" fill="hsl(var(--primary))" radius={2} />
               </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-1 border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5 flex flex-col">
-          <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-emerald-500" /> Elites
-            </CardTitle>
+        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5 overflow-hidden flex flex-col">
+          <CardHeader className="py-2 border-b border-primary/5 bg-primary/[0.01]">
+            <CardTitle className="text-[10px] font-bold uppercase opacity-60">Span of Control</CardTitle>
           </CardHeader>
-          <CardContent className="p-0 flex-1 overflow-y-auto max-h-[220px]">
-            {topPerformers?.slice(0, 5).map((p: any, i: number) => (
-              <div key={i} className="px-4 py-2 flex items-center justify-between text-[11px] border-b border-primary/5 last:border-0 hover:bg-primary/[0.02]">
-                <span className="font-bold">{p.name}</span>
-                <span className="font-mono bg-emerald-500/10 text-emerald-600 px-1.5 rounded">{p.avg_score.toFixed(1)}</span>
+          <CardContent className="p-3 flex-1 overflow-y-auto max-h-[100px]">
+            {supervisionStats?.slice(0, 3).map((s: any, i: number) => (
+              <div key={i} className="flex justify-between text-[9px] mb-1">
+                <span>{s.name}</span>
+                <span className="font-bold">{s.count}</span>
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5 overflow-hidden">
+          <CardHeader className="py-2 border-b border-primary/5 bg-primary/[0.01]">
+            <CardTitle className="text-[10px] font-bold uppercase opacity-60">Recruitment Conversion</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <ChartContainer config={{}} className="h-24 w-full">
+              <FunnelChart>
+                <Funnel dataKey="count" data={recruitmentData?.funnel} isAnimationActive={false}>
+                  <Cell fill="hsl(var(--primary))" />
+                  <Cell fill="hsl(var(--primary))" opacity={0.8} />
+                  <Cell fill="hsl(var(--primary))" opacity={0.6} />
+                  <Cell fill="hsl(var(--primary))" opacity={0.4} />
+                </Funnel>
+              </FunnelChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>

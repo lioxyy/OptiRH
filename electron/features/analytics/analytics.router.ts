@@ -70,6 +70,16 @@ router.get('/supervision-stats', asyncHandler(async (_req, res) => {
   res.json(success(data))
 }))
 
+router.get('/absence-deep-dive', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getAbsenceDeepDive()
+  res.json(success(data))
+}))
+
+router.get('/leave-utilization', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getLeaveUtilization()
+  res.json(success(data))
+}))
+
 router.get('/dashboard/admin', authorize('Admin'), asyncHandler(async (req, res) => {
   const data = await AnalyticsService.getAdminDashboard(req.user.id_emp)
   res.json(success(data))

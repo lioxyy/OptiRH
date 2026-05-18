@@ -315,6 +315,68 @@ export async function getSupervisionStats() {
     .sort((a, b) => b.count - a.count)
 }
 
+export async function getAbsenceDeepDive() {
+  const generateMonths = () => {
+    const months = []
+    const d = new Date()
+    for (let i = 11; i >= 0; i--) {
+      const m = new Date(d.getFullYear(), d.getMonth() - i, 1)
+      months.push(m.toISOString().slice(0, 7))
+    }
+    return months
+  }
+
+  const months = generateMonths()
+  const totalEmployees = await prisma.employee.count()
+  const expectedWorkDaysPerMonth = 22 // Average
+
+  const absences = await prisma.absence.findMany({
+    select: { date_absence: true, is_justified: true, leave_type: { select: { name: true } } }
+  })
+
+  const monthlyStats: Record<string, { total: number, justified: number, unjustified: number, byType: Record<string, number> }> = {}
+  months.forEach(m => {
+    monthlyStats[m] = { total: 0, justified: 0, unjustified: 0, byType: {} }
+  })
+
+  absences.forEach(a => {
+    const key = a.date_absence.toISOString().slice(0, 7)
+    if (monthlyStats[key]) {
+      monthlyStats[key].total++
+      if (a.is_justified) monthlyStats[key].justified++
+      else monthlyStats[key].unjustified++
+      
+      const type = a.leave_type?.name || 'Other'
+      monthlyStats[key].byType[type] = (monthlyStats[key].byType[type] || 0) + 1
+    }
+  })
+
+  return Object.entries(monthlyStats).map(([month, data]) => ({
+    month,
+    rate: totalEmployees > 0 ? (data.total / (totalEmployees * expectedWorkDaysPerMonth)) * 100 : 0,
+    justified: data.justified,
+    unjustified: data.unjustified,
+    byType: data.byType
+  }))
+}
+
+export async function getLeaveUtilization() {
+  const balances = await prisma.congeBalance.groupBy({
+    by: ['id_type'],
+    _sum: { allocated: true, consumed: true },
+  })
+
+  const leaveTypes = await prisma.leaveType.findMany()
+  const typeMap = new Map(leaveTypes.map(lt => [lt.id_type, lt.name]))
+
+  return balances.map(b => ({
+    type: typeMap.get(b.id_type!) || 'Unknown',
+    allocated: b._sum.allocated || 0,
+    consumed: b._sum.consumed || 0,
+    utilization: (b._sum.allocated ?? 0) > 0 ? ((b._sum.consumed ?? 0) / (b._sum.allocated ?? 0)) * 100 : 0
+  }))
+}
+
 export async function getAdminDashboard(actorId: number) {
   const departments = await prisma.department.findMany({
     select: {
