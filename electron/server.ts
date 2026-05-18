@@ -16,6 +16,10 @@ import evaluationsRouter from './features/evaluations/evaluations.router'
 import analyticsRouter from './features/analytics/analytics.router'
 import departmentsRouter from './features/departments/departments.router'
 import formationRouter from './features/formation/formation.router'
+import absencesRouter from './features/absences/absences.router'
+import attendanceRouter from './features/attendance/attendance.router'
+import massroufRouter from './features/massrouf/massrouf.router'
+import settingsRouter from './features/settings/settings.router'
 
 export function createApp() {
   const app = express()
@@ -46,8 +50,11 @@ export function createApp() {
   app.use('/api/evaluations', evaluationsRouter)
   app.use('/api/analytics', analyticsRouter)
   app.use('/api/departments', departmentsRouter)
-
   app.use('/api/formations', formationRouter)
+  app.use('/api/absences', absencesRouter)
+  app.use('/api/attendance', attendanceRouter)
+  app.use('/api/massrouf', massroufRouter)
+  app.use('/api/settings', settingsRouter)
 
   app.use('/api/*', (_req, res) => {
     res.status(404).json(fail('NOT_FOUND', 'API route not found'))

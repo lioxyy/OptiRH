@@ -1,127 +1,83 @@
 import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
-import { createNotification } from '../../lib/notifications'
 import { writeAuditLog } from '../../lib/audit'
-import type { RequestUser } from '../../middleware/authenticate'
-import type { GeneratePayrollDTO } from './payroll.types'
-import { prorateSalary } from './payroll.helpers'
 
-export async function getPayslips(user: RequestUser) {
-  if (user.role === 'Admin') {
-    return prisma.salaire.findMany({
-      include: {
-        employee: { select: { name: true, departments: { select: { id_dept: true } } } },
-        contract: { select: { type: true, salaire_base: true } },
-      },
-      orderBy: { month_year: 'desc' },
-    })
-  }
+export function getMonthRange(monthYear: string): { startDate: Date; endDate: Date } {
+  const parts = monthYear.split('-')
+  if (parts.length !== 2) throw new AppError('INVALID_MONTH_YEAR', 400, 'Month-Year must be in MM-YYYY format')
+  
+  const month = Number(parts[0])
+  const year = Number(parts[1])
+  if (isNaN(month) || isNaN(year) || month < 1 || month > 12) throw new AppError('INVALID_MONTH_YEAR', 400, 'Invalid month/year')
 
-  if (user.role === 'Agent') {
-    const managedDepts = await prisma.department.findMany({
-      where: { manager_id: user.id_emp },
-      select: { id_dept: true }
-    })
-    const managedDeptIds = managedDepts.map(d => d.id_dept)
+  const startDate = new Date(year, month - 1, 1)
+  const endDate = new Date(year, month, 0, 23, 59, 59)
+  return { startDate, endDate }
+}
 
-    return prisma.salaire.findMany({
-      where: {
-        employee: {
-          departments: {
-            some: { id_dept: { in: managedDeptIds } }
-          }
-        }
-      },
-      include: {
-        employee: { select: { name: true, departments: { select: { id_dept: true } } } },
-        contract: { select: { type: true, salaire_base: true } },
-      },
-      orderBy: { month_year: 'desc' },
-    })
-  }
+export async function generateMonthlyPayroll(employeeId: number, monthYear: string) {
+  const contract = await prisma.contract.findFirst({ where: { id_emp: employeeId, status: 'Active' } })
+  if (!contract) throw new AppError('NO_ACTIVE_CONTRACT', 400, `No active contract found for employee ID ${employeeId}`)
+
+  const baseSalary = contract.salaire_base
+  const { startDate, endDate } = getMonthRange(monthYear)
+
+  const totalUnjustifiedAbsences = await prisma.absence.count({
+    where: { id_emp: employeeId, date_absence: { gte: startDate, lte: endDate }, is_justified: false }
+  })
+
+  const monthlyMassroufs = await prisma.massrouf.findMany({
+    where: { id_emp: employeeId, date_request: { gte: startDate, lte: endDate }, status: 'Approved' }
+  })
+  const totalMassroufDeductions = monthlyMassroufs.reduce((sum, item) => sum + item.amount, 0)
+
+  const absenceDeductions = totalUnjustifiedAbsences * (baseSalary / 30)
+  const amountFinal = Math.max(0, baseSalary - absenceDeductions - totalMassroufDeductions) // Negative pay prevention
+
+  return prisma.salaire.upsert({
+    where: { id_emp_month_year: { id_emp: employeeId, month_year: monthYear } },
+    create: {
+      month_year: monthYear,
+      bonus_amount: 0,
+      absence_deductions: absenceDeductions,
+      amount_final: amountFinal,
+      status: 'Generated',
+      id_emp: employeeId,
+      id_contract: contract.id_contract
+    },
+    update: { absence_deductions: absenceDeductions, amount_final: amountFinal }
+  })
+}
+
+export async function getPayrollHistory(filters: { id_emp?: number; month_year?: string } = {}) {
+  const whereClause: any = {}
+  if (filters.id_emp) whereClause.id_emp = Number(filters.id_emp)
+  if (filters.month_year) whereClause.month_year = filters.month_year
 
   return prisma.salaire.findMany({
-    where: { id_emp: user.id_emp },
-    include: { contract: { select: { type: true, salaire_base: true } } },
-    orderBy: { month_year: 'desc' },
-  })
-}
-
-export async function generatePayroll(data: GeneratePayrollDTO, actorId: number) {
-  return prisma.$transaction(async (tx) => {
-    const existing = await tx.salaire.findUnique({
-      where: { id_emp_month_year: { id_emp: data.id_emp, month_year: data.month_year } },
-    })
-    if (existing) {
-      throw new AppError('PAYROLL_ALREADY_GENERATED', 409, 'Payroll already generated for this employee and month')
-    }
-
-    const contract = await tx.contract.findFirst({
-      where: { id_emp: data.id_emp, status: 'Active' },
-    })
-    if (!contract) throw new AppError('NO_ACTIVE_CONTRACT', 400, 'Employee has no active contract')
-
-    const proratedBase = prorateSalary(contract.salaire_base, data.month_year, contract.date_deb)
-    const amountFinal = proratedBase + data.bonus_amount - data.absence_deductions
-
-    const salaire = await tx.salaire.create({
-      data: {
-        id_emp: data.id_emp,
-        id_contract: contract.id_contract,
-        month_year: data.month_year,
-        bonus_amount: data.bonus_amount,
-        absence_deductions: data.absence_deductions,
-        amount_final: Math.max(0, amountFinal),
-        status: 'Generated',
+    where: whereClause,
+    include: {
+      employee: {
+        select: {
+          name: true,
+          email: true,
+          role: true,
+          departments: { select: { name: true } } // Tailored for many-to-many departments
+        }
       },
-    })
-
-    await createNotification(
-      tx,
-      data.id_emp,
-      'PAYROLL_GENERATED',
-      `Payslip for ${data.month_year} has been generated`,
-      'Salaire',
-      salaire.id_salaire,
-    )
-
-    await writeAuditLog(tx, actorId, 'GENERATE', 'Salaire', salaire.id_salaire, salaire)
-
-    return salaire
+      contract: true
+    },
+    orderBy: { month_year: 'desc' }
   })
 }
 
-export async function updatePayrollStatus(id: number, status: string, actorId: number) {
+export async function validatePayroll(salaireId: number, status: 'Validated' | 'Paid', actorId: number) {
+  const payroll = await prisma.salaire.findUnique({ where: { id_salaire: salaireId } })
+  if (!payroll) throw new AppError('PAYROLL_NOT_FOUND', 404, 'Payroll record not found')
+
   return prisma.$transaction(async (tx) => {
-    const salaire = await tx.salaire.findUnique({ where: { id_salaire: id } })
-    if (!salaire) throw new AppError('NOT_FOUND', 404, 'Payslip not found')
-
-    const validTransitions: Record<string, string[]> = {
-      Generated: ['Validated'],
-      Validated: ['Paid'],
-    }
-    const allowed = validTransitions[salaire.status]
-    if (!allowed || !allowed.includes(status)) {
-      throw new AppError('VALIDATION_ERROR', 400, `Cannot transition from ${salaire.status} to ${status}`)
-    }
-
-    const updated = await tx.salaire.update({
-      where: { id_salaire: id },
-      data: { status },
-    })
-
-    if (status === 'Paid') {
-      await createNotification(
-        tx,
-        salaire.id_emp,
-        'PAYROLL_PAID',
-        `Your payslip for ${salaire.month_year} has been paid.`,
-        'Salaire',
-        id
-      )
-    }
-
-    await writeAuditLog(tx, actorId, 'UPDATE', 'Salaire', id, updated)
+    const updated = await tx.salaire.update({ where: { id_salaire: salaireId }, data: { status } })
+    await writeAuditLog(tx, actorId, 'UPDATE', 'Salaire', salaireId, updated)
     return updated
   })
 }

@@ -1,237 +1,144 @@
 import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
 import { createNotification } from '../../lib/notifications'
-import { writeAuditLog } from '../../lib/audit'
-import type { RequestUser } from '../../middleware/authenticate'
-import type { CreateLeaveDTO } from './leave.types'
-import { getDayCount, getDateRange, datesOverlap } from './leave.helpers'
 
 export async function getLeaveTypes() {
-  return prisma.leaveType.findMany()
+  return prisma.leaveType.findMany({ orderBy: { name: 'asc' } })
 }
 
-export async function getLeaves(user: RequestUser) {
-  if (user.role === 'Admin') {
-    return prisma.conge.findMany({
-      include: { leave_type: true, employee: true, approver: true },
-      orderBy: { date_deb: 'desc' },
-    })
-  }
+export async function createLeaveType(data: any) {
+  return prisma.leaveType.create({ data })
+}
 
-  if (user.role === 'Agent') {
-    const managedDepts = await prisma.department.findMany({
-      where: { manager_id: user.id_emp },
-      select: { id_dept: true }
-    })
-    const managedDeptIds = managedDepts.map(d => d.id_dept)
+export async function updateLeaveType(id: number, data: any) {
+  return prisma.leaveType.update({ where: { id_type: id }, data })
+}
 
-    return prisma.conge.findMany({
-      where: {
-        employee: {
-          departments: {
-            some: { id_dept: { in: managedDeptIds } }
-          }
-        }
-      },
-      include: { leave_type: true, employee: true, approver: true },
-      orderBy: { date_deb: 'desc' },
-    })
-  }
-
+export async function getLeaveRequests(filters: { id_emp?: number; status?: string } = {}) {
   return prisma.conge.findMany({
-    where: { id_emp: user.id_emp },
-    include: { leave_type: true, approver: true },
+    where: filters,
+    include: {
+      employee: { select: { name: true, departments: { select: { name: true } } } }, // Tailored for many-to-many
+      leave_type: true,
+    },
     orderBy: { date_deb: 'desc' },
   })
 }
 
-export async function getLeaveBalance(employeeId: number, year: number) {
-  const balances = await prisma.congeBalance.findMany({
-    where: { id_emp: employeeId, year },
-    include: { leave_type: true },
+export async function createLeaveRequest(employeeId: number, data: any) {
+  const { id_type, date_deb, date_fin } = data
+  const start = new Date(date_deb)
+  const end = new Date(date_fin)
+  if (start >= end) throw new AppError('INVALID_DATES', 400, 'Start date must be before end date')
+
+  const daysRequested = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  const year = start.getFullYear()
+
+  const balance = await prisma.congeBalance.findUnique({
+    where: { id_emp_id_type_year: { id_emp: employeeId, id_type, year } }
   })
 
-  return balances.map(b => ({
-    ...b,
-    remaining: b.allocated + b.carried_over - b.consumed
-  }))
-}
+  if (!balance) {
+    const leaveType = await prisma.leaveType.findUnique({ where: { id_type } })
+    if (!leaveType) throw new AppError('LEAVE_TYPE_NOT_FOUND', 404)
+    await prisma.congeBalance.create({
+      data: { id_emp: employeeId, id_type, year, allocated: leaveType.default_days, consumed: 0, carried_over: 0 }
+    })
+  }
 
-export async function createLeaveRequest(data: CreateLeaveDTO, employeeId: number) {
-  const start = new Date(data.date_deb)
-  const end = new Date(data.date_fin)
-
-  const existingLeaves = await prisma.conge.findMany({
-    where: {
-      id_emp: employeeId,
-      status: { not: 'Rejected' }
-    }
+  const currentBalance = await prisma.congeBalance.findUnique({
+    where: { id_emp_id_type_year: { id_emp: employeeId, id_type, year } }
   })
 
-  for (const leave of existingLeaves) {
-    if (datesOverlap(start, end, new Date(leave.date_deb), new Date(leave.date_fin))) {
-      throw new AppError('LEAVE_OVERLAP', 409, 'Leave request overlaps with an existing leave')
-    }
+  if (currentBalance && (currentBalance.allocated + currentBalance.carried_over - currentBalance.consumed < daysRequested)) {
+    throw new AppError('INSUFFICIENT_BALANCE', 400, 'Not enough leave days remaining')
   }
 
   return prisma.$transaction(async (tx) => {
-    const leave = await tx.conge.create({
-      data: {
-        id_emp: employeeId,
-        id_type: data.id_type,
-        date_deb: start,
-        date_fin: end,
-        status: 'Pending',
-      }
+    const leaveType = await tx.leaveType.findUnique({ where: { id_type } })
+    const employee = await tx.employee.findUnique({ where: { id_emp: employeeId } })
+
+    const conge = await tx.conge.create({
+      data: { ...data, date_deb: start, date_fin: end, id_emp: employeeId, status: 'Pending' }
     })
 
-    const employee = await tx.employee.findUnique({ where: { id_emp: employeeId } })
-    if (employee?.supervisor_id) {
+    const startStr = start.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    const endStr   = end.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+
+    const hrStaff = await tx.employee.findMany({ where: { role: { in: ['Admin', 'Agent'] } } })
+    for (const hr of hrStaff) {
       await createNotification(
         tx,
-        employee.supervisor_id,
+        hr.id_emp,
         'LEAVE_PENDING',
-        `New leave request from ${employee.name}`,
+        `${employee?.name ?? 'An employee'} submitted a ${leaveType?.name ?? 'leave'} request (${daysRequested} days) — ${startStr} to ${endStr}`,
         'Conge',
-        leave.id_conge
+        conge.id_conge
       )
     }
 
-    return leave
+    return conge
   })
 }
 
-export async function approveLeave(leaveId: number, approverId: number) {
-  return prisma.$transaction(async (tx) => {
-    const leave = await tx.conge.findUnique({ where: { id_conge: leaveId } })
-    if (!leave) throw new AppError('LEAVE_NOT_FOUND', 404)
-    if (leave.status !== 'Pending') throw new AppError('LEAVE_INVALID_STATUS', 400, 'Leave must be Pending to approve')
-
-    const year = new Date(leave.date_deb).getFullYear()
-    const balance = await tx.congeBalance.findUnique({
-      where: {
-        id_emp_id_type_year: {
-          id_emp: leave.id_emp,
-          id_type: leave.id_type,
-          year
-        }
-      }
-    })
-
-    if (!balance) throw new AppError('NOT_FOUND', 404, 'Leave balance not found for this year')
-
-    const days = getDayCount(new Date(leave.date_deb), new Date(leave.date_fin))
-    const remaining = balance.allocated + balance.carried_over - balance.consumed
-
-    if (days > remaining) {
-      throw new AppError('LEAVE_OVER_ALLOCATION', 400, `Requested ${days} days but only ${remaining} remaining`)
-    }
-
-    const updatedLeave = await tx.conge.update({
-      where: { id_conge: leaveId },
-      data: {
-        status: 'Approved',
-        approved_by: approverId
-      }
-    })
-
-    await tx.congeBalance.update({
-      where: { id_balance: balance.id_balance },
-      data: { consumed: balance.consumed + days }
-    })
-
-    const dateRange = getDateRange(new Date(leave.date_deb), new Date(leave.date_fin))
-    const absences = dateRange.map(d => ({
-      date_absence: d,
-      id_type: leave.id_type,
-      is_justified: true,
-      id_emp: leave.id_emp,
-      recorded_by: approverId,
-      conge_id: leave.id_conge
-    }))
-
-    await tx.absence.createMany({ data: absences })
-
-    await createNotification(
-      tx,
-      leave.id_emp,
-      'LEAVE_APPROVED',
-      'Your leave request was approved',
-      'Conge',
-      leave.id_conge
-    )
-
-    await writeAuditLog(tx, approverId, 'APPROVE', 'Conge', leave.id_conge, updatedLeave)
-
-    return updatedLeave
+export async function updateLeaveStatus(id: number, status: string, actorId: number) {
+  const conge = await prisma.conge.findUnique({
+    where: { id_conge: id },
+    include: { leave_type: true, employee: true }
   })
-}
+  if (!conge) throw new AppError('LEAVE_NOT_FOUND', 404)
 
-export async function rejectLeave(leaveId: number, approverId: number) {
-  return prisma.$transaction(async (tx) => {
-    const leave = await tx.conge.findUnique({ where: { id_conge: leaveId } })
-    if (!leave) throw new AppError('LEAVE_NOT_FOUND', 404)
-    if (leave.status !== 'Pending') throw new AppError('LEAVE_INVALID_STATUS', 400, 'Leave must be Pending to reject')
+  const start = new Date(conge.date_deb)
+  const end = new Date(conge.date_fin)
+  const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  const year = start.getFullYear()
+  const startStr = start.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  const endStr   = end.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  const typeName = conge.leave_type?.name ?? 'leave'
 
-    const updatedLeave = await tx.conge.update({
-      where: { id_conge: leaveId },
-      data: {
-        status: 'Rejected',
-        approved_by: approverId
-      }
-    })
-
-    await createNotification(
-      tx,
-      leave.id_emp,
-      'LEAVE_REJECTED',
-      'Your leave request was rejected',
-      'Conge',
-      leave.id_conge
-    )
-
-    await writeAuditLog(tx, approverId, 'REJECT', 'Conge', leave.id_conge, updatedLeave)
-
-    return updatedLeave
-  })
-}
-
-export async function cancelApprovedLeave(leaveId: number, actorId: number) {
-  return prisma.$transaction(async (tx) => {
-    const leave = await tx.conge.findUnique({ where: { id_conge: leaveId } })
-    if (!leave) throw new AppError('LEAVE_NOT_FOUND', 404)
-    if (leave.status !== 'Approved') throw new AppError('LEAVE_INVALID_STATUS', 400, 'Leave must be Approved to cancel')
-
-    const updatedLeave = await tx.conge.update({
-      where: { id_conge: leaveId },
-      data: { status: 'Rejected' } // Or 'Cancelled', but plan says 'Rejected'
-    })
-
-    const year = new Date(leave.date_deb).getFullYear()
-    const balance = await tx.congeBalance.findUnique({
-      where: {
-        id_emp_id_type_year: {
-          id_emp: leave.id_emp,
-          id_type: leave.id_type,
-          year
-        }
-      }
-    })
-
-    if (balance) {
-      const days = getDayCount(new Date(leave.date_deb), new Date(leave.date_fin))
+  if (status === 'Approved' && conge.status !== 'Approved') {
+    return prisma.$transaction(async (tx) => {
       await tx.congeBalance.update({
-        where: { id_balance: balance.id_balance },
-        data: { consumed: Math.max(0, balance.consumed - days) }
+        where: { id_emp_id_type_year: { id_emp: conge.id_emp, id_type: conge.id_type, year } },
+        data: { consumed: { increment: days } }
       })
-    }
 
-    await tx.absence.deleteMany({
-      where: { conge_id: leaveId }
+      const updated = await tx.conge.update({
+        where: { id_conge: id },
+        data: { status, approved_by: actorId }
+      })
+
+      await createNotification(
+        tx,
+        conge.id_emp,
+        'LEAVE_APPROVED',
+        `Your ${typeName} request (${days} days) from ${startStr} to ${endStr} has been approved.`,
+        'Conge',
+        id
+      )
+      return updated
     })
+  } else if (status === 'Rejected') {
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.conge.update({ where: { id_conge: id }, data: { status, approved_by: actorId } })
+      await createNotification(
+        tx,
+        conge.id_emp,
+        'LEAVE_REJECTED',
+        `Your ${typeName} request (${days} days) from ${startStr} to ${endStr} has been rejected.`,
+        'Conge',
+        id
+      )
+      return updated
+    })
+  } else {
+    return prisma.conge.update({ where: { id_conge: id }, data: { status, approved_by: actorId } })
+  }
+}
 
-    await writeAuditLog(tx, actorId, 'UPDATE', 'Conge', leave.id_conge, { ...updatedLeave, action: 'Cancelled' })
-
-    return updatedLeave
+export async function getEmployeeBalances(employeeId: number, year: number) {
+  return prisma.congeBalance.findMany({
+    where: { id_emp: employeeId, year },
+    include: { leave_type: true }
   })
 }

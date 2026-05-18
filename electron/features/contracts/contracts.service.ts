@@ -1,65 +1,54 @@
 import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
 import { writeAuditLog } from '../../lib/audit'
-import type { RequestUser } from '../../middleware/authenticate'
-import type { CreateContractDTO } from './contracts.types'
 
-export async function getContracts(user: RequestUser) {
-  if (user.role === 'Admin') {
-    return prisma.contract.findMany({
-      include: { employee: { select: { name: true, departments: { select: { id_dept: true } } } } },
-      orderBy: { date_deb: 'desc' },
-    })
-  }
-
-  if (user.role === 'Agent') {
-    const managedDepts = await prisma.department.findMany({
-      where: { manager_id: user.id_emp },
-      select: { id_dept: true }
-    })
-    const managedDeptIds = managedDepts.map(d => d.id_dept)
-
-    return prisma.contract.findMany({
-      where: {
-        employee: {
-          departments: {
-            some: { id_dept: { in: managedDeptIds } }
-          }
-        }
-      },
-      include: { employee: { select: { name: true, departments: { select: { id_dept: true } } } } },
-      orderBy: { date_deb: 'desc' },
-    })
-  }
+export async function getContracts(filters: { id_emp?: number; status?: string } = {}) {
+  const whereClause: any = {}
+  if (filters.id_emp) whereClause.id_emp = Number(filters.id_emp)
+  if (filters.status) whereClause.status = filters.status
 
   return prisma.contract.findMany({
-    where: { id_emp: user.id_emp },
-    orderBy: { date_deb: 'desc' },
+    where: whereClause,
+    include: {
+      employee: {
+        select: {
+          name: true,
+          email: true,
+          role: true,
+          departments: { select: { name: true } } // Changed from department to departments
+        }
+      }
+    },
+    orderBy: { date_deb: 'desc' }
   })
 }
 
-export async function createContract(data: CreateContractDTO, actorId: number) {
-  const existingActive = await prisma.contract.findFirst({
-    where: {
-      id_emp: data.id_emp,
-      status: 'Active',
-    },
-  })
-
-  if (existingActive) {
-    throw new AppError('CONFLICT', 409, 'Employee already has an active contract')
-  }
+export async function createContract(data: {
+  type: string
+  date_deb: string
+  date_fin?: string | null
+  salaire_base: number
+  id_emp: number
+}, actorId: number) {
+  const employeeId = Number(data.id_emp)
+  const employee = await prisma.employee.findUnique({ where: { id_emp: employeeId } })
+  if (!employee) throw new AppError('EMPLOYEE_NOT_FOUND', 404, 'Employee not found')
 
   return prisma.$transaction(async (tx) => {
+    await tx.contract.updateMany({
+      where: { id_emp: employeeId, status: 'Active' },
+      data: { status: 'Expired' }
+    })
+
     const contract = await tx.contract.create({
       data: {
-        id_emp: data.id_emp,
         type: data.type,
         date_deb: new Date(data.date_deb),
         date_fin: data.date_fin ? new Date(data.date_fin) : null,
-        salaire_base: data.salaire_base,
-        status: 'Active',
-      },
+        salaire_base: Number(data.salaire_base),
+        id_emp: employeeId,
+        status: 'Active'
+      }
     })
 
     await writeAuditLog(tx, actorId, 'CREATE', 'Contract', contract.id_contract, contract)
@@ -67,29 +56,16 @@ export async function createContract(data: CreateContractDTO, actorId: number) {
   })
 }
 
-export async function terminateContract(id: number, actorId: number) {
+export async function archiveContract(contractId: number, actorId: number) {
+  const contract = await prisma.contract.findUnique({ where: { id_contract: contractId } })
+  if (!contract) throw new AppError('CONTRACT_NOT_FOUND', 404, 'Contract not found')
+
   return prisma.$transaction(async (tx) => {
-    const contract = await tx.contract.findUnique({ where: { id_contract: id } })
-    if (!contract) throw new AppError('CONTRACT_NOT_FOUND', 404)
-
-    const updatedContract = await tx.contract.update({
-      where: { id_contract: id },
-      data: {
-        status: 'Terminated',
-        date_fin: contract.date_fin || new Date(),
-      },
+    const updated = await tx.contract.update({
+      where: { id_contract: contractId },
+      data: { status: 'Archived' }
     })
-
-    await writeAuditLog(tx, actorId, 'UPDATE', 'Contract', id, { ...updatedContract, action: 'Terminate' })
-    return updatedContract
-  })
-}
-
-export async function getActiveContract(employeeId: number) {
-  return prisma.contract.findFirst({
-    where: {
-      id_emp: employeeId,
-      status: 'Active',
-    },
+    await writeAuditLog(tx, actorId, 'UPDATE', 'Contract', contractId, updated)
+    return updated
   })
 }
