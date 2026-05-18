@@ -345,7 +345,7 @@ export async function getAbsenceDeepDive() {
       monthlyStats[key].total++
       if (a.is_justified) monthlyStats[key].justified++
       else monthlyStats[key].unjustified++
-      
+
       const type = a.leave_type?.name || 'Other'
       monthlyStats[key].byType[type] = (monthlyStats[key].byType[type] || 0) + 1
     }
@@ -375,6 +375,83 @@ export async function getLeaveUtilization() {
     consumed: b._sum.consumed || 0,
     utilization: (b._sum.allocated ?? 0) > 0 ? ((b._sum.consumed ?? 0) / (b._sum.allocated ?? 0)) * 100 : 0
   }))
+}
+
+export async function getPayrollDeepDive() {
+  const salaires = await prisma.salaire.findMany({
+    select: { month_year: true, amount_final: true, bonus_amount: true, absence_deductions: true }
+  })
+
+  // Aggregated totals for the whole period
+  let totalBase = 0
+  let totalBonus = 0
+  let totalDeductions = 0
+
+  salaires.forEach(s => {
+    totalBase += (s.amount_final - s.bonus_amount + s.absence_deductions)
+    totalBonus += s.bonus_amount
+    totalDeductions += s.absence_deductions
+  })
+
+  return {
+    breakdown: [
+      { label: 'Base Salary', value: totalBase },
+      { label: 'Bonuses', value: totalBonus },
+      { label: 'Deductions', value: totalDeductions }
+    ]
+  }
+}
+
+export async function getDepartmentPayroll() {
+  const departments = await prisma.department.findMany({
+    select: {
+      name: true,
+      employees: {
+        select: {
+          contracts: {
+            where: { status: 'Active' },
+            select: { salaire_base: true }
+          }
+        }
+      }
+    }
+  })
+
+  return departments.map(d => {
+    const salaries = d.employees.flatMap(e => e.contracts.map(c => c.salaire_base))
+    const total = salaries.reduce((a, b) => a + b, 0)
+    const avg = salaries.length > 0 ? total / salaries.length : 0
+    return {
+      department: d.name,
+      average: Math.round(avg),
+      total: Math.round(total)
+    }
+  }).sort((a, b) => b.average - a.average)
+}
+
+export async function getRolePayrollStats() {
+  const employees = await prisma.employee.findMany({
+    select: {
+      role: true,
+      contracts: {
+        where: { status: 'Active' },
+        select: { salaire_base: true }
+      }
+    }
+  })
+
+  const roleMap: Record<string, { total: number, count: number }> = {}
+  employees.forEach(e => {
+    const base = e.contracts[0]?.salaire_base || 0
+    if (!roleMap[e.role]) roleMap[e.role] = { total: 0, count: 0 }
+    roleMap[e.role].total += base
+    roleMap[e.role].count += 1
+  })
+
+  return Object.entries(roleMap).map(([role, data]) => ({
+    role,
+    average: Math.round(data.total / data.count)
+  })).sort((a, b) => b.average - a.average)
 }
 
 export async function getAdminDashboard(actorId: number) {

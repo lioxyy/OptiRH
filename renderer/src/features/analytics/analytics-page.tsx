@@ -15,6 +15,7 @@ import {
 } from '../../components/ui/chart'
 import {
   Users,
+  Briefcase,
   Activity,
   DollarSign,
   TrendingUp,
@@ -103,6 +104,22 @@ export function AnalyticsPage() {
   const { data: leaveUtilization } = useQuery({
     queryKey: ['analytics', 'leave-utilization'],
     queryFn: async () => (await api.get('/api/analytics/leave-utilization')).data.data,
+  })
+
+  // Phase 4 Queries
+  const { data: payrollDeepDive } = useQuery({
+    queryKey: ['analytics', 'payroll-deep-dive'],
+    queryFn: async () => (await api.get('/api/analytics/payroll-deep-dive')).data.data,
+  })
+
+  const { data: deptPayroll } = useQuery({
+    queryKey: ['analytics', 'department-payroll'],
+    queryFn: async () => (await api.get('/api/analytics/department-payroll')).data.data,
+  })
+
+  const { data: rolePayroll } = useQuery({
+    queryKey: ['analytics', 'role-payroll'],
+    queryFn: async () => (await api.get('/api/analytics/role-payroll')).data.data,
   })
 
   const kpis = [
@@ -261,18 +278,69 @@ export function AnalyticsPage() {
                 </div>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-[9px] font-bold text-muted-foreground uppercase mb-2">Roles</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase mb-4 tracking-tighter">Roles</span>
                 <div className="h-24 w-24">
                   <ResponsiveContainer>
                     <PieChart>
-                      <Pie data={demographics?.roles} cx="50%" cy="50%" innerRadius={25} outerRadius={35} dataKey="value">
-                        {demographics?.roles?.map((_e: any, i: number) => <Cell key={i} fill={`hsl(var(--chart-${i + 1}))`} />)}
+                      <Pie data={rolePayroll} cx="50%" cy="50%" innerRadius={25} outerRadius={35} dataKey="value">
+                        {rolePayroll?.map((_e: any, i: number) => <Cell key={i} fill={`hsl(var(--chart-${i + 1}))`} />)}
                       </Pie>
-                      <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Payroll Composition (Phase 4) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
+            <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-emerald-500" /> Payroll Composition
+              </CardTitle>
+              <CardDescription className="text-xs">Base salary vs Bonus vs Deductions (All-time)</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px] pt-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={payrollDeepDive?.breakdown || []}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {payrollDeepDive?.breakdown?.map((_entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${index + 1}))`} />
+                    ))}
+                  </Pie>
+                  <Tooltip cursor={{ fill: 'transparent' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
+            <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-primary" /> Avg Salary by Department
+              </CardTitle>
+              <CardDescription className="text-xs">Current active contract base salaries</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-8">
+              <ChartContainer config={{}} className="min-h-[250px] w-full">
+                <BarChart data={deptPayroll}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis dataKey="department" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => `${v / 1000}k`} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="average" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
             </CardContent>
           </Card>
         </div>

@@ -80,6 +80,21 @@ router.get('/leave-utilization', asyncHandler(async (_req, res) => {
   res.json(success(data))
 }))
 
+router.get('/payroll-deep-dive', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getPayrollDeepDive()
+  res.json(success(data))
+}))
+
+router.get('/department-payroll', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getDepartmentPayroll()
+  res.json(success(data))
+}))
+
+router.get('/role-payroll', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getRolePayrollStats()
+  res.json(success(data))
+}))
+
 router.get('/dashboard/admin', authorize('Admin'), asyncHandler(async (req, res) => {
   const data = await AnalyticsService.getAdminDashboard(req.user.id_emp)
   res.json(success(data))
