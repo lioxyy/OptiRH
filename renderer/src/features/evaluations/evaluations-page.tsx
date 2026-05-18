@@ -211,7 +211,7 @@ export function EvaluationsPage() {
                 { label: 'Top Dimension', val: 'Technical', icon: Trophy },
               ].map((kpi, i) => (
                 <Card key={i} className="border-primary/5 shadow-sm overflow-hidden group hover:border-primary/20 transition-all">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider opacity-60 transition-opacity">{kpi.label}</p>
