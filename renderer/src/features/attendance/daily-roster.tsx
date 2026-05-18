@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
-import { Search, UserCheck, AlertTriangle, UserX, Users2, CalendarDays, Edit3 } from 'lucide-react'
+import { Search, UserCheck, AlertTriangle, UserX, Users2, CalendarDays, Edit3, TrendingUp } from 'lucide-react'
 import { Skeleton } from '../../components/ui/skeleton'
 import { OverrideModal } from './override-modal'
 
@@ -28,11 +28,11 @@ interface RosterItem {
 }
 
 const STATUS_CONFIG = {
-  Present: { label: 'Present', variant: 'default' as const, className: 'bg-emerald-500 hover:bg-emerald-600 text-white font-semibold' },
-  Late: { label: 'Late', variant: 'outline' as const, className: 'text-amber-500 border-amber-500/30 bg-amber-500/5 font-semibold animate-pulse' },
-  'Half-Day': { label: 'Half-Day', variant: 'outline' as const, className: 'text-blue-500 border-blue-500/30 bg-blue-500/5 font-semibold' },
-  Absent: { label: 'Absent', variant: 'destructive' as const, className: 'font-semibold' },
-  'On Leave': { label: 'On Leave', variant: 'outline' as const, className: 'text-indigo-500 border-indigo-500/30 bg-indigo-500/5 font-semibold' },
+  Present: { label: 'Present', variant: 'outline' as const, className: 'text-emerald-500/80 border-emerald-500/10 bg-transparent font-medium' },
+  Late: { label: 'Late', variant: 'outline' as const, className: 'text-amber-500/80 border-amber-500/10 bg-transparent font-medium' },
+  'Half-Day': { label: 'Half-Day', variant: 'outline' as const, className: 'text-blue-500/80 border-blue-500/10 bg-transparent font-medium' },
+  Absent: { label: 'Absent', variant: 'outline' as const, className: 'text-destructive/80 border-destructive/10 bg-transparent font-medium' },
+  'On Leave': { label: 'On Leave', variant: 'outline' as const, className: 'text-indigo-500/80 border-indigo-500/10 bg-transparent font-medium' },
 }
 
 export function DailyRoster() {
@@ -77,95 +77,68 @@ export function DailyRoster() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* ── KPIs Metric Cards Grid ───────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {/* Total Active */}
-        <Card className="border-border/40 bg-card/30 backdrop-blur-md">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-              <Users2 className="h-4 w-4" />
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground uppercase block font-semibold">Total Staff</span>
-              <span className="text-xl font-bold font-mono">{isLoading ? '...' : totalStaff}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          { label: 'Total Staff', val: isLoading ? '...' : totalStaff, trend: 'Stable', foot: 'Total workforce', icon: Users2, color: 'text-foreground' },
+          { label: 'Present', val: isLoading ? '...' : presentCount, trend: '+2', foot: 'Across units', icon: UserCheck, color: 'text-emerald-500/80' },
+          { label: 'Late', val: isLoading ? '...' : lateCount, trend: '-1', foot: 'Today logged', icon: AlertTriangle, color: 'text-amber-500/80' },
+          { label: 'Absent', val: isLoading ? '...' : absentCount, trend: 'Unchanged', foot: 'Unjustified', icon: UserX, color: 'text-destructive/80' },
+          { label: 'On Leave', val: isLoading ? '...' : onLeaveCount, trend: '+1', foot: 'Approved balances', icon: CalendarDays, color: 'text-indigo-500/80' },
+        ].map((kpi, i) => (
+          <Card key={i} className="border-primary/5 bg-card/40 backdrop-blur-sm shadow-sm hover:border-primary/20 transition-all group p-4">
+            <div className="flex flex-col justify-between h-full space-y-4">
+              <div className="flex items-start justify-between">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-80">{kpi.label}</span>
+                <kpi.icon className="h-3.5 w-3.5 text-muted-foreground opacity-40" />
+              </div>
 
-        {/* Present */}
-        <Card className="border-border/40 bg-card/30 backdrop-blur-md">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-              <UserCheck className="h-4 w-4" />
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground uppercase block font-semibold">Present</span>
-              <span className="text-xl font-bold font-mono text-emerald-400">{isLoading ? '...' : presentCount}</span>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="flex items-end justify-between gap-2">
+                <h3 className={`text-2xl font-mono font-bold tracking-tight ${kpi.color}`}>{kpi.val}</h3>
+                <div className="flex items-center gap-1.5">
+                  <div className={`px-2 py-0.5 rounded-full bg-emerald-500/10 text-[10px] font-bold text-emerald-500 flex items-center gap-1 border border-emerald-500/10`}>
+                    <TrendingUp className="h-2.5 w-2.5" />
+                    {kpi.trend}
+                  </div>
+                </div>
+              </div>
 
-        {/* Late */}
-        <Card className="border-border/40 bg-card/30 backdrop-blur-md">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
-              <AlertTriangle className="h-4 w-4 animate-bounce" />
+              <div className="pt-2 border-t border-primary/5">
+                <p className="text-[9px] text-muted-foreground font-medium opacity-60">
+                  <span className="font-bold">{kpi.foot.split(' ')[0]}</span> {kpi.foot.split(' ').slice(1).join(' ')}
+                </p>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground uppercase block font-semibold">Late</span>
-              <span className="text-xl font-bold font-mono text-amber-400">{isLoading ? '...' : lateCount}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Absent */}
-        <Card className="border-border/40 bg-card/30 backdrop-blur-md">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
-              <UserX className="h-4 w-4" />
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground uppercase block font-semibold">Absent</span>
-              <span className="text-xl font-bold font-mono text-destructive">{isLoading ? '...' : absentCount}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* On Leave */}
-        <Card className="border-border/40 bg-card/30 backdrop-blur-md md:col-span-1 col-span-2">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-              <CalendarDays className="h-4 w-4" />
-            </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground uppercase block font-semibold">On Leave</span>
-              <span className="text-xl font-bold font-mono text-indigo-400">{isLoading ? '...' : onLeaveCount}</span>
-            </div>
-          </CardContent>
-        </Card>
+          </Card>
+        ))}
       </div>
 
       {/* ── Table Grid with search ──────────────────────────────── */}
-      <Card className="border-border/40 bg-card/30 backdrop-blur-xl">
-        <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-lg font-bold">Roster Renseignements</CardTitle>
-            <CardDescription>Live daily pointages overview with filters.</CardDescription>
+      <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg transition-all hover:border-primary/10">
+        <CardHeader className="pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 bg-muted/50 rounded-xl flex items-center justify-center border border-border/10">
+              <Users2 className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold tracking-tight">Roster Renseignements</CardTitle>
+              <CardDescription className="text-xs">Consolidated real-time view of organizational manpower.</CardDescription>
+            </div>
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground/60" />
             <Input
               placeholder="Search employee or dept..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9 text-xs rounded-xl"
+              className="pl-9 h-9 text-xs rounded-xl bg-muted/10 border-border/20"
             />
           </div>
         </CardHeader>
 
-        <CardContent className="p-0 border-t border-border/10">
+        <CardContent className="p-0 border-t border-border/5">
           {isLoading ? (
             <div className="p-4 space-y-3">
               {[1, 2, 3, 4].map((i) => (
@@ -173,23 +146,23 @@ export function DailyRoster() {
               ))}
             </div>
           ) : filteredRoster.length === 0 ? (
-            <div className="text-center py-16">
-              <Users2 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-muted-foreground">No employees found today.</p>
-              <p className="text-xs text-muted-foreground/60">Try adjusting your filters or search terms.</p>
+            <div className="text-center py-20 bg-muted/5">
+              <Users2 className="h-8 w-8 text-muted-foreground/20 mx-auto mb-3" />
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">No matching records</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-1">Adjust filters or search terms.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="bg-muted/15">
-                  <TableRow className="border-border/10">
-                    <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Employee</TableHead>
-                    <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Department</TableHead>
-                    <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Status</TableHead>
-                    <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Clock In</TableHead>
-                    <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Clock Out</TableHead>
-                    <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Total Shift</TableHead>
-                    <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground text-right">Override</TableHead>
+                <TableHeader className="bg-muted/10">
+                  <TableRow className="border-border/10 hover:bg-transparent">
+                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Employee</TableHead>
+                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Department</TableHead>
+                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Status</TableHead>
+                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Clock In</TableHead>
+                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Clock Out</TableHead>
+                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Total Shift</TableHead>
+                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider text-right pr-6">Override</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -200,33 +173,33 @@ export function DailyRoster() {
                       className: '',
                     }
                     return (
-                      <TableRow key={item.id_emp} className="border-border/10 hover:bg-muted/5 transition-all duration-150">
-                        <TableCell className="py-3 px-4 font-medium">
+                      <TableRow key={item.id_emp} className="border-border/5 hover:bg-muted/5 group transition-all duration-150">
+                        <TableCell className="py-3 px-4">
                           <div className="flex flex-col">
-                            <span className="text-sm font-bold text-foreground">{item.name}</span>
-                            <span className="text-[10px] text-muted-foreground font-mono">{item.email}</span>
+                            <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{item.name}</span>
+                            <span className="text-[10px] text-muted-foreground font-mono opacity-70">{item.email}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 px-4 text-xs font-semibold text-muted-foreground">{item.departmentName}</TableCell>
+                        <TableCell className="py-3 px-4 text-[10px] font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-tight">{item.departmentName}</TableCell>
                         <TableCell className="py-3 px-4">
-                          <Badge variant={cfg.variant} className={`text-[10px] py-0.5 px-2 rounded-full border ${cfg.className}`}>
-                            {cfg.label}
+                          <Badge variant={cfg.variant} className={`text-[9px] font-mono py-0 px-2 rounded-full border bg-transparent ${cfg.className}`}>
+                            {cfg.label.toUpperCase()}
                           </Badge>
                         </TableCell>
-                        <TableCell className="py-3 px-4 text-sm font-semibold text-foreground">
+                        <TableCell className="py-3 px-4 text-sm font-mono font-bold text-foreground">
                           {formatTime(item.attendance?.clock_in)}
                         </TableCell>
-                        <TableCell className="py-3 px-4 text-sm font-semibold text-foreground">
+                        <TableCell className="py-3 px-4 text-sm font-mono font-bold text-foreground">
                           {formatTime(item.attendance?.clock_out)}
                         </TableCell>
-                        <TableCell className="py-3 px-4 text-sm font-mono text-muted-foreground">
+                        <TableCell className="py-3 px-4 text-xs font-mono text-muted-foreground">
                           {item.attendance?.work_hours ? `${item.attendance.work_hours.toFixed(2)}h` : '—'}
                         </TableCell>
-                        <TableCell className="py-3 px-4 text-right">
+                        <TableCell className="py-3 px-4 text-right pr-6">
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 text-xs rounded-lg text-indigo-400 hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 gap-1"
+                            className="h-8 text-[10px] font-bold uppercase rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/10 border border-transparent hover:border-border/10 gap-2 px-3"
                             onClick={() => handleOpenOverride({ id_emp: item.id_emp, name: item.name })}
                           >
                             <Edit3 className="h-3 w-3" />
