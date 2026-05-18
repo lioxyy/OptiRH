@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
@@ -24,7 +24,7 @@ import {
     SelectValue,
 } from '../../components/ui/select'
 import { toast } from 'sonner'
-import { Loader2, GraduationCap, MapPin, Calendar, User } from 'lucide-react'
+import { Loader2, GraduationCap, MapPin, Calendar, User, Globe } from 'lucide-react'
 
 interface FormationFormProps {
     initialData?: any
@@ -34,6 +34,9 @@ interface FormationFormProps {
 export function FormationForm({ initialData, onClose }: FormationFormProps) {
     const queryClient = useQueryClient()
     const [activeTab, setActiveTab] = useState('info')
+    const [instructorType, setInstructorType] = useState<'local' | 'external'>(
+        initialData?.external_instructor ? 'external' : 'local'
+    )
     const isEditing = !!initialData
 
     const { register, handleSubmit, formState: { errors }, watch, setValue, trigger } = useForm<CreateFormationInput>({
@@ -79,7 +82,14 @@ export function FormationForm({ initialData, onClose }: FormationFormProps) {
     }
 
     const onSubmit = (data: CreateFormationInput) => {
-        mutation.mutate(data)
+        // Clean up unselected instructor type
+        const payload = { ...data }
+        if (instructorType === 'local') {
+            payload.external_instructor = undefined
+        } else {
+            payload.id_instructor = undefined
+        }
+        mutation.mutate(payload)
     }
 
     return (
@@ -160,25 +170,56 @@ export function FormationForm({ initialData, onClose }: FormationFormProps) {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="instructor">Instructor</Label>
-                                <Select
-                                    value={watch('id_instructor')?.toString()}
-                                    onValueChange={(val) => setValue('id_instructor', parseInt(val))}
+                            <div className="space-y-4 pt-2">
+                                <Label>Instructor Type</Label>
+                                <Tabs
+                                    value={instructorType}
+                                    onValueChange={(val: any) => setInstructorType(val)}
+                                    className="w-full"
                                 >
-                                    <SelectTrigger className="w-full pl-9 relative">
-                                        <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <SelectValue placeholder="Select an instructor" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {employees.map((emp: any) => (
-                                            <SelectItem key={emp.id_emp} value={emp.id_emp.toString()}>
-                                                {emp.name} ({emp.role})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.id_instructor && <p className="text-xs text-destructive">Please select an instructor</p>}
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="local" className="flex items-center gap-2">
+                                            <User className="h-4 w-4" /> Internal
+                                        </TabsTrigger>
+                                        <TabsTrigger value="external" className="flex items-center gap-2">
+                                            <Globe className="h-4 w-4" /> External
+                                        </TabsTrigger>
+                                    </TabsList>
+
+                                    <TabsContent value="local" className="mt-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="id_instructor">Select Employee</Label>
+                                            <Select
+                                                value={watch('id_instructor')?.toString()}
+                                                onValueChange={(val) => setValue('id_instructor', parseInt(val))}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select an instructor" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {employees.map((emp: any) => (
+                                                        <SelectItem key={emp.id_emp} value={emp.id_emp.toString()}>
+                                                            {emp.name} ({emp.role})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.id_instructor && <p className="text-xs text-destructive">{errors.id_instructor.message}</p>}
+                                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="external" className="mt-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="external_instructor">Instructor Name</Label>
+                                            <Input
+                                                id="external_instructor"
+                                                placeholder="e.g. John Doe (Partner Agency)"
+                                                {...register('external_instructor')}
+                                            />
+                                            {errors.external_instructor && <p className="text-xs text-destructive">{errors.external_instructor.message}</p>}
+                                        </div>
+                                    </TabsContent>
+                                </Tabs>
                             </div>
                         </TabsContent>
                     </Tabs>

@@ -8,7 +8,7 @@ import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { FormationForm } from './formation-form'
 import { ParticipantManager } from './participant-manager'
-import { GraduationCap, MapPin, Calendar, Clock, User, Users } from 'lucide-react'
+import { GraduationCap, MapPin, Calendar, Clock, User, Users, Globe } from 'lucide-react'
 import { toast } from 'sonner'
 
 export interface Formation {
@@ -18,11 +18,12 @@ export interface Formation {
     location?: string | null
     date_deb: string
     duration_days: number
-    id_instructor: number
-    instructor: {
+    id_instructor?: number | null
+    external_instructor?: string | null
+    instructor?: {
         id_emp: number
         name: string
-    }
+    } | null
 }
 
 export function FormationPage() {
@@ -94,12 +95,18 @@ export function FormationPage() {
         },
         {
             id: "instructor",
-            accessorFn: (row) => row.instructor.name,
+            accessorFn: (row) => row.instructor?.name || row.external_instructor,
             header: ({ column }) => <DataTableColumnHeader column={column} title="Instructor" />,
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{row.original.instructor.name}</span>
+                    {row.original.id_instructor ? (
+                        <User className="h-4 w-4 text-primary" />
+                    ) : (
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className="text-sm">
+                        {row.original.instructor?.name || row.original.external_instructor || 'N/A'}
+                    </span>
                 </div>
             )
         },
