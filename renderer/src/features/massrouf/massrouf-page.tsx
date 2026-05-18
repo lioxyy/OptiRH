@@ -3,13 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { toast } from 'sonner'
-import { Wallet, Check, X, ShieldAlert, Sparkles, Scale, History } from 'lucide-react'
-import { Skeleton } from '../../components/ui/skeleton'
+import { Wallet, Check, X, ShieldAlert, Scale } from 'lucide-react'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 
 interface MassroufRequest {
   id_massrouf: number
@@ -20,13 +20,13 @@ interface MassroufRequest {
   employee?: {
     name: string
     email: string
-    departments?: { name: string }[] // Adjusted for many-to-many
+    departments?: { name: string }[]
   }
 }
 
 const STATUS_CONFIG = {
-  Pending: { label: 'Pending', variant: 'outline' as const, className: 'text-amber-500 border-amber-500/30 bg-amber-500/5 font-semibold' },
-  Approved: { label: 'Approved', variant: 'default' as const, className: 'bg-emerald-500 hover:bg-emerald-600 text-white font-semibold' },
+  Pending: { label: 'Pending', variant: 'outline' as const, className: 'text-amber-500 border-amber-500/30' },
+  Approved: { label: 'Approved', variant: 'default' as const, className: 'bg-emerald-600 hover:bg-emerald-700 text-white font-semibold' },
   Rejected: { label: 'Rejected', variant: 'outline' as const, className: 'text-destructive border-destructive/30 bg-destructive/5 font-semibold' },
 }
 
@@ -97,32 +97,138 @@ export function MassroufPage() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
   }
 
+  const employeeColumns: ColumnDef<MassroufRequest>[] = [
+    {
+      id: "date_request",
+      accessorKey: "date_request",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Request Date" />,
+      cell: ({ row }) => <span>{formatDay(row.original.date_request)}</span>
+    },
+    {
+      id: "amount",
+      accessorKey: "amount",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
+      cell: ({ row }) => <span className="font-bold font-mono">{row.original.amount.toLocaleString()} DZD</span>
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const cfg = STATUS_CONFIG[row.original.status] || { label: row.original.status, variant: 'outline' as const, className: '' }
+        return (
+          <Badge variant={cfg.variant} className={cfg.className}>
+            {cfg.label}
+          </Badge>
+        )
+      }
+    }
+  ]
+
+  const managerColumns: ColumnDef<MassroufRequest>[] = [
+    {
+      id: "employee",
+      accessorFn: (row) => row.employee?.name ?? '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Employee" />,
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span className="font-semibold text-foreground">{row.original.employee?.name}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">{row.original.employee?.email}</span>
+        </div>
+      )
+    },
+    {
+      id: "department",
+      accessorFn: (row) => row.employee?.departments?.map(d => d.name).join(', ') || '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Department" />,
+      cell: ({ row }) => (
+        <span className="font-semibold text-muted-foreground">
+          {row.original.employee?.departments?.map(d => d.name).join(', ') || '—'}
+        </span>
+      )
+    },
+    {
+      id: "date_request",
+      accessorKey: "date_request",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Request Date" />,
+      cell: ({ row }) => <span>{formatDay(row.original.date_request)}</span>
+    },
+    {
+      id: "amount",
+      accessorKey: "amount",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
+      cell: ({ row }) => <span className="font-bold font-mono">{row.original.amount.toLocaleString()} DZD</span>
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const cfg = STATUS_CONFIG[row.original.status] || { label: row.original.status, variant: 'outline' as const, className: '' }
+        return (
+          <Badge variant={cfg.variant} className={cfg.className}>
+            {cfg.label}
+          </Badge>
+        )
+      }
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Review</div>,
+      cell: ({ row }) => {
+        const r = row.original
+        if (r.status !== 'Pending') return <span className="text-xs text-muted-foreground/45">—</span>
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            <Button
+              size="sm"
+              className="h-7 w-7 p-0 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={validateMutation.isPending}
+              onClick={() => validateMutation.mutate({ id: r.id_massrouf, status: 'Approved' })}
+            >
+              <Check className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-7 w-7 p-0 rounded-lg"
+              disabled={validateMutation.isPending}
+              onClick={() => validateMutation.mutate({ id: r.id_massrouf, status: 'Rejected' })}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )
+      }
+    }
+  ]
+
   const renderEmployeeView = () => {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-1 space-y-6">
-          <Card className="border-border/40 bg-card/30 backdrop-blur-xl shadow-lg relative overflow-hidden">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <Wallet className="h-5 w-5 text-teal-400" />
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Wallet className="h-4.5 w-4.5 text-muted-foreground" />
                 Request Advance
               </CardTitle>
               <CardDescription>Request a salary advance from your upcoming payslip.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 rounded-xl border border-teal-500/20 bg-teal-500/5 space-y-2">
+              <div className="p-3.5 rounded-lg border bg-muted/40 space-y-2">
                 <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <Scale className="h-3.5 w-3.5 text-teal-400" />
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <Scale className="h-3.5 w-3.5" />
                     Remaining Requests
                   </span>
-                  <Badge variant="outline" className="text-teal-400 border-teal-500/30 font-mono">
+                  <Badge variant="outline" className="font-mono">
                     {requestsRemaining} / 2 Left
                   </Badge>
                 </div>
-                <div className="w-full bg-muted/60 h-2.5 rounded-full overflow-hidden">
+                <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-teal-400 to-emerald-500 h-full rounded-full transition-all duration-500"
+                    className="bg-emerald-600 h-full rounded-full transition-all duration-500"
                     style={{ width: `${(requestsRemaining / 2) * 100}%` }}
                   />
                 </div>
@@ -137,20 +243,20 @@ export function MassroufPage() {
                       placeholder="e.g. 15000"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="rounded-xl h-10 border-border/60 text-sm font-semibold"
+                      className="h-9 text-xs"
                     />
                   </div>
                   <Button
                     type="submit"
-                    className="w-full h-10 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl shadow-md"
+                    className="w-full h-9"
                     disabled={submitMutation.isPending}
                   >
                     {submitMutation.isPending ? 'Submitting...' : 'Submit Request'}
                   </Button>
                 </form>
               ) : (
-                <div className="p-4 rounded-xl border border-destructive/20 bg-destructive/5 text-xs text-destructive text-center space-y-2 leading-relaxed">
-                  <ShieldAlert className="h-6 w-6 mx-auto" />
+                <div className="p-4 rounded-lg border bg-destructive/5 text-xs text-destructive text-center space-y-2 leading-relaxed">
+                  <ShieldAlert className="h-5 w-5 mx-auto" />
                   <p className="font-semibold">Limit Exceeded</p>
                   <p className="text-[10px] text-muted-foreground">You have already reached your 2 advances limit this year.</p>
                 </div>
@@ -160,52 +266,19 @@ export function MassroufPage() {
         </div>
 
         <div className="lg:col-span-2">
-          <Card className="border-border/40 bg-card/30 backdrop-blur-xl shadow-md">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <History className="h-5 w-5 text-indigo-400" />
-                Requests History
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 border-t border-border/10">
-              {isLoading ? (
-                <div className="p-4 space-y-3">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-11 w-full rounded-lg" />)}
-                </div>
-              ) : requests.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground text-sm">
-                  <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/30 mb-1" />
-                  <p className="font-semibold">No requests submitted yet.</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border/10">
-                      <TableHead className="py-3 px-4 text-xs">Request Date</TableHead>
-                      <TableHead className="py-3 px-4 text-xs">Amount</TableHead>
-                      <TableHead className="py-3 px-4 text-xs">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {requests.map((r) => {
-                      const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.Pending
-                      return (
-                        <TableRow key={r.id_massrouf} className="border-border/10 hover:bg-muted/5">
-                          <TableCell className="py-3 px-4 text-sm font-medium">{formatDay(r.date_request)}</TableCell>
-                          <TableCell className="py-3 px-4 text-sm font-bold font-mono">{r.amount.toLocaleString()} DZD</TableCell>
-                          <TableCell className="py-3 px-4">
-                            <Badge variant={cfg.variant} className={`text-[10px] py-0.5 px-2 rounded-full border ${cfg.className}`}>
-                              {cfg.label}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => <Card key={i} className="h-14 w-full" />)}
+            </div>
+          ) : (
+            <GenericDataTable
+              columns={employeeColumns}
+              data={requests}
+              searchOptions={[
+                { id: "status", label: "Status" }
+              ]}
+            />
+          )}
         </div>
       </div>
     )
@@ -213,101 +286,34 @@ export function MassroufPage() {
 
   const renderManagerView = () => {
     return (
-      <Card className="border-border/40 bg-card/30 backdrop-blur-xl shadow-md">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-indigo-400" />
-            Salary Advances Administration
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 border-t border-border/10">
-          {isLoading ? (
-            <div className="p-4 space-y-3">
-              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
-            </div>
-          ) : requests.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground text-sm">
-              <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/30 mb-1" />
-              <p className="font-semibold">No requests submitted across the company.</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border/10">
-                  <TableHead className="py-3 px-4 text-xs">Employee</TableHead>
-                  <TableHead className="py-3 px-4 text-xs">Department</TableHead>
-                  <TableHead className="py-3 px-4 text-xs">Request Date</TableHead>
-                  <TableHead className="py-3 px-4 text-xs">Amount</TableHead>
-                  <TableHead className="py-3 px-4 text-xs">Status</TableHead>
-                  <TableHead className="py-3 px-4 text-xs text-right">Review</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requests.map((r) => {
-                  const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.Pending
-                  return (
-                    <TableRow key={r.id_massrouf} className="border-border/10 hover:bg-muted/5">
-                      <TableCell className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-foreground">{r.employee?.name}</span>
-                          <span className="text-[10px] text-muted-foreground font-mono">{r.employee?.email}</span>
-                        </div>
-                      </TableCell>
-                      {/* Pre-tailored Plural Departments renderer */}
-                      <TableCell className="py-3 px-4 text-xs font-semibold text-muted-foreground">
-                        {r.employee?.departments?.map(d => d.name).join(', ') || '—'}
-                      </TableCell>
-                      <TableCell className="py-3 px-4 text-sm font-medium">{formatDay(r.date_request)}</TableCell>
-                      <TableCell className="py-3 px-4 text-sm font-bold font-mono">{r.amount.toLocaleString()} DZD</TableCell>
-                      <TableCell className="py-3 px-4">
-                        <Badge variant={cfg.variant} className={`text-[10px] py-0.5 px-2 rounded-full border ${cfg.className}`}>
-                          {cfg.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-3 px-4 text-right">
-                        {r.status === 'Pending' ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Button
-                              size="sm"
-                              className="h-7 w-7 p-0 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white"
-                              disabled={validateMutation.isPending}
-                              onClick={() => validateMutation.mutate({ id: r.id_massrouf, status: 'Approved' })}
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-7 w-7 p-0 rounded-lg"
-                              disabled={validateMutation.isPending}
-                              onClick={() => validateMutation.mutate({ id: r.id_massrouf, status: 'Rejected' })}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/45">—</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Card key={i} className="h-14 w-full" />)}
+          </div>
+        ) : (
+          <GenericDataTable
+            columns={managerColumns}
+            data={requests}
+            searchOptions={[
+              { id: "employee", label: "Employee" },
+              { id: "department", label: "Department" },
+              { id: "status", label: "Status" }
+            ]}
+          />
+        )}
+      </div>
     )
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-teal-500 to-indigo-500 bg-clip-text text-transparent">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold">
           {isManager ? 'Salary Advance Administration' : 'My Salary Advances (Massrouf)'}
         </h1>
         <p className="text-muted-foreground text-sm">
-          {isManager ? 'Review employee advances' : 'Request advances directly to be deducted from your next payslip.'}
+          {isManager ? 'Review employee advance requests.' : 'Request advances directly to be deducted from your next payslip.'}
         </p>
       </div>
       {isManager ? renderManagerView() : renderEmployeeView()}
