@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { useAuth } from "@/context/auth-context"
 import {
   CalendarDays,
   FileText,
@@ -41,6 +42,7 @@ function OperationalKpi({ title, value, icon: Icon, description }: {
 }
 
 export function OverviewPage() {
+  const { user } = useAuth()
   const queryClient = useQueryClient()
 
   // Fetch unified operational data
@@ -192,35 +194,37 @@ export function OverviewPage() {
         </Card>
 
         {/* System Activity (Logs) */}
-        <Card className="border shadow-none">
-          <CardHeader className="pb-3 pt-4">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <History className="h-4 w-4 text-muted-foreground" />
-              Today's System Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {tables.todaysLogs.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground py-4 text-center border rounded-lg border-dashed">No activity recorded today.</p>
-            ) : (
-              <div className="space-y-3">
-                {tables.todaysLogs.map((log: any) => (
-                  <div key={log.id_log} className="flex gap-3 items-start border-b pb-2 last:border-0">
-                    <span className="text-[9px] font-mono text-muted-foreground w-12 shrink-0">{format(new Date(log.timestamp), "HH:mm")}</span>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[11px] font-semibold block truncate">
-                        {log.actor?.name || "System"} <span className="font-normal opacity-70">performed</span> {log.action}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground block truncate italic uppercase">
-                        {log.target_model} (ID: {log.target_id})
-                      </span>
+        {user?.role === 'Admin' && (
+          <Card className="border shadow-none">
+            <CardHeader className="pb-3 pt-4">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <History className="h-4 w-4 text-muted-foreground" />
+                Today's System Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {tables.todaysLogs.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground py-4 text-center border rounded-lg border-dashed">No activity recorded today.</p>
+              ) : (
+                <div className="space-y-3">
+                  {tables.todaysLogs.map((log: any) => (
+                    <div key={log.id_log} className="flex gap-3 items-start border-b pb-2 last:border-0">
+                      <span className="text-[9px] font-mono text-muted-foreground w-12 shrink-0">{format(new Date(log.timestamp), "HH:mm")}</span>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[11px] font-semibold block truncate">
+                          {log.actor?.name || "System"} <span className="font-normal opacity-70">performed</span> {log.action}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground block truncate italic uppercase">
+                          {log.target_model} (ID: {log.target_id})
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Formations & Learning */}
         <Card className="border shadow-none">

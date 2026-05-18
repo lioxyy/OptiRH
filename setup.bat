@@ -12,7 +12,7 @@ call npm install
 echo 🗄️ Initializing database...
 call npx prisma migrate dev --name init --skip-seed --skip-generate
 call npx prisma generate
-call npx prisma db seed
+call npx tsx create-agent.ts
 
 echo ✅ Installation complete! Run run.bat to start the app.
 pause

@@ -64,14 +64,14 @@ async function main() {
     const dept = allDepts[i % allDepts.length]
     const emp = await prisma.employee.create({
       data: {
-        name: `${names[i % names.length]} ${surnames[i % surnames.length]} ${i}`,
-        email: `user${i}@optirh.dz`,
-        password_hash: 'hashed_pass',
+        name: i === 1 ? 'Agent User' : `${names[i % names.length]} ${surnames[i % surnames.length]} ${i}`,
+        email: i === 1 ? 'agent@optirh.dz' : `user${i}@optirh.dz`,
+        password_hash: '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa', // password: password123
         phone: `0550${100000 + i}`,
         gender: i % 2 === 0 ? 'Male' : 'Female',
         date_birth: new Date(1980 + (i % 20), 0, 1),
         date_employment: new Date(2023, 0, 1),
-        role: roles[i % roles.length],
+        role: i === 1 ? 'Agent' : roles[i % roles.length],
         departments: { connect: { id_dept: dept.id_dept } }
       }
     })

@@ -9,8 +9,8 @@ import * as MassroufService from './massrouf.service'
 
 const router = Router()
 
-// Fetch all advance requests (restricted to Admin and Agent)
-router.get('/', authenticate, authorize('Admin', 'Agent'), asyncHandler(async (req, res) => {
+// Fetch all advance requests (restricted to Admin)
+router.get('/', authenticate, authorize('Admin'), asyncHandler(async (req, res) => {
   const filters: any = {}
   if (req.query.id_emp) filters.id_emp = Number(req.query.id_emp)
   if (req.query.status) filters.status = String(req.query.status)
@@ -31,8 +31,8 @@ router.post('/request', authenticate, validate('body', SubmitMassroufSchema), as
   res.json(success(request))
 }))
 
-// Review a salary advance (Admin or Agent)
-router.post('/:id/review', authenticate, authorize('Admin', 'Agent'), validate('body', ReviewMassroufSchema), asyncHandler(async (req, res) => {
+// Review a salary advance (Admin only)
+router.post('/:id/review', authenticate, authorize('Admin'), validate('body', ReviewMassroufSchema), asyncHandler(async (req, res) => {
   const updated = await MassroufService.validateMassrouf(
     Number(req.params.id),
     req.body.status,

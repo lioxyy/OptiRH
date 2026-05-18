@@ -62,9 +62,51 @@ export async function generateMonthlyPayroll(employeeId: number, monthYear: stri
   })
 }
 
-export async function getPayrollHistory(filters: { id_emp?: number; month_year?: string } = {}) {
+export async function getPayrollHistory(
+  filters: { id_emp?: any; month_year?: string } = {},
+  actor?: { id_emp: number; role: string }
+) {
   const whereClause: any = {}
-  if (filters.id_emp) whereClause.id_emp = Number(filters.id_emp)
+
+  if (actor) {
+    if (actor.role === 'Employee') {
+      whereClause.id_emp = actor.id_emp
+    } else if (actor.role === 'Agent') {
+      const agent = await prisma.employee.findUnique({
+        where: { id_emp: actor.id_emp },
+        select: { departments: { select: { id_dept: true } } }
+      })
+      const deptIds = agent?.departments.map(d => d.id_dept) || []
+
+      const teamEmployees = await prisma.employee.findMany({
+        where: {
+          OR: [
+            { departments: { some: { id_dept: { in: deptIds } } } },
+            { supervisor_id: actor.id_emp },
+            { id_emp: actor.id_emp }
+          ]
+        },
+        select: { id_emp: true }
+      })
+      const teamIds = teamEmployees.map(e => e.id_emp)
+
+      if (filters.id_emp) {
+        const targetEmpId = Number(filters.id_emp)
+        if (teamIds.includes(targetEmpId)) {
+          whereClause.id_emp = targetEmpId
+        } else {
+          whereClause.id_emp = -1
+        }
+      } else {
+        whereClause.id_emp = { in: teamIds }
+      }
+    } else {
+      if (filters.id_emp) whereClause.id_emp = Number(filters.id_emp)
+    }
+  } else {
+    if (filters.id_emp) whereClause.id_emp = Number(filters.id_emp)
+  }
+
   if (filters.month_year) whereClause.month_year = filters.month_year
 
   return prisma.salaire.findMany({
@@ -96,11 +138,7 @@ export async function validatePayroll(salaireId: number, status: 'Validated' | '
 }
 
 export async function getPayslips(user: { id_emp: number; role: string }) {
-  const filters: any = {}
-  if (user.role !== 'Admin' && user.role !== 'Agent') {
-    filters.id_emp = user.id_emp
-  }
-  return getPayrollHistory(filters)
+  return getPayrollHistory({}, user)
 }
 
 export async function generatePayroll(data: {

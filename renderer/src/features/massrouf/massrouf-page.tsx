@@ -34,7 +34,7 @@ export function MassroufPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [amount, setAmount] = useState('')
-  const isManager = user?.role === 'Admin' || user?.role === 'Agent'
+  const isManager = user?.role === 'Admin'
 
   const { data: requests = [], isLoading } = useQuery<MassroufRequest[]>({
     queryKey: ['massrouf', 'list'],

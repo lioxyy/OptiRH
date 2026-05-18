@@ -20,9 +20,10 @@ export async function getEmployees(requestUser: RequestUser) {
 
     return prisma.employee.findMany({
       where: {
-        departments: {
-          some: { id_dept: { in: managedDeptIds } }
-        }
+        OR: [
+          { departments: { some: { id_dept: { in: managedDeptIds } } } },
+          { supervisor_id: requestUser.id_emp }
+        ]
       },
       include: { departments: true, supervisor: { select: { id_emp: true, name: true } } },
     })

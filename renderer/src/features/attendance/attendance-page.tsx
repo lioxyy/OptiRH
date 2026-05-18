@@ -60,10 +60,12 @@ export function AttendancePage() {
             <CalendarCheck2 className="h-3.5 w-3.5" />
             Attendance History
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-lg gap-2 text-xs font-medium px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Settings2 className="h-3.5 w-3.5" />
-            Attendance Settings
-          </TabsTrigger>
+          {user?.role === 'Admin' && (
+            <TabsTrigger value="settings" className="rounded-lg gap-2 text-xs font-medium px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Settings2 className="h-3.5 w-3.5" />
+              Attendance Settings
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="roster" className="mt-4 outline-none">
@@ -76,11 +78,13 @@ export function AttendancePage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="settings" className="mt-4 outline-none">
-          <div className="max-w-xl">
-            <OfficeSettings />
-          </div>
-        </TabsContent>
+        {user?.role === 'Admin' && (
+          <TabsContent value="settings" className="mt-4 outline-none">
+            <div className="max-w-xl">
+              <OfficeSettings />
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )
