@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import { useAuth } from '../../context/auth-context'
 import { Card } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
@@ -37,6 +38,7 @@ const STATUS_CONFIG = {
 }
 
 export function ContractsPage() {
+  const { user } = useAuth()
   const queryClient = useQueryClient()
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [employeeId, setEmployeeId] = useState('')
@@ -136,7 +138,7 @@ export function ContractsPage() {
     return c.status === statusFilter
   })
 
-  const columns: ColumnDef<Contract>[] = [
+  const baseColumns: ColumnDef<Contract>[] = [
     {
       id: "employee",
       accessorFn: (row) => row.employee?.name ?? '—',
@@ -184,33 +186,39 @@ export function ContractsPage() {
           </Badge>
         )
       }
-    },
-    {
-      id: "actions",
-      header: () => <div className="text-right">Actions</div>,
-      cell: ({ row }) => {
-        const c = row.original
-        return (
-          <div className="flex items-center justify-end">
-            {c.status === 'Active' ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs text-amber-500 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 gap-1"
-                disabled={archiveMutation.isPending}
-                onClick={() => archiveMutation.mutate(c.id_contract)}
-              >
-                <Archive className="h-3.5 w-3.5" />
-                Archive
-              </Button>
-            ) : (
-              <span className="text-xs text-muted-foreground/35 select-none">—</span>
-            )}
-          </div>
-        )
-      }
     }
   ]
+
+  const columns = user?.role === 'Admin'
+    ? [
+        ...baseColumns,
+        {
+          id: "actions",
+          header: () => <div className="text-right">Actions</div>,
+          cell: ({ row }: any) => {
+            const c = row.original
+            return (
+              <div className="flex items-center justify-end">
+                {c.status === 'Active' ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-amber-500 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 gap-1"
+                    disabled={archiveMutation.isPending}
+                    onClick={() => archiveMutation.mutate(c.id_contract)}
+                  >
+                    <Archive className="h-3.5 w-3.5" />
+                    Archive
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground/35 select-none">—</span>
+                )}
+              </div>
+            )
+          }
+        }
+      ]
+    : baseColumns
 
   return (
     <div className="space-y-6">
@@ -235,115 +243,117 @@ export function ContractsPage() {
             </SelectContent>
           </Select>
 
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button className="h-9 gap-1.5 text-xs px-4">
-                <Plus className="h-4 w-4" />
-                New Contract
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg border-none bg-background shadow-2xl rounded-xl">
-              <DialogHeader>
-                <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-muted-foreground" />
-                  Create New Contract
-                </DialogTitle>
-                <DialogDescription>
-                  Assign a base salary and formal employment term. Creating a new contract will automatically archive
-                  the employee's previous active agreement.
-                </DialogDescription>
-              </DialogHeader>
+          {user?.role === 'Admin' && (
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button className="h-9 gap-1.5 text-xs px-4">
+                  <Plus className="h-4 w-4" />
+                  New Contract
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg border-none bg-background shadow-2xl rounded-xl">
+                <DialogHeader>
+                  <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-muted-foreground" />
+                    Create New Contract
+                  </DialogTitle>
+                  <DialogDescription>
+                    Assign a base salary and formal employment term. Creating a new contract will automatically archive
+                    the employee's previous active agreement.
+                  </DialogDescription>
+                </DialogHeader>
 
-              <form onSubmit={handleSubmit} className="space-y-4 py-3">
-                {/* Select Employee */}
-                <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
-                  <label className="text-right">Employee</label>
-                  <Select value={employeeId} onValueChange={setEmployeeId}>
-                    <SelectTrigger className="col-span-3 h-9 text-xs rounded-lg">
-                      <SelectValue placeholder="Select Employee..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((emp) => (
-                        <SelectItem key={emp.id_emp} value={String(emp.id_emp)}>
-                          {emp.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-4 py-3">
+                  {/* Select Employee */}
+                  <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
+                    <label className="text-right">Employee</label>
+                    <Select value={employeeId} onValueChange={setEmployeeId}>
+                      <SelectTrigger className="col-span-3 h-9 text-xs rounded-lg">
+                        <SelectValue placeholder="Select Employee..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employees.map((emp) => (
+                          <SelectItem key={emp.id_emp} value={String(emp.id_emp)}>
+                            {emp.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Select Contract Type */}
-                <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
-                  <label className="text-right">Contract Type</label>
-                  <Select value={type} onValueChange={setType}>
-                    <SelectTrigger className="col-span-3 h-9 text-xs rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CDI">CDI (Permanent)</SelectItem>
-                      <SelectItem value="CDD">CDD (Fixed-Term)</SelectItem>
-                      <SelectItem value="Internship">Internship</SelectItem>
-                      <SelectItem value="Trial">Trial Period</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* Select Contract Type */}
+                  <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
+                    <label className="text-right">Contract Type</label>
+                    <Select value={type} onValueChange={setType}>
+                      <SelectTrigger className="col-span-3 h-9 text-xs rounded-lg">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CDI">CDI (Permanent)</SelectItem>
+                        <SelectItem value="CDD">CDD (Fixed-Term)</SelectItem>
+                        <SelectItem value="Internship">Internship</SelectItem>
+                        <SelectItem value="Trial">Trial Period</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Base Salary */}
-                <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
-                  <label className="text-right">Base Salary (DZD)</label>
-                  <Input
-                    type="number"
-                    placeholder="e.g. 75000"
-                    value={salary}
-                    onChange={(e) => setSalary(e.target.value)}
-                    className="col-span-3 rounded-lg h-9 text-xs font-mono font-bold"
-                    required
-                  />
-                </div>
+                  {/* Base Salary */}
+                  <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
+                    <label className="text-right">Base Salary (DZD)</label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 75000"
+                      value={salary}
+                      onChange={(e) => setSalary(e.target.value)}
+                      className="col-span-3 rounded-lg h-9 text-xs font-mono font-bold"
+                      required
+                    />
+                  </div>
 
-                {/* Start Date */}
-                <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
-                  <label className="text-right">Start Date</label>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="col-span-3 rounded-lg h-9 text-xs"
-                    required
-                  />
-                </div>
+                  {/* Start Date */}
+                  <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
+                    <label className="text-right">Start Date</label>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="col-span-3 rounded-lg h-9 text-xs"
+                      required
+                    />
+                  </div>
 
-                {/* End Date */}
-                <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
-                  <label className="text-right">End Date (CDD only)</label>
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="col-span-3 rounded-lg h-9 text-xs"
-                  />
-                </div>
+                  {/* End Date */}
+                  <div className="grid grid-cols-4 items-center gap-4 text-xs font-semibold text-muted-foreground">
+                    <label className="text-right">End Date (CDD only)</label>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="col-span-3 rounded-lg h-9 text-xs"
+                    />
+                  </div>
 
-                <DialogFooter className="pt-4">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="rounded-lg h-9 text-xs"
-                    onClick={() => setIsAddOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="h-9 text-xs px-4 shadow-sm"
-                    disabled={createMutation.isPending}
-                  >
-                    {createMutation.isPending ? 'Creating...' : 'Issue Contract'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter className="pt-4">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="rounded-lg h-9 text-xs"
+                      onClick={() => setIsAddOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="h-9 text-xs px-4 shadow-sm"
+                      disabled={createMutation.isPending}
+                    >
+                      {createMutation.isPending ? 'Creating...' : 'Issue Contract'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 

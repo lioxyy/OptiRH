@@ -648,26 +648,24 @@ export async function getAgentDashboard(actorId: number) {
   })
   const deptIds = agent?.departments.map(d => d.id_dept) || []
 
-  if (deptIds.length === 0) {
-    return {
-      team_size: 0,
-      pending_leaves: 0,
-      overdue_tasks: 0,
-      upcoming_interviews: 0,
-      interviews_list: [],
-      in_progress_tasks: 0,
-      team_absences_today: 0
-    }
-  }
-
   const teamSize = await prisma.employee.count({
-    where: { departments: { some: { id_dept: { in: deptIds } } } }
+    where: {
+      OR: [
+        { departments: { some: { id_dept: { in: deptIds } } } },
+        { supervisor_id: actorId }
+      ]
+    }
   })
 
   const pendingLeaves = await prisma.conge.count({
     where: {
       status: 'Pending',
-      employee: { departments: { some: { id_dept: { in: deptIds } } } }
+      employee: {
+        OR: [
+          { departments: { some: { id_dept: { in: deptIds } } } },
+          { supervisor_id: actorId }
+        ]
+      }
     }
   })
 
@@ -675,7 +673,12 @@ export async function getAgentDashboard(actorId: number) {
     where: {
       date_fin: { lt: new Date() },
       status: { not: 'Done' },
-      assignee: { departments: { some: { id_dept: { in: deptIds } } } }
+      assignee: {
+        OR: [
+          { departments: { some: { id_dept: { in: deptIds } } } },
+          { supervisor_id: actorId }
+        ]
+      }
     }
   })
 
@@ -707,7 +710,12 @@ export async function getAgentDashboard(actorId: number) {
   const inProgressTasks = await prisma.task.count({
     where: {
       status: 'In Progress',
-      assignee: { departments: { some: { id_dept: { in: deptIds } } } }
+      assignee: {
+        OR: [
+          { departments: { some: { id_dept: { in: deptIds } } } },
+          { supervisor_id: actorId }
+        ]
+      }
     }
   })
 
@@ -717,7 +725,12 @@ export async function getAgentDashboard(actorId: number) {
   const teamAbsences = await prisma.absence.count({
     where: {
       date_absence: { gte: startOfToday, lte: endOfToday },
-      employee: { departments: { some: { id_dept: { in: deptIds } } } }
+      employee: {
+        OR: [
+          { departments: { some: { id_dept: { in: deptIds } } } },
+          { supervisor_id: actorId }
+        ]
+      }
     }
   })
 
@@ -787,6 +800,13 @@ export async function getEmployeeDashboard(actorId: number) {
 
 
 export async function getUnifiedDashboard(actorId: number) {
+  const actor = await prisma.employee.findUnique({
+    where: { id_emp: actorId },
+    select: { role: true, departments: { select: { id_dept: true } } }
+  })
+  const role = actor?.role ?? 'Employee'
+  const deptIds = actor?.departments.map(d => d.id_dept) || []
+
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const endOfToday = new Date(today)
@@ -802,16 +822,36 @@ export async function getUnifiedDashboard(actorId: number) {
     pendingPayslips,
     presentPersonnel
   ] = await Promise.all([
-    prisma.entretien.count({ where: { status: 'Scheduled' } }),
+    prisma.entretien.count({
+      where: role === 'Agent' ? { status: 'Scheduled', id_agent: actorId } : { status: 'Scheduled' }
+    }),
     prisma.contract.count({
-      where: {
+      where: role === 'Agent' ? {
+        status: 'Active',
+        date_fin: { lte: thirtyDaysFromNow, gte: today },
+        employee: {
+          OR: [
+            { departments: { some: { id_dept: { in: deptIds } } } },
+            { supervisor_id: actorId }
+          ]
+        }
+      } : {
         status: 'Active',
         date_fin: { lte: thirtyDaysFromNow, gte: today }
       }
     }),
-    prisma.salaire.count({ where: { status: 'Generated' } }),
+    role === 'Agent' ? Promise.resolve(0) : prisma.salaire.count({ where: { status: 'Generated' } }),
     prisma.attendance.count({
-      where: {
+      where: role === 'Agent' ? {
+        date: { gte: today, lte: endOfToday },
+        status: 'Present',
+        employee: {
+          OR: [
+            { departments: { some: { id_dept: { in: deptIds } } } },
+            { supervisor_id: actorId }
+          ]
+        }
+      } : {
         date: { gte: today, lte: endOfToday },
         status: 'Present'
       }
@@ -827,7 +867,15 @@ export async function getUnifiedDashboard(actorId: number) {
   ] = await Promise.all([
     // Pending Leave Requests
     prisma.conge.findMany({
-      where: { status: 'Pending' },
+      where: role === 'Agent' ? {
+        status: 'Pending',
+        employee: {
+          OR: [
+            { departments: { some: { id_dept: { in: deptIds } } } },
+            { supervisor_id: actorId }
+          ]
+        }
+      } : { status: 'Pending' },
       include: {
         employee: { select: { name: true, role: true } },
         leave_type: { select: { name: true } }
@@ -836,12 +884,12 @@ export async function getUnifiedDashboard(actorId: number) {
     }),
 
     // Today's System Logs
-    prisma.auditLog.findMany({
+    role === 'Admin' ? prisma.auditLog.findMany({
       where: { timestamp: { gte: today } },
       include: { actor: { select: { name: true } } },
       orderBy: { timestamp: 'desc' },
       take: 10
-    }),
+    }) : Promise.resolve([]),
 
     // Today's scheduled formations
     prisma.formation.findMany({

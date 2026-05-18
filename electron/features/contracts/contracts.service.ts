@@ -2,10 +2,24 @@ import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
 import { writeAuditLog } from '../../lib/audit'
 
-export async function getContracts(filters: { id_emp?: number; status?: string } = {}) {
+export async function getContracts(user: any) {
   const whereClause: any = {}
-  if (filters.id_emp) whereClause.id_emp = Number(filters.id_emp)
-  if (filters.status) whereClause.status = filters.status
+
+  if (user.role === 'Employee') {
+    whereClause.id_emp = Number(user.id_emp)
+  } else if (user.role === 'Agent') {
+    const managedDepts = await prisma.department.findMany({
+      where: { manager_id: user.id_emp },
+      select: { id_dept: true }
+    })
+    const managedDeptIds = managedDepts.map(d => d.id_dept)
+
+    whereClause.OR = [
+      { id_emp: user.id_emp },
+      { employee: { supervisor_id: user.id_emp } },
+      { employee: { departments: { some: { id_dept: { in: managedDeptIds } } } } }
+    ]
+  }
 
   return prisma.contract.findMany({
     where: whereClause,

@@ -26,6 +26,7 @@ export async function getTasks(user: RequestUser) {
       where: {
         OR: [
           { assigned_by: user.id_emp },
+          { assignee: { supervisor_id: user.id_emp } },
           { assignee: { departments: { some: { id_dept: { in: managedDeptIds } } } } },
         ],
       },

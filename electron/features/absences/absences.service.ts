@@ -15,7 +15,7 @@ function ensureUploadsDir() {
 }
 
 // Fetch Absences with optional filters
-export async function getAbsences(filters: { id_emp?: number; justification_status?: string } = {}) {
+export async function getAbsences(filters: { id_emp?: number; justification_status?: string } = {}, requestUser?: any) {
   const whereClause: any = {}
   
   if (filters.id_emp) {
@@ -24,6 +24,20 @@ export async function getAbsences(filters: { id_emp?: number; justification_stat
   
   if (filters.justification_status) {
     whereClause.justification_status = filters.justification_status
+  }
+
+  if (requestUser && requestUser.role === 'Agent') {
+    const managedDepts = await prisma.department.findMany({
+      where: { manager_id: requestUser.id_emp },
+      select: { id_dept: true }
+    })
+    const managedDeptIds = managedDepts.map(d => d.id_dept)
+
+    whereClause.OR = [
+      { id_emp: requestUser.id_emp },
+      { employee: { supervisor_id: requestUser.id_emp } },
+      { employee: { departments: { some: { id_dept: { in: managedDeptIds } } } } }
+    ]
   }
 
   return prisma.absence.findMany({

@@ -33,7 +33,7 @@ const navGroups = [
     roles: ["Admin", "Agent", "Employee"],
     items: [
       { title: "Overview", url: "/dashboard" },
-      { title: "Audit Logs", url: "/dashboard/logs" },
+      { title: "Audit Logs", url: "/dashboard/logs", roles: ["Admin"] },
     ],
   },
   {
@@ -66,7 +66,7 @@ const navGroups = [
     icon: WalletIcon,
     roles: ["Admin", "Agent", "Employee"],
     items: [
-      { title: "Payroll Management", url: "/dashboard/payroll" },
+      { title: "Payroll Management", url: "/dashboard/payroll", roles: ["Admin"] },
       { title: "Massrouf (Advances)", url: "/dashboard/massrouf" },
       { title: "Salary Payslips", url: "/dashboard/payslips" },
       { title: "Contract Archive", url: "/dashboard/contracts" },
@@ -78,8 +78,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth()
   const role = (user?.role as Role) ?? "Employee"
 
-  // Filter groups based on role
-  const filteredGroups = navGroups.filter((group) => group.roles.includes(role))
+  // Filter groups and items based on role
+  const filteredGroups = navGroups
+    .filter((group) => group.roles.includes(role))
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !("roles" in item) || (item.roles as string[]).includes(role)
+      ),
+    }))
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>

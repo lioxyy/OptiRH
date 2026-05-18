@@ -80,6 +80,7 @@ export async function getEvaluations(user: RequestUser) {
     where: {
       OR: [
         { evaluator_id: user.id_emp },
+        { evaluatee_emp: { supervisor_id: user.id_emp } },
         { evaluatee_emp: { departments: { some: { id_dept: { in: managedDeptIds } } } } },
       ],
     },
@@ -166,9 +167,25 @@ export async function createEvaluationInternal(tx: any, data: CreateEvaluationDT
   return evaluation
 }
 
-export async function getDashboardStats() {
+export async function getDashboardStats(user?: any) {
+  const whereClause: any = { type_eval: 'Employee' }
+
+  if (user && user.role === 'Agent') {
+    const managedDepts = await prisma.department.findMany({
+      where: { manager_id: user.id_emp },
+      select: { id_dept: true }
+    })
+    const managedDeptIds = managedDepts.map(d => d.id_dept)
+
+    whereClause.OR = [
+      { evaluator_id: user.id_emp },
+      { evaluatee_emp: { supervisor_id: user.id_emp } },
+      { evaluatee_emp: { departments: { some: { id_dept: { in: managedDeptIds } } } } }
+    ]
+  }
+
   const evaluations = await prisma.evaluation.findMany({
-    where: { type_eval: 'Employee' },
+    where: whereClause,
     include: {
       evaluatee_emp: { include: { departments: true } },
       campaign: true,
@@ -194,7 +211,7 @@ export async function getDashboardStats() {
   }))
 
   const topPerformers = await prisma.evaluation.findMany({
-    where: { type_eval: 'Employee' },
+    where: whereClause,
     include: { evaluatee_emp: { select: { name: true } } },
     orderBy: { score: 'desc' },
     take: 5

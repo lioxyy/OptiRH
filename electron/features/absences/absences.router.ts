@@ -16,7 +16,7 @@ router.get('/', authenticate, authorize('Admin', 'Agent'), asyncHandler(async (r
   if (req.query.is_justified) filters.is_justified = req.query.is_justified === 'true'
   if (req.query.justification_status) filters.justification_status = String(req.query.justification_status)
 
-  const absences = await AbsencesService.getAbsences(filters)
+  const absences = await AbsencesService.getAbsences(filters, req.user)
   res.json(success(absences))
 }))
 

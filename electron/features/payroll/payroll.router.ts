@@ -20,11 +20,7 @@ router.use(authenticate)
 router.get('/history', asyncHandler(async (req, res) => {
   const filters: any = {}
   
-  if (req.user.role !== 'Admin' && req.user.role !== 'Agent') {
-    // Security Guard: Regular employees are strictly restricted to their own payroll sheets
-    filters.id_emp = req.user.id_emp
-  } else if (req.query.id_emp) {
-    // Admins/Agents can view other employees' records
+  if (req.query.id_emp && req.query.id_emp !== 'all') {
     filters.id_emp = Number(req.query.id_emp)
   }
   
@@ -32,7 +28,7 @@ router.get('/history', asyncHandler(async (req, res) => {
     filters.month_year = String(req.query.month_year)
   }
   
-  const payslips = await PayrollService.getPayrollHistory(filters)
+  const payslips = await PayrollService.getPayrollHistory(filters, req.user)
   res.json(success(payslips))
 }))
 

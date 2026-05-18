@@ -99,7 +99,18 @@ export async function getLeaveBalance(employeeId: number, year: number) {
 
 export async function getLeaves(user: { id_emp: number; role: string }) {
   const filters: any = {}
-  if (user.role !== 'Admin' && user.role !== 'Agent') {
+  if (user.role === 'Agent') {
+    const managedDepts = await prisma.department.findMany({
+      where: { manager_id: user.id_emp },
+      select: { id_dept: true }
+    })
+    const managedDeptIds = managedDepts.map(d => d.id_dept)
+    filters.OR = [
+      { id_emp: user.id_emp },
+      { employee: { supervisor_id: user.id_emp } },
+      { employee: { departments: { some: { id_dept: { in: managedDeptIds } } } } }
+    ]
+  } else if (user.role !== 'Admin') {
     filters.id_emp = user.id_emp
   }
   return getLeaveRequests(filters)

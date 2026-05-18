@@ -15,8 +15,8 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
   res.json(success(settings))
 }))
 
-// Upsert a system setting (Admin or Agent)
-router.post('/', authenticate, authorize('Admin', 'Agent'), validate('body', UpdateSettingSchema), asyncHandler(async (req, res) => {
+// Upsert a system setting (Admin only)
+router.post('/', authenticate, authorize('Admin'), validate('body', UpdateSettingSchema), asyncHandler(async (req, res) => {
   const { key, value } = req.body
   const setting = await SettingsService.updateSetting(key, value)
   res.json(success(setting))

@@ -23,7 +23,7 @@ router.use(authenticate)
 
 // --- DASHBOARD ---
 router.get('/dashboard', authorize('Admin', 'Agent'), asyncHandler(async (req, res) => {
-  const stats = await EvaluationService.getDashboardStats()
+  const stats = await EvaluationService.getDashboardStats(req.user)
   res.json(success(stats))
 }))
 
