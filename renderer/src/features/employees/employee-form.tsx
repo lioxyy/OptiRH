@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '../../components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import { User, KeyRound, ArrowRight } from 'lucide-react'
+import { User, KeyRound, ArrowRight, Briefcase } from 'lucide-react'
 
 const FormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -36,15 +36,10 @@ const FormSchema = z.object({
   date_employment: z.string().min(1, 'Date of employment is required'),
   address: z.string().optional(),
   role: z.enum(['Admin', 'Agent', 'Employee']),
-  id_dept: z.coerce.number({ invalid_type_error: 'Department is required' }),
-  supervisor_id: z.coerce.number().optional(),
+  id_depts: z.array(z.number()).min(1, 'At least one department is required'),
   password: z.string().optional(),
   confirm_password: z.string().optional(),
 }).superRefine((data, ctx) => {
-  // Password validation logic:
-  // If editing: password can be empty.
-  // If creating: password is required (checked in onSubmit, but good to add hint here or use a flag)
-
   if (data.password) {
     if (data.password.length < 8) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least 8 characters", path: ["password"] })
@@ -64,7 +59,6 @@ const FormSchema = z.object({
   const employmentDate = new Date(data.date_employment)
   const today = new Date()
 
-  // 1. Employee must be at least 18
   const age = today.getFullYear() - birthDate.getFullYear()
   const m = today.getMonth() - birthDate.getMonth()
   const is18 = age > 18 || (age === 18 && (m > 0 || (m === 0 && today.getDate() >= birthDate.getDate())))
@@ -77,7 +71,6 @@ const FormSchema = z.object({
     })
   }
 
-  // 2. Date of employment <= today's date
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
   const empDateStart = new Date(employmentDate)
@@ -91,7 +84,6 @@ const FormSchema = z.object({
     })
   }
 
-  // 3. Employee can't have a date of employment where his age is < 18
   const ageAtEmp = employmentDate.getFullYear() - birthDate.getFullYear()
   const mAtEmp = employmentDate.getMonth() - birthDate.getMonth()
   const is18AtEmp = ageAtEmp > 18 || (ageAtEmp === 18 && (mAtEmp > 0 || (mAtEmp === 0 && employmentDate.getDate() >= birthDate.getDate())))
@@ -110,12 +102,14 @@ type FormData = z.infer<typeof FormSchema>
 interface Department {
   id_dept: number
   name: string
+  manager_id: number | null
 }
 
 interface Employee {
   id_emp: number
   name: string
   role: string
+  departments?: { id_dept: number }[]
 }
 
 export function EmployeeForm({
@@ -132,7 +126,7 @@ export function EmployeeForm({
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: async () => {
-      const res = await api.get('/api/employees/departments')
+      const res = await api.get('/api/departments')
       return res.data.data
     },
   })
@@ -152,22 +146,38 @@ export function EmployeeForm({
         ...initialData,
         date_birth: initialData.date_birth?.split('T')[0],
         date_employment: initialData.date_employment?.split('T')[0],
+        id_depts: initialData.departments?.map((d: any) => d.id_dept) || [],
         password: '',
         confirm_password: '',
       }
-      : { role: 'Employee', password: '', confirm_password: '' },
+      : { role: 'Employee', id_depts: [], password: '', confirm_password: '' },
   })
 
   async function onSubmit(data: FormData) {
     setSubmitting(true)
     try {
+      if (data.role === 'Agent') {
+        const deptWithAgent = departments.find(d => 
+          data.id_depts.includes(d.id_dept) && 
+          allEmployees.some(emp => 
+            emp.role === 'Agent' && 
+            emp.departments?.some((ed: any) => ed.id_dept === d.id_dept) &&
+            emp.id_emp !== initialData?.id_emp
+          )
+        )
+        if (deptWithAgent) {
+          toast.error(`Department "${deptWithAgent.name}" already has an agent assigned`)
+          setSubmitting(false)
+          return
+        }
+      }
+
       const payload: any = {
         ...data,
         date_birth: new Date(data.date_birth).toISOString(),
         date_employment: new Date(data.date_employment).toISOString(),
       }
 
-      // Remove password/confirm_password as they are handled specially
       delete payload.confirm_password
       if (initialData && !data.password) {
         delete payload.password
@@ -186,18 +196,30 @@ export function EmployeeForm({
       }
 
       queryClient.invalidateQueries({ queryKey: ['employees'] })
+      queryClient.invalidateQueries({ queryKey: ['departments'] })
       queryClient.invalidateQueries({ queryKey: ['employee', initialData?.id_emp?.toString()] })
       onSuccess?.()
-    } catch {
-      toast.error(initialData ? 'Failed to update employee' : 'Failed to create employee')
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || (initialData ? 'Failed to update employee' : 'Failed to create employee')
+      toast.error(errMsg)
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleContinue = async () => {
+  const handleContinueToJob = async () => {
     const fieldsToValidate: (keyof FormData)[] = [
-      'name', 'gender', 'date_birth', 'date_employment', 'role', 'id_dept'
+      'name', 'gender', 'date_birth', 'date_employment'
+    ]
+    const isValid = await form.trigger(fieldsToValidate)
+    if (isValid) {
+      setActiveTab('job')
+    }
+  }
+
+  const handleContinueToAccount = async () => {
+    const fieldsToValidate: (keyof FormData)[] = [
+      'role', 'id_depts'
     ]
     const isValid = await form.trigger(fieldsToValidate)
     if (isValid) {
@@ -209,12 +231,15 @@ export function EmployeeForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="personal">
-              <User className="mr-2 h-4 w-4" /> Personal Details
+              <User className="mr-2 h-4 w-4" /> Personal
+            </TabsTrigger>
+            <TabsTrigger value="job">
+              <Briefcase className="mr-2 h-4 w-4" /> Job Details
             </TabsTrigger>
             <TabsTrigger value="account">
-              <KeyRound className="mr-2 h-4 w-4" /> Account Credentials
+              <KeyRound className="mr-2 h-4 w-4" /> Credentials
             </TabsTrigger>
           </TabsList>
 
@@ -311,7 +336,9 @@ export function EmployeeForm({
                 </FormItem>
               )}
             />
+          </TabsContent>
 
+          <TabsContent value="job" className="space-y-4 pt-4">
             <FormField
               control={form.control}
               name="role"
@@ -335,58 +362,76 @@ export function EmployeeForm({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="id_dept"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Department</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select dept" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {departments.map((d) => (
-                          <SelectItem key={d.id_dept} value={d.id_dept.toString()}>
-                            {d.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="supervisor_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Supervisor</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="None" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {allEmployees
-                          .filter((e) => e.role === 'Admin' || e.role === 'Agent')
-                          .map((e) => (
-                            <SelectItem key={e.id_emp} value={e.id_emp.toString()}>
-                              {e.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="id_depts"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold">Assigned Departments</FormLabel>
+                  <FormControl>
+                    <div className="grid grid-cols-2 gap-3 mt-1.5 border rounded-lg p-4 bg-muted/20 border-border">
+                      {departments.map((d) => {
+                        const checked = field.value?.includes(d.id_dept)
+                        return (
+                          <label
+                            key={d.id_dept}
+                            className={`flex items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/40 cursor-pointer transition-all duration-150 ${
+                              checked
+                                ? "border-primary bg-primary/5 text-primary font-medium"
+                                : "border-muted text-muted-foreground"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
+                              onChange={(e) => {
+                                const val = field.value || []
+                                if (e.target.checked) {
+                                  field.onChange([...val, d.id_dept])
+                                } else {
+                                  field.onChange(val.filter((id) => id !== d.id_dept))
+                                }
+                              }}
+                            />
+                            <span className="text-sm">{d.name}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {form.watch('role') === 'Agent' && initialData && (
+              <div className="space-y-2 border rounded-md p-4 bg-muted/40 border-border">
+                <label className="text-xs font-semibold uppercase text-muted-foreground block">
+                  Managed Departments
+                </label>
+                <div className="flex flex-wrap gap-2 mt-1.5">
+                  {(() => {
+                    const managed = departments.filter((d: any) => d.manager_id === initialData?.id_emp)
+                    if (managed.length > 0) {
+                      return managed.map((d: any) => (
+                        <span
+                          key={d.id_dept}
+                          className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary"
+                        >
+                          {d.name}
+                        </span>
+                      ))
+                    }
+                    return (
+                      <span className="text-xs text-muted-foreground italic">
+                        None (No departments currently managed by this agent)
+                      </span>
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="account" className="space-y-4 pt-4">
@@ -438,13 +483,19 @@ export function EmployeeForm({
           </TabsContent>
         </Tabs>
 
-        {activeTab === 'personal' ? (
-          <Button type="button" onClick={handleContinue} className="w-full">
-            Continue <ArrowRight className="ml-2 h-4 w-4" />
+        {activeTab === 'personal' && (
+          <Button type="button" onClick={handleContinueToJob} className="w-full">
+            Continue to Job Details <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
-        ) : (
+        )}
+        {activeTab === 'job' && (
+          <Button type="button" onClick={handleContinueToAccount} className="w-full">
+            Continue to Credentials <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+        {activeTab === 'account' && (
           <Button type="submit" disabled={submitting} className="w-full">
-            {submitting ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? (initialData ? 'Update Employee' : 'Create Employee') : 'Create Employee')}
+            {submitting ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Employee' : 'Create Employee')}
           </Button>
         )}
       </form>

@@ -19,9 +19,19 @@ export async function getLeaves(user: RequestUser) {
   }
 
   if (user.role === 'Agent') {
+    const managedDepts = await prisma.department.findMany({
+      where: { manager_id: user.id_emp },
+      select: { id_dept: true }
+    })
+    const managedDeptIds = managedDepts.map(d => d.id_dept)
+
     return prisma.conge.findMany({
       where: {
-        employee: { id_dept: user.id_dept }
+        employee: {
+          departments: {
+            some: { id_dept: { in: managedDeptIds } }
+          }
+        }
       },
       include: { leave_type: true, employee: true, approver: true },
       orderBy: { date_deb: 'desc' },

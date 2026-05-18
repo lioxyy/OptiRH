@@ -9,8 +9,7 @@ interface OrgNode {
   name: string
   role: string
   supervisor_id: number | null
-  id_dept: number
-  department?: { name: string }
+  departments?: { name: string }[]
   children: OrgNode[]
 }
 
@@ -43,9 +42,9 @@ function TreeNode({ node, depth = 0 }: { node: OrgNode; depth?: number }) {
         <Badge className={`text-[10px] px-1.5 py-0 h-4 ${roleColor[node.role] || ''}`} variant="outline">
           {node.role}
         </Badge>
-        {node.department && (
+        {node.departments && node.departments.length > 0 && (
           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/80 px-2 py-0.5 rounded-sm border border-muted-foreground/10">
-            {node.department.name}
+            {node.departments.map(d => d.name).join(', ')}
           </span>
         )}
       </div>

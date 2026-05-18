@@ -34,8 +34,7 @@ interface Employee {
   name: string
   email: string
   role: string
-  id_dept: number
-  department: { name: string }
+  departments?: { name: string }[]
   supervisor?: { name: string } | null
 }
 
@@ -99,7 +98,7 @@ export function EmployeesPage() {
     },
     {
       id: "department",
-      accessorFn: (row) => row.department?.name ?? 'General',
+      accessorFn: (row) => row.departments?.map(d => d.name).join(', ') || '—',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Department" />,
     },
     {
