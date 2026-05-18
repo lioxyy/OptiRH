@@ -132,7 +132,7 @@ export function EmployeeForm({
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: async () => {
-      const res = await api.get('/api/employees/departments')
+      const res = await api.get('/api/departments')
       return res.data.data
     },
   })

@@ -19,7 +19,7 @@ export function CandidateForm({ onClose }: CandidateFormProps) {
   const { data: departments = [] } = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
-      const res = await api.get('/api/employees/departments')
+      const res = await api.get('/api/departments')
       return res.data.data
     }
   })
