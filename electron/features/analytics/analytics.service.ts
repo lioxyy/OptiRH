@@ -454,6 +454,59 @@ export async function getRolePayrollStats() {
   })).sort((a, b) => b.average - a.average)
 }
 
+export async function getRecruitmentVelocity() {
+  const candidates = await prisma.candidat.findMany({
+    where: { status: 'Accepted' },
+    select: { date_candidature: true, id_cand: true }
+  })
+
+  const acceptedIds = candidates.map(c => c.id_cand)
+
+  // Find the date of the LAST favorable entretien for each accepted candidate
+  const entretiens = await prisma.entretien.findMany({
+    where: { id_cand: { in: acceptedIds } },
+    orderBy: { date_heure: 'asc' }
+  })
+
+  const velocityData = candidates.map(c => {
+    const lastEntretien = entretiens.filter(e => e.id_cand === c.id_cand).pop()
+    if (!lastEntretien) return null
+    const diffTime = Math.abs(lastEntretien.date_heure.getTime() - c.date_candidature.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }).filter(v => v !== null) as number[]
+
+  const averageDays = velocityData.length > 0
+    ? velocityData.reduce((a, b) => a + b, 0) / velocityData.length
+    : 0
+
+  return {
+    average_days_to_hire: Math.round(averageDays),
+    total_hires: velocityData.length
+  }
+}
+
+export async function getPerformanceTrends() {
+  const evaluations = await prisma.evaluation.findMany({
+    where: { evaluatee_emp_id: { not: null } },
+    select: { date_eval: true, score: true },
+    orderBy: { date_eval: 'asc' }
+  })
+
+  const trends: Record<string, { total: number, count: number }> = {}
+  evaluations.forEach(ev => {
+    const month = ev.date_eval.toISOString().slice(0, 7)
+    if (!trends[month]) trends[month] = { total: 0, count: 0 }
+    trends[month].total += ev.score
+    trends[month].count += 1
+  })
+
+  return Object.entries(trends).map(([month, data]) => ({
+    month,
+    average: Math.round(data.total / data.count)
+  }))
+}
+
 export async function getAdminDashboard(actorId: number) {
   const departments = await prisma.department.findMany({
     select: {

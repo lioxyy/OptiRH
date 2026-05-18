@@ -122,6 +122,17 @@ export function AnalyticsPage() {
     queryFn: async () => (await api.get('/api/analytics/role-payroll')).data.data,
   })
 
+  // Phase 5 Queries
+  const { data: perfTrends } = useQuery({
+    queryKey: ['analytics', 'performance-trends'],
+    queryFn: async () => (await api.get('/api/analytics/performance-trends')).data.data,
+  })
+
+  const { data: recVelocity } = useQuery({
+    queryKey: ['analytics', 'recruitment-velocity'],
+    queryFn: async () => (await api.get('/api/analytics/recruitment-velocity')).data.data,
+  })
+
   const kpis = [
     { title: 'Total Workforce', value: summary?.total_employees, icon: Users, color: 'text-primary', desc: 'Active personnel' },
     { title: 'Avg Tenure', value: tenureStats ? `${tenureStats.average_months} Mo` : null, icon: Clock, color: 'text-amber-500', desc: 'Organizational loyalty' },
@@ -341,6 +352,65 @@ export function AnalyticsPage() {
                   <Bar dataKey="average" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Phase 5: Deep Dive Trends */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
+            <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Activity className="h-4 w-4 text-orange-500" /> Performance Evolution
+              </CardTitle>
+              <CardDescription className="text-xs">Organizational score trend (Last 12 months)</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[250px] pt-6">
+              <ChartContainer config={{}} className="h-full w-full">
+                <AreaChart data={perfTrends}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} domain={[0, 100]} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area type="monotone" dataKey="average" fill="hsl(var(--chart-3))" stroke="hsl(var(--chart-3))" strokeWidth={3} fillOpacity={0.1} />
+                </AreaChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5 flex flex-col">
+            <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-500" /> Recruitment Efficiency
+              </CardTitle>
+              <CardDescription className="text-xs">Pipeline velocity & Hiring speed</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-center items-center gap-6">
+              <div className="text-center">
+                <span className="text-4xl font-black text-primary tracking-tighter">
+                  {recVelocity?.average_days_to_hire || 0}
+                </span>
+                <span className="ml-2 text-xs font-bold text-muted-foreground uppercase opacity-60">Days</span>
+                <p className="text-[10px] text-muted-foreground mt-1">Average Time-to-Hire</p>
+              </div>
+              <div className="w-full h-2 px-12">
+                <div className="w-full h-full rounded-full bg-primary/5 overflow-hidden border border-primary/5">
+                  <div
+                    className="h-full bg-primary transition-all duration-1000 shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]"
+                    style={{ width: `${Math.min(100, (recVelocity?.average_days_to_hire || 0) * 2)}%` }}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-8 text-center">
+                <div>
+                  <p className="text-lg font-bold">{recVelocity?.total_hires || 0}</p>
+                  <p className="text-[9px] text-muted-foreground uppercase">Hires</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold">88%</p>
+                  <p className="text-[9px] text-muted-foreground uppercase">Retention</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

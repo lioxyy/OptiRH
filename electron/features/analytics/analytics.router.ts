@@ -95,6 +95,16 @@ router.get('/role-payroll', asyncHandler(async (_req, res) => {
   res.json(success(data))
 }))
 
+router.get('/recruitment-velocity', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getRecruitmentVelocity()
+  res.json(success(data))
+}))
+
+router.get('/performance-trends', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getPerformanceTrends()
+  res.json(success(data))
+}))
+
 router.get('/dashboard/admin', authorize('Admin'), asyncHandler(async (req, res) => {
   const data = await AnalyticsService.getAdminDashboard(req.user.id_emp)
   res.json(success(data))
