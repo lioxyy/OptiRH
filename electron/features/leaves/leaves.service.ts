@@ -32,12 +32,16 @@ export async function updateLeaveStatus(id: number, status: string, actorId: num
   })
   if (!conge) throw new AppError('LEAVE_NOT_FOUND', 404, 'Leave request not found')
 
+  if (actorId === conge.id_emp) {
+    throw new AppError('SELF_APPROVAL_NOT_ALLOWED', 403, 'Employees cannot approve or reject their own leave requests')
+  }
+
   const start = new Date(conge.date_deb)
   const end = new Date(conge.date_fin)
   const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
   const year = start.getFullYear()
   const startStr = start.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  const endStr   = end.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  const endStr = end.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   const typeName = conge.leave_type?.name ?? 'leave'
 
   if (status === 'Approved' && conge.status !== 'Approved') {
@@ -139,7 +143,7 @@ export async function createLeaveRequest(data: { id_type: number; date_deb: stri
     })
 
     const startStr = start.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    const endStr   = end.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    const endStr = end.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 
     const hrStaff = await tx.employee.findMany({ where: { role: { in: ['Admin', 'Agent'] } } })
     for (const hr of hrStaff) {

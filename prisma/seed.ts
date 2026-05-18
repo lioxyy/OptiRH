@@ -3,6 +3,30 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
+  console.log('Cleaning up existing data...')
+  await prisma.participationFormation.deleteMany()
+  await prisma.evaluationScore.deleteMany()
+  await prisma.evaluationCriteria.deleteMany()
+  await prisma.evaluation.deleteMany()
+  await prisma.congeBalance.deleteMany()
+  await prisma.conge.deleteMany()
+  await prisma.absence.deleteMany()
+  await prisma.salaire.deleteMany()
+  await prisma.attendance.deleteMany()
+  await prisma.massrouf.deleteMany()
+  await prisma.auditLog.deleteMany()
+  await prisma.notification.deleteMany()
+  await prisma.task.deleteMany()
+  await prisma.formation.deleteMany()
+  await prisma.contract.deleteMany()
+  await prisma.candidat.deleteMany()
+
+  // Set manager_id to null first to avoid circular dependency on delete
+  await prisma.department.updateMany({ data: { manager_id: null } })
+  await prisma.employee.deleteMany()
+  await prisma.department.deleteMany()
+  await prisma.leaveType.deleteMany()
+
   console.log('Seeding data...')
 
   // 1. Departments

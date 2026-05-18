@@ -118,7 +118,17 @@ export async function generatePayroll(data: {
   const totalMassroufDeductions = monthlyMassroufs.reduce((sum: number, item: any) => sum + item.amount, 0)
 
   const absenceDeductions = unjustifiedAbsencesCount * (baseSalary / 30)
-  const amountFinal = Math.max(0, baseSalary - absenceDeductions - totalMassroufDeductions + data.bonus_amount)
+
+  // Proration for mid-month hires
+  let adjustedSalary = baseSalary
+  const hireDate = new Date(contract.date_deb)
+  if (hireDate > startDate && hireDate <= endDate) {
+    const daysInMonth = endDate.getDate()
+    const daysWorked = daysInMonth - hireDate.getDate() + 1
+    adjustedSalary = (baseSalary / daysInMonth) * daysWorked
+  }
+
+  const amountFinal = Math.max(0, adjustedSalary - absenceDeductions - totalMassroufDeductions + data.bonus_amount)
 
   return prisma.$transaction(async (tx) => {
     const payslip = await tx.salaire.upsert({
