@@ -14,11 +14,5 @@ call npx prisma migrate dev --name init --skip-seed --skip-generate
 call npx prisma generate
 call npx prisma db seed
 
-echo 🎨 Installing renderer dependencies...
-call npm install --workspace=renderer
-
-echo ⚡ Installing electron dependencies...
-call npm install --workspace=electron
-
 echo ✅ Installation complete! Run run.bat to start the app.
 pause
