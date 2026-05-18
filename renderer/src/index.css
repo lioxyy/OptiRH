@@ -117,11 +117,11 @@
 
 @layer base {
   [data-slot="card"] {
-    @apply shadow-xs bg-gradient-to-t from-primary/5 to-card;
+    @apply shadow-xs bg-card;
   }
 
   .dark [data-slot="card"] {
-    @apply bg-gradient-to-t from-primary/5 to-card;
+    @apply bg-card;
   }
 
   * {

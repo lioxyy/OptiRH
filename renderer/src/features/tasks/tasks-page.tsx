@@ -106,8 +106,8 @@ function TaskCard({ task, isOverlay = false }: { task: Task; isOverlay?: boolean
       {...attributes}
       {...listeners}
       className={cn(
-        "group relative p-4 bg-[#18181b] border-none hover:bg-[#222226] transition-all cursor-grab active:cursor-grabbing rounded-2xl shadow-sm mb-3",
-        isOverlay && "cursor-grabbing shadow-2xl scale-105 ring-2 ring-primary/20 bg-[#1e1e21]"
+        "group relative p-4 bg-muted/40 dark:bg-[#18181b] border-none hover:bg-muted/60 dark:hover:bg-[#222226] transition-all cursor-grab active:cursor-grabbing rounded-2xl shadow-sm mb-3",
+        isOverlay && "cursor-grabbing shadow-2xl scale-105 ring-2 ring-primary/20 bg-muted/80 dark:bg-[#1e1e21]"
       )}
     >
       <div className="space-y-3">
