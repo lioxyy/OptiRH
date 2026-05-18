@@ -225,7 +225,7 @@ export function LogsPage() {
               extraActions={
                 <div className="flex items-center gap-2 no-print mr-2">
                   <Select value={targetModel} onValueChange={(v) => { setTargetModel(v); setPage(1); }}>
-                    <SelectTrigger className="w-40 h-9 text-xs rounded-lg border-0 bg-muted/10 shadow-none">
+                    <SelectTrigger className="w-40 h-9 text-xs rounded-lg border-0 bg-muted/20 shadow-none text-muted-foreground font-medium">
                       <SelectValue placeholder="All Models" />
                     </SelectTrigger>
                     <SelectContent>
