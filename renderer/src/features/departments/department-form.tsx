@@ -65,9 +65,9 @@ export function DepartmentForm({
   })
 
 
-  // Filter for potential managers (Agent role only)
+  // Filter for potential managers (Agent and Admin roles)
   const potentialManagers = employees.filter(
-    (e) => e.role === 'Agent'
+    (e) => e.role === 'Agent' || e.role === 'Admin'
   )
 
   const filteredEmployees = employees.filter((emp) =>

@@ -96,8 +96,8 @@ export async function createDepartment(data: CreateDepartmentDTO & { employee_id
         where: { id_emp: finalManagerId },
         select: { role: true }
       })
-      if (!managerEmp || managerEmp.role !== 'Agent') {
-        throw new AppError('VALIDATION_ERROR', 400, 'Only agents can be department managers')
+      if (!managerEmp || (managerEmp.role !== 'Agent' && managerEmp.role !== 'Admin')) {
+        throw new AppError('VALIDATION_ERROR', 400, 'Only agents and admins can be department managers')
       }
 
       await tx.department.updateMany({
@@ -209,8 +209,8 @@ export async function updateDepartment(id: number, data: UpdateDepartmentDTO & {
         where: { id_emp: finalManagerId },
         select: { role: true }
       })
-      if (!managerEmp || managerEmp.role !== 'Agent') {
-        throw new AppError('VALIDATION_ERROR', 400, 'Only agents can be department managers')
+      if (!managerEmp || (managerEmp.role !== 'Agent' && managerEmp.role !== 'Admin')) {
+        throw new AppError('VALIDATION_ERROR', 400, 'Only agents and admins can be department managers')
       }
 
       await tx.department.updateMany({

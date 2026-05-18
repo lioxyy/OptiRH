@@ -49,8 +49,19 @@ export async function createEmployee(data: CreateEmployeeDTO, actorId: number) {
       }
     }
 
+    // Fetch default supervisor based on chosen department manager
+    const dept = await tx.department.findUnique({
+      where: { id_dept: rest.id_dept },
+      select: { manager_id: true }
+    })
+    const finalSupervisorId = rest.supervisor_id || dept?.manager_id || null
+
     const employee = await tx.employee.create({
-      data: { ...rest, password_hash },
+      data: {
+        ...rest,
+        supervisor_id: finalSupervisorId,
+        password_hash
+      },
     })
 
     if (employee.role === 'Agent') {
@@ -99,9 +110,22 @@ export async function updateEmployee(id: number, data: UpdateEmployeeDTO, reques
       }
     }
 
+    // Auto-update supervisor if department was updated and supervisor was not explicitly changed
+    let computedSupervisorId: number | null | undefined = updateData.supervisor_id
+    if (updateData.id_dept !== undefined && updateData.supervisor_id === undefined) {
+      const dept = await tx.department.findUnique({
+        where: { id_dept: updateData.id_dept },
+        select: { manager_id: true }
+      })
+      computedSupervisorId = dept?.manager_id ?? null
+    }
+
     const updated = await tx.employee.update({
       where: { id_emp: id },
-      data: updateData,
+      data: {
+        ...updateData,
+        supervisor_id: computedSupervisorId
+      },
     })
 
     if (updated.role === 'Agent') {

@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '../../components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import { User, KeyRound, ArrowRight } from 'lucide-react'
+import { User, KeyRound, ArrowRight, Briefcase } from 'lucide-react'
 
 const FormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -211,9 +211,19 @@ export function EmployeeForm({
     }
   }
 
-  const handleContinue = async () => {
+  const handleContinueToJob = async () => {
     const fieldsToValidate: (keyof FormData)[] = [
-      'name', 'gender', 'date_birth', 'date_employment', 'role', 'id_dept'
+      'name', 'gender', 'date_birth', 'date_employment'
+    ]
+    const isValid = await form.trigger(fieldsToValidate)
+    if (isValid) {
+      setActiveTab('job')
+    }
+  }
+
+  const handleContinueToAccount = async () => {
+    const fieldsToValidate: (keyof FormData)[] = [
+      'role', 'id_dept', 'supervisor_id'
     ]
     const isValid = await form.trigger(fieldsToValidate)
     if (isValid) {
@@ -225,12 +235,15 @@ export function EmployeeForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="personal">
-              <User className="mr-2 h-4 w-4" /> Personal Details
+              <User className="mr-2 h-4 w-4" /> Personal
+            </TabsTrigger>
+            <TabsTrigger value="job">
+              <Briefcase className="mr-2 h-4 w-4" /> Job Details
             </TabsTrigger>
             <TabsTrigger value="account">
-              <KeyRound className="mr-2 h-4 w-4" /> Account Credentials
+              <KeyRound className="mr-2 h-4 w-4" /> Credentials
             </TabsTrigger>
           </TabsList>
 
@@ -327,7 +340,9 @@ export function EmployeeForm({
                 </FormItem>
               )}
             />
+          </TabsContent>
 
+          <TabsContent value="job" className="space-y-4 pt-4">
             <FormField
               control={form.control}
               name="role"
@@ -403,6 +418,34 @@ export function EmployeeForm({
                 )}
               />
             </div>
+
+            {form.watch('role') === 'Agent' && initialData && (
+              <div className="space-y-2 border rounded-md p-4 bg-muted/40 border-border">
+                <label className="text-xs font-semibold uppercase text-muted-foreground block">
+                  Managed Departments
+                </label>
+                <div className="flex flex-wrap gap-2 mt-1.5">
+                  {(() => {
+                    const managed = departments.filter((d: any) => d.manager_id === initialData?.id_emp)
+                    if (managed.length > 0) {
+                      return managed.map((d: any) => (
+                        <span
+                          key={d.id_dept}
+                          className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary"
+                        >
+                          {d.name}
+                        </span>
+                      ))
+                    }
+                    return (
+                      <span className="text-xs text-muted-foreground italic">
+                        None (No departments currently managed by this agent)
+                      </span>
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="account" className="space-y-4 pt-4">
@@ -454,13 +497,19 @@ export function EmployeeForm({
           </TabsContent>
         </Tabs>
 
-        {activeTab === 'personal' ? (
-          <Button type="button" onClick={handleContinue} className="w-full">
-            Continue <ArrowRight className="ml-2 h-4 w-4" />
+        {activeTab === 'personal' && (
+          <Button type="button" onClick={handleContinueToJob} className="w-full">
+            Continue to Job Details <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
-        ) : (
+        )}
+        {activeTab === 'job' && (
+          <Button type="button" onClick={handleContinueToAccount} className="w-full">
+            Continue to Credentials <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+        {activeTab === 'account' && (
           <Button type="submit" disabled={submitting} className="w-full">
-            {submitting ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? (initialData ? 'Update Employee' : 'Create Employee') : 'Create Employee')}
+            {submitting ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Employee' : 'Create Employee')}
           </Button>
         )}
       </form>
