@@ -74,27 +74,29 @@ export function OfficeSettings() {
   }
 
   return (
-    <Card className="border-border/40 bg-card/30 backdrop-blur-xl shadow-md relative overflow-hidden transition-all duration-300 hover:shadow-lg">
-      <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-
-      <CardHeader>
-        <CardTitle className="text-xl font-bold flex items-center gap-2">
-          <Settings className="h-5 w-5 text-indigo-400 animate-spin-slow" />
-          Attendance & Chrono Configurations
-        </CardTitle>
-        <CardDescription>Configure global parameters governing pointage and lateness detection.</CardDescription>
+    <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg overflow-hidden transition-all duration-300 hover:border-primary/10">
+      <CardHeader className="pb-6">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 bg-muted/50 rounded-xl flex items-center justify-center border border-border/10">
+            <Settings className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div>
+            <CardTitle className="text-xl font-bold tracking-tight">System Parameters</CardTitle>
+            <CardDescription className="text-xs">Configure global parameters governing pointage and lateness detection.</CardDescription>
+          </div>
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
         {/* Lateness Threshold Parameter */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-muted-foreground" />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-xl border border-border/10 bg-muted/5">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground/60" />
                 Office Start Time
               </label>
-              <span className="text-xs text-muted-foreground block">
+              <span className="text-[10px] text-muted-foreground block max-w-[300px]">
                 Any clock-in recorded past this threshold will be flagged as Late.
               </span>
             </div>
@@ -102,29 +104,29 @@ export function OfficeSettings() {
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="h-9 w-28 text-xs font-mono rounded-lg border-border/60 focus-visible:ring-indigo-500"
+              className="h-10 w-32 text-sm font-mono rounded-lg border-border/20 bg-background focus-visible:ring-primary/20"
             />
           </div>
         </div>
 
         {/* Informative Tip Banner */}
-        <div className="flex gap-2.5 p-3.5 rounded-xl border border-indigo-500/10 bg-indigo-500/5 text-xs text-muted-foreground leading-normal">
-          <Lightbulb className="h-5 w-5 text-indigo-400 shrink-0" />
+        <div className="flex gap-3 p-4 rounded-xl border border-border/10 bg-muted/10 text-[11px] text-muted-foreground leading-relaxed">
+          <Lightbulb className="h-4 w-4 text-muted-foreground/40 shrink-0 mt-0.5" />
           <div>
-            <span className="font-semibold text-foreground block mb-0.5">Lateness Calculation Tip</span>
+            <span className="font-bold text-foreground block mb-1 uppercase tracking-wider">System Behavior Notice</span>
             Changing this value will immediately re-configure pointage thresholds. Pre-existing records will not be mutated historically, but all future clock-ins will respect the new limit.
           </div>
         </div>
 
         {/* Save Actions Button */}
-        <div className="pt-2 flex items-center justify-between border-t border-border/10">
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase font-semibold">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+        <div className="pt-4 flex items-center justify-between border-t border-border/10">
+          <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground uppercase font-bold tracking-widest">
+            <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground/40" />
             Administrative scope
           </div>
 
           <Button
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 text-xs px-4 gap-1 shadow-md hover:shadow-lg transition-all duration-200"
+            className="bg-foreground text-background hover:bg-foreground/90 rounded-xl h-10 text-xs font-bold px-6 gap-2 shadow-sm transition-all duration-200"
             onClick={handleSave}
             disabled={updateSettingMutation.isPending}
           >

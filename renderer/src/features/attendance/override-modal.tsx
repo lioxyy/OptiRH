@@ -89,68 +89,68 @@ export function OverrideModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg border-border/40 bg-card/90 backdrop-blur-xl shadow-2xl rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <CalendarRange className="h-5 w-5 text-indigo-400" />
+          <DialogTitle className="text-lg font-bold flex items-center gap-2">
+            <CalendarRange className="h-4 w-4 text-muted-foreground" />
             Attendance Correction
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs">
             Manually edit or create today's or historical attendance points for{' '}
             <strong className="text-foreground">{employeeName}</strong>.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 text-sm">
+        <div className="space-y-5 py-4 text-sm">
           {/* Target Date */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <label className="text-right text-xs font-semibold text-muted-foreground">Date</label>
+            <label className="text-right text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Date</label>
             <Input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="col-span-3 rounded-lg h-9 text-xs"
+              className="col-span-3 rounded-lg h-10 text-xs bg-muted/10 border-border/20"
             />
           </div>
 
           {/* Status Override */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <label className="text-right text-xs font-semibold text-muted-foreground">Status</label>
+            <label className="text-right text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Status</label>
             <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-              <SelectTrigger className="col-span-3 h-9 text-xs rounded-lg">
+              <SelectTrigger className="col-span-3 h-10 text-xs rounded-lg bg-muted/10 border-border/20">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-card/95 backdrop-blur-md border-border/40">
                 <SelectItem value="Present">Present</SelectItem>
-                <SelectItem value="Late">Late ⏰</SelectItem>
+                <SelectItem value="Late">Late</SelectItem>
                 <SelectItem value="Half-Day">Half-Day</SelectItem>
-                <SelectItem value="Absent">Absent ❌</SelectItem>
+                <SelectItem value="Absent">Absent</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Clock In Punch */}
           <div className="grid grid-cols-4 items-start gap-4">
-            <label className="text-right text-xs font-semibold text-muted-foreground pt-2">Clock In</label>
-            <div className="col-span-3 space-y-2">
+            <label className="text-right text-[10px] font-bold text-muted-foreground uppercase tracking-wider pt-2">Clock In</label>
+            <div className="col-span-3 space-y-3">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="hasClockIn"
                   checked={hasClockIn}
                   onCheckedChange={(checked) => setHasClockIn(!!checked)}
-                  className="rounded"
+                  className="rounded border-border/40"
                 />
-                <label htmlFor="hasClockIn" className="text-xs font-medium cursor-pointer">
+                <label htmlFor="hasClockIn" className="text-[11px] font-medium text-muted-foreground cursor-pointer">
                   Has Clock In recorded
                 </label>
               </div>
 
               {hasClockIn && (
-                <div className="flex items-center gap-2 animate-in slide-in-from-top-1 duration-150">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-border/10 bg-muted/5 animate-in slide-in-from-top-1 duration-150">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground/40" />
                   <Input
                     type="time"
                     value={clockInTime}
                     onChange={(e) => setClockInTime(e.target.value)}
-                    className="h-8 w-28 text-xs rounded-lg"
+                    className="h-8 w-32 text-xs font-mono bg-background"
                   />
                 </div>
               )}
@@ -159,28 +159,28 @@ export function OverrideModal({
 
           {/* Clock Out Punch */}
           <div className="grid grid-cols-4 items-start gap-4">
-            <label className="text-right text-xs font-semibold text-muted-foreground pt-2">Clock Out</label>
-            <div className="col-span-3 space-y-2">
+            <label className="text-right text-[10px] font-bold text-muted-foreground uppercase tracking-wider pt-2">Clock Out</label>
+            <div className="col-span-3 space-y-3">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="hasClockOut"
                   checked={hasClockOut}
                   onCheckedChange={(checked) => setHasClockOut(!!checked)}
-                  className="rounded"
+                  className="rounded border-border/40"
                 />
-                <label htmlFor="hasClockOut" className="text-xs font-medium cursor-pointer">
+                <label htmlFor="hasClockOut" className="text-[11px] font-medium text-muted-foreground cursor-pointer">
                   Has Clock Out recorded
                 </label>
               </div>
 
               {hasClockOut && (
-                <div className="flex items-center gap-2 animate-in slide-in-from-top-1 duration-150">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-border/10 bg-muted/5 animate-in slide-in-from-top-1 duration-150">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground/40" />
                   <Input
                     type="time"
                     value={clockOutTime}
                     onChange={(e) => setClockOutTime(e.target.value)}
-                    className="h-8 w-28 text-xs rounded-lg"
+                    className="h-8 w-32 text-xs font-mono bg-background"
                   />
                 </div>
               )}
@@ -189,27 +189,27 @@ export function OverrideModal({
 
           {/* Notes / Reason */}
           <div className="grid grid-cols-4 items-start gap-4">
-            <label className="text-right text-xs font-semibold text-muted-foreground pt-2">Reason</label>
+            <label className="text-right text-[10px] font-bold text-muted-foreground uppercase tracking-wider pt-2">Reason</label>
             <Input
-              placeholder="e.g. Employee forgot card, manual correction by HR..."
+              placeholder="e.g. Manual correction by HR..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="col-span-3 rounded-lg h-9 text-xs"
+              className="col-span-3 rounded-lg h-10 text-xs bg-muted/10 border-border/20"
             />
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 border-t border-border/5 pt-6">
           <Button
             variant="ghost"
-            className="rounded-lg h-9 text-xs"
+            className="rounded-xl h-10 text-xs font-bold uppercase text-muted-foreground"
             onClick={() => onOpenChange(false)}
             disabled={overrideMutation.isPending}
           >
             Cancel
           </Button>
           <Button
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 text-xs px-4 gap-1 shadow-md hover:shadow-lg transition-all duration-200"
+            className="bg-foreground text-background hover:bg-foreground/90 rounded-xl h-10 text-xs font-bold px-6 shadow-sm transition-all duration-200"
             onClick={handleSave}
             disabled={overrideMutation.isPending}
           >
