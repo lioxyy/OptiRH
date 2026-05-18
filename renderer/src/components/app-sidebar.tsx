@@ -2,21 +2,13 @@
 
 import * as React from "react"
 import {
-  CalendarCheckIcon,
   Command,
   LayoutDashboardIcon,
   UsersIcon,
-  FileTextIcon,
   WalletIcon,
-  ListChecksIcon,
-  UserPlusIcon,
-  StarIcon,
-  BarChart3Icon,
-  Building2,
-  GraduationCap,
   Clock,
-  PiggyBank,
-  Receipt,
+  FileTextIcon,
+  BarChart3Icon,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -25,8 +17,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -37,97 +27,53 @@ import { Link } from "react-router-dom"
 
 type Role = "Admin" | "Agent" | "Employee"
 
-const navItems = [
+const navGroups = [
   {
-    title: "Overview",
+    title: "Core Intelligence",
     url: "/dashboard",
     icon: LayoutDashboardIcon,
     roles: ["Admin", "Agent", "Employee"],
+    items: [
+      { title: "Overview", url: "/dashboard" },
+      { title: "Analytics", url: "/dashboard/analytics" },
+      { title: "Audit Logs", url: "/dashboard/logs" },
+    ],
   },
   {
-    title: "Employees",
+    title: "Workforce",
     url: "/dashboard/employees",
     icon: UsersIcon,
     roles: ["Admin", "Agent"],
+    items: [
+      { title: "Employees", url: "/dashboard/employees" },
+      { title: "Departments", url: "/dashboard/departments" },
+      { title: "Recruitment", url: "/dashboard/recruitment" },
+      { title: "Evaluations", url: "/dashboard/evaluations" },
+    ],
   },
   {
-    title: "Departments",
-    url: "/dashboard/departments",
-    icon: Building2,
-    roles: ["Admin", "Agent"],
-  },
-
-  {
-    title: "Leave",
-    url: "/dashboard/leaves",
-    icon: CalendarCheckIcon,
-    roles: ["Admin", "Agent", "Employee"],
-  },
-  {
-    title: "Attendance",
+    title: "Operations",
     url: "/dashboard/attendance",
     icon: Clock,
     roles: ["Admin", "Agent", "Employee"],
+    items: [
+      { title: "Attendance Tracking", url: "/dashboard/attendance" },
+      { title: "Leave Management", url: "/dashboard/leaves" },
+      { title: "Task Boards", url: "/dashboard/tasks" },
+      { title: "Training Hub", url: "/dashboard/formations" },
+    ],
   },
   {
-    title: "Contracts",
-    url: "/dashboard/contracts",
-    icon: FileTextIcon,
-    roles: ["Admin", "Agent"],
-  },
-  {
-    title: "Payroll",
+    title: "Finance & Admin",
     url: "/dashboard/payroll",
     icon: WalletIcon,
-    roles: ["Admin"],
-  },
-  {
-    title: "Payslips",
-    url: "/dashboard/payslips",
-    icon: Receipt,
     roles: ["Admin", "Agent", "Employee"],
-  },
-  {
-    title: "Massrouf",
-    url: "/dashboard/massrouf",
-    icon: PiggyBank,
-    roles: ["Admin", "Agent", "Employee"],
-  },
-  {
-    title: "Tasks",
-    url: "/dashboard/tasks",
-    icon: ListChecksIcon,
-    roles: ["Admin", "Agent", "Employee"],
-  },
-  {
-    title: "Recruitment",
-    url: "/dashboard/recruitment",
-    icon: UserPlusIcon,
-    roles: ["Admin", "Agent"],
-  },
-  {
-    title: "Evaluations",
-    url: "/dashboard/evaluations",
-    icon: StarIcon,
-    roles: ["Admin", "Agent"],
-  },
-  {
-    title: "Formations",
-    url: "/dashboard/formations",
-    icon: GraduationCap,
-    roles: ["Admin", "Agent", "Employee"],
-  },
-  {
-    title: "Analytics",
-    url: "/dashboard/analytics",
-    icon: BarChart3Icon,
-    roles: ["Admin"],
-  },
-  {
-    title: "Logs",
-    url: "/dashboard/logs",
-    icon: FileTextIcon,
-    roles: ["Admin"],
+    items: [
+      { title: "Payroll Management", url: "/dashboard/payroll" },
+      { title: "Massrouf (Advances)", url: "/dashboard/massrouf" },
+      { title: "Salary Payslips", url: "/dashboard/payslips" },
+      { title: "Contract Archive", url: "/dashboard/contracts" },
+    ],
   },
 ]
 
@@ -135,9 +81,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth()
   const role = (user?.role as Role) ?? "Employee"
 
-  const filteredNav = navItems.filter((item) =>
-    item.roles.includes(role)
-  )
+  // Filter groups based on role
+  const filteredGroups = navGroups.filter((group) => group.roles.includes(role))
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
@@ -157,11 +102,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="overflow-y-auto">
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <NavMain items={filteredNav} />
-        </SidebarGroup>
+      <SidebarContent className="overflow-y-auto scrollbar-none">
+        <NavMain items={filteredGroups} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={{ name: user?.name || "User", email: user?.email || "", avatar: "" }} onLogout={logout} />
