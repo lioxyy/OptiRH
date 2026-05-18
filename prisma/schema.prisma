@@ -165,13 +165,49 @@ model Evaluation {
   bonus_amount      Float    @default(0)
   comments          String?
   type_eval         String
+  campaign_id       Int?
   evaluator_id      Int
   evaluatee_emp_id  Int?
   evaluatee_cand_id Int?
 
-  evaluator     Employee  @relation("Evaluator", fields: [evaluator_id], references: [id_emp])
-  evaluatee_emp Employee? @relation("EvaluateeEmp", fields: [evaluatee_emp_id], references: [id_emp])
-  evaluatee_cand Candidat? @relation("EvaluateeCand", fields: [evaluatee_cand_id], references: [id_cand])
+  campaign      EvaluationCampaign? @relation(fields: [campaign_id], references: [id_campaign])
+  evaluator     Employee            @relation("Evaluator", fields: [evaluator_id], references: [id_emp])
+  evaluatee_emp Employee?           @relation("EvaluateeEmp", fields: [evaluatee_emp_id], references: [id_emp])
+  evaluatee_cand Candidat?          @relation("EvaluateeCand", fields: [evaluatee_cand_id], references: [id_cand])
+  scores        EvaluationScore[]
+}
+
+model EvaluationCampaign {
+  id_campaign Int      @id @default(autoincrement())
+  title       String
+  type        String   // e.g., "Monthly", "Quarterly", "Annual"
+  date_start  DateTime
+  date_end    DateTime
+  status      String   @default("Active")
+  description String?
+
+  evaluations Evaluation[]
+}
+
+model EvaluationCriteria {
+  id_criteria Int      @id @default(autoincrement())
+  name        String
+  description String?
+  weight      Int      @default(1) // Relative weight
+  max_score   Int      @default(10)
+
+  scores      EvaluationScore[]
+}
+
+model EvaluationScore {
+  id_score    Int      @id @default(autoincrement())
+  eval_id     Int
+  criteria_id Int
+  score       Int
+  comment     String?
+
+  evaluation  Evaluation         @relation(fields: [eval_id], references: [id_eval])
+  criteria    EvaluationCriteria @relation(fields: [criteria_id], references: [id_criteria])
 }
 
 model Task {

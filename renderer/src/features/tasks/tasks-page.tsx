@@ -9,7 +9,10 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
+import { Checkbox } from '../../components/ui/checkbox'
 import { TaskForm } from './task-form'
+import { AlertCircle, Clock, Trash2 } from 'lucide-react'
+import { cn } from '../../lib/utils'
 
 interface Task {
   id_task: number
@@ -31,6 +34,18 @@ const priorityVariant: Record<string, 'default' | 'secondary' | 'destructive'> =
   High: 'destructive',
 }
 
+const getTaskUrgency = (task: Task) => {
+  if (task.status === 'Done') return null
+  const now = new Date()
+  const due = new Date(task.date_fin)
+  const diff = due.getTime() - now.getTime()
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
+
+  if (diff < 0) return { label: 'Overdue', variant: 'destructive' as const, days }
+  if (days <= 2) return { label: 'Due Soon', variant: 'default' as const, days }
+  return { label: `${days}d left`, variant: 'secondary' as const, days }
+}
+
 const columns = ['To Do', 'Doing', 'Done'] as const
 
 export function TasksPage() {
@@ -38,6 +53,7 @@ export function TasksPage() {
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [view, setView] = useState<'kanban' | 'list'>('kanban')
+  const [rowSelection, setRowSelection] = useState({})
 
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ['tasks'],
@@ -61,6 +77,16 @@ export function TasksPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   })
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      await Promise.all(ids.map(id => api.delete(`/api/tasks/${id}`)))
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      setRowSelection({})
+    },
+  })
+
 
 
   const groupedTasks = columns.map((status) => ({
@@ -69,6 +95,25 @@ export function TasksPage() {
   }))
 
   const listColumns = React.useMemo<ColumnDef<Task>[]>(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       id: "name",
       accessorKey: "name",
@@ -141,6 +186,22 @@ export function TasksPage() {
             <TabsTrigger value="list" className="h-7 px-4">List</TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {Object.keys(rowSelection).length > 0 && view === 'list' && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-9"
+            onClick={() => {
+              const selectedIds = Object.keys(rowSelection).map(index => tasks[Number(index)].id_task)
+              if (confirm(`Delete ${selectedIds.length} tasks?`)) {
+                bulkDeleteMutation.mutate(selectedIds)
+              }
+            }}
+          >
+            <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({Object.keys(rowSelection).length})
+          </Button>
+        )}
       </div>
 
       {view === 'kanban' ? (
@@ -163,6 +224,17 @@ export function TasksPage() {
                           {task.priority}
                         </Badge>
                       </div>
+
+                      {getTaskUrgency(task) && (
+                        <div className={cn(
+                          "flex items-center gap-1.5 text-[10px] font-bold p-1 rounded",
+                          getTaskUrgency(task)?.label === 'Overdue' ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+                        )}>
+                          {getTaskUrgency(task)?.label === 'Overdue' ? <AlertCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                          {getTaskUrgency(task)?.label}
+                        </div>
+                      )}
+
                       {task.description && (
                         <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                       )}
@@ -200,6 +272,8 @@ export function TasksPage() {
         <GenericDataTable
           columns={listColumns}
           data={tasks}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
           searchOptions={[
             { id: "name", label: "Task Name" },
             { id: "description", label: "Description" },

@@ -6,30 +6,63 @@ import { authorize } from '../../middleware/authorize'
 import { success } from '../../lib/response'
 import {
   CreateEvaluationSchema,
-  EmployeeParamsSchema,
+  CreateCampaignSchema,
+  CreateCriteriaSchema,
+  EvaluationParamsSchema,
 } from './evaluations.schema'
-import type { CreateEvaluationDTO } from './evaluations.types'
+import type {
+  CreateEvaluationDTO,
+  CreateCampaignDTO,
+  CreateCriteriaDTO,
+} from './evaluations.types'
 import * as EvaluationService from './evaluations.service'
 
 const router = Router()
 
 router.use(authenticate)
-router.use(authorize('Admin', 'Agent'))
 
+// --- DASHBOARD ---
+router.get('/dashboard', authorize('Admin', 'Agent'), asyncHandler(async (req, res) => {
+  const stats = await EvaluationService.getDashboardStats()
+  res.json(success(stats))
+}))
+
+// --- CAMPAIGNS ---
+router.get('/campaigns', asyncHandler(async (req, res) => {
+  const campaigns = await EvaluationService.getCampaigns()
+  res.json(success(campaigns))
+}))
+
+router.post('/campaigns', authorize('Admin'), validate('body', CreateCampaignSchema), asyncHandler(async (req, res) => {
+  const campaign = await EvaluationService.createCampaign(req.body as CreateCampaignDTO, req.user.id_emp)
+  res.status(201).json(success(campaign))
+}))
+
+// --- CRITERIA ---
+router.get('/criteria', asyncHandler(async (req, res) => {
+  const criteria = await EvaluationService.getCriteria()
+  res.json(success(criteria))
+}))
+
+router.post('/criteria', authorize('Admin'), validate('body', CreateCriteriaSchema), asyncHandler(async (req, res) => {
+  const criteria = await EvaluationService.createCriteria(req.body as CreateCriteriaDTO, req.user.id_emp)
+  res.status(201).json(success(criteria))
+}))
+
+// --- EVALUATIONS ---
 router.get('/', asyncHandler(async (req, res) => {
   const evaluations = await EvaluationService.getEvaluations(req.user)
   res.json(success(evaluations))
 }))
 
-router.post('/', validate('body', CreateEvaluationSchema), asyncHandler(async (req, res) => {
+router.post('/', authorize('Admin', 'Agent'), validate('body', CreateEvaluationSchema), asyncHandler(async (req, res) => {
   const evaluation = await EvaluationService.createEvaluation(req.body as CreateEvaluationDTO, req.user.id_emp)
   res.status(201).json(success(evaluation))
 }))
 
-router.get('/employee/:id/latest-bonus', authorize('Admin'), validate('params', EmployeeParamsSchema), asyncHandler(async (req, res) => {
-  const { id } = req.params as unknown as { id: number }
-  const bonus = await EvaluationService.getLatestBonus(id)
-  res.json(success(bonus))
+router.delete('/:id', authorize('Admin'), asyncHandler(async (req, res) => {
+  const result = await EvaluationService.deleteEvaluation(Number(req.params.id), req.user.id_emp)
+  res.json(success(result))
 }))
 
 export default router

@@ -111,6 +111,8 @@ interface GenericDataTableProps<TData, TValue> {
     searchKey?: string   // Default column to search if no options provided
     searchPlaceholder?: string
     searchOptions?: SearchOption[]
+    rowSelection?: Record<string, boolean>
+    onRowSelectionChange?: (selection: any) => void
 }
 
 export function GenericDataTable<TData, TValue>({
@@ -118,7 +120,9 @@ export function GenericDataTable<TData, TValue>({
     data,
     searchKey,
     searchPlaceholder = "Search...",
-    searchOptions
+    searchOptions,
+    rowSelection,
+    onRowSelectionChange
 }: GenericDataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -144,10 +148,12 @@ export function GenericDataTable<TData, TValue>({
         onColumnFiltersChange: setColumnFilters,
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
+        onRowSelectionChange: onRowSelectionChange,
         state: {
             sorting,
             columnFilters,
             columnVisibility,
+            rowSelection: rowSelection ?? {},
         },
     })
 

@@ -10,6 +10,8 @@ export type NotificationType =
   | 'TASK_ASSIGNED'
   | 'TASK_COMPLETED'
   | 'EVALUATION_RECEIVED'
+  | 'CANDIDATE_ASSIGNED'
+  | 'INTERVIEW_SCHEDULED'
 
 export async function createNotification(
   tx: Prisma.TransactionClient,

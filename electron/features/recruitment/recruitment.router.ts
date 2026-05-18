@@ -31,7 +31,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }))
 
 router.post('/', validate('body', CreateCandidateSchema), asyncHandler(async (req, res) => {
-  const candidate = await RecruitmentService.createCandidate(req.body as CreateCandidateDTO)
+  const candidate = await RecruitmentService.createCandidate(req.body as CreateCandidateDTO, req.user.id_emp)
   res.status(201).json(success(candidate))
 }))
 
@@ -42,7 +42,7 @@ router.patch('/:id/status', validate('params', CandidateParamsSchema), validate(
 }))
 
 router.post('/interviews', validate('body', ScheduleInterviewSchema), asyncHandler(async (req, res) => {
-  const interview = await RecruitmentService.scheduleInterview(req.body as ScheduleInterviewDTO)
+  const interview = await RecruitmentService.scheduleInterview(req.body as ScheduleInterviewDTO, req.user.id_emp)
   res.status(201).json(success(interview))
 }))
 
