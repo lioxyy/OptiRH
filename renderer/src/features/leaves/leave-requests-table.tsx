@@ -64,9 +64,9 @@ export function LeaveRequestsTable() {
     ...(isManager ? [
       {
         id: "employee",
-        accessorFn: (row) => row.employee?.name ?? '—',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Employee" />,
-        cell: ({ row }) => <span className="font-medium">{row.original.employee?.name ?? '—'}</span>
+        accessorFn: (row: LeaveRequest) => row.employee?.name ?? '—',
+        header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title="Employee" />,
+        cell: ({ row }: { row: any }) => <span className="font-medium">{row.original.employee?.name ?? '—'}</span>
       }
     ] : []),
     {

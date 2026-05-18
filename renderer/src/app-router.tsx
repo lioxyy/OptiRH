@@ -19,6 +19,7 @@ import { DepartmentsPage } from './features/departments/departments-page'
 import { DepartmentDetail } from './features/departments/department-detail'
 
 import { FormationPage } from './features/formation/formation-page'
+import { LogsPage } from './features/logs/logs-page'
 
 import { RootLayout } from './components/layout/root-layout'
 
@@ -124,6 +125,14 @@ export function AppRouter() {
             element={
               <RoleGuard roles={['Admin']}>
                 <AnalyticsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="logs"
+            element={
+              <RoleGuard roles={['Admin']}>
+                <LogsPage />
               </RoleGuard>
             }
           />

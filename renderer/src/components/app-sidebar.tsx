@@ -123,6 +123,12 @@ const navItems = [
     icon: BarChart3Icon,
     roles: ["Admin"],
   },
+  {
+    title: "Logs",
+    url: "/dashboard/logs",
+    icon: FileTextIcon,
+    roles: ["Admin"],
+  },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

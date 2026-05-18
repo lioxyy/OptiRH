@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import { Card, CardContent } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
-import { ReceiptText, Printer, FileText, Landmark } from 'lucide-react'
+import { ReceiptText, Printer, Landmark } from 'lucide-react'
 import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 
@@ -212,13 +212,13 @@ export function PayslipPage() {
     ...(isAdmin ? [
       {
         id: "employee",
-        accessorFn: (row) => row.employee?.name ?? '—',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Employee" />,
-        cell: ({ row }) => (
+        accessorFn: (row: PayrollRecord) => row.employee?.name ?? '—',
+        header: ({ column }: { column: any }) => <DataTableColumnHeader column={column} title="Employee" />,
+        cell: ({ row }: { row: any }) => (
           <div className="flex flex-col">
             <span className="font-semibold text-foreground">{row.original.employee?.name ?? '—'}</span>
             <span className="text-[10px] text-muted-foreground font-mono">
-              {row.original.employee?.departments?.map(d => d.name).join(', ') || 'General'}
+              {row.original.employee?.departments?.map((d: any) => d.name).join(', ') || 'General'}
             </span>
           </div>
         )
