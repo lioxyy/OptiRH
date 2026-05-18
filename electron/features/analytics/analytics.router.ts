@@ -45,6 +45,31 @@ router.get('/score-distribution', asyncHandler(async (_req, res) => {
   res.json(success(data))
 }))
 
+router.get('/headcount-trend', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getHeadcountTrend()
+  res.json(success(data))
+}))
+
+router.get('/department-stats', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getDepartmentStats()
+  res.json(success(data))
+}))
+
+router.get('/demographics', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getDemographics()
+  res.json(success(data))
+}))
+
+router.get('/tenure-stats', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getTenureStats()
+  res.json(success(data))
+}))
+
+router.get('/supervision-stats', asyncHandler(async (_req, res) => {
+  const data = await AnalyticsService.getSupervisionStats()
+  res.json(success(data))
+}))
+
 router.get('/dashboard/admin', authorize('Admin'), asyncHandler(async (req, res) => {
   const data = await AnalyticsService.getAdminDashboard(req.user.id_emp)
   res.json(success(data))

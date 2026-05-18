@@ -202,6 +202,119 @@ export async function getTopPerformers() {
   }))
 }
 
+export async function getHeadcountTrend() {
+  const generateMonths = () => {
+    const months = []
+    const d = new Date()
+    for (let i = 11; i >= 0; i--) {
+      const m = new Date(d.getFullYear(), d.getMonth() - i, 1)
+      months.push(new Date(m.getFullYear(), m.getMonth() + 1, 0)) // End of month
+    }
+    return months
+  }
+
+  const months = generateMonths()
+  const trend = []
+
+  for (const endOfMonth of months) {
+    const count = await prisma.employee.count({
+      where: { date_employment: { lte: endOfMonth } }
+    })
+    trend.push({
+      month: endOfMonth.toISOString().slice(0, 7),
+      count
+    })
+  }
+
+  return trend
+}
+
+export async function getDepartmentStats() {
+  const depts = await prisma.department.findMany({
+    select: {
+      name: true,
+      _count: { select: { employees: true } }
+    }
+  })
+  return depts.map(d => ({
+    department: d.name,
+    count: d._count.employees
+  }))
+}
+
+export async function getDemographics() {
+  const [genders, roles, contracts] = await Promise.all([
+    prisma.employee.groupBy({ by: ['gender'], _count: { id_emp: true } }),
+    prisma.employee.groupBy({ by: ['role'], _count: { id_emp: true } }),
+    prisma.contract.groupBy({
+      by: ['type'],
+      where: { status: 'Active' },
+      _count: { id_contract: true }
+    })
+  ])
+
+  // Gender by Department (Stacked Bar)
+  const genderByDeptRaw = await prisma.employee.findMany({
+    select: {
+      gender: true,
+      departments: { select: { name: true } }
+    }
+  })
+
+  const deptGenderMap: Record<string, Record<string, number>> = {}
+  genderByDeptRaw.forEach(emp => {
+    emp.departments.forEach(dept => {
+      if (!deptGenderMap[dept.name]) deptGenderMap[dept.name] = { Male: 0, Female: 0, Other: 0 }
+      const g = emp.gender || 'Other'
+      deptGenderMap[dept.name][g] = (deptGenderMap[dept.name][g] || 0) + 1
+    })
+  })
+
+  return {
+    gender: genders.map(g => ({ label: g.gender || 'Other', value: g._count.id_emp })),
+    roles: roles.map(r => ({ label: r.role, value: r._count.id_emp })),
+    contracts: contracts.map(c => ({ label: c.type, value: c._count.id_contract })),
+    genderByDept: Object.entries(deptGenderMap).map(([dept, counts]) => ({ department: dept, ...counts }))
+  }
+}
+
+export async function getTenureStats() {
+  const employees = await prisma.employee.findMany({
+    select: { date_employment: true }
+  })
+
+  const today = new Date()
+  const tenures = employees.map(e => {
+    const diffTime = Math.abs(today.getTime() - e.date_employment.getTime())
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30.44)) // approx months
+  })
+
+  const avgTenure = tenures.length > 0 ? tenures.reduce((a, b) => a + b, 0) / tenures.length : 0
+
+  return {
+    average_months: Math.round(avgTenure)
+  }
+}
+
+export async function getSupervisionStats() {
+  const employees = await prisma.employee.findMany({
+    select: {
+      supervisor: { select: { name: true } }
+    },
+    where: { supervisor_id: { not: null } }
+  })
+
+  const supervisionMap: Record<string, number> = {}
+  employees.forEach(e => {
+    const name = e.supervisor?.name || 'Unknown'
+    supervisionMap[name] = (supervisionMap[name] || 0) + 1
+  })
+
+  return Object.entries(supervisionMap)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
 export async function getAdminDashboard(actorId: number) {
   const departments = await prisma.department.findMany({
     select: {
