@@ -116,6 +116,7 @@ interface OrgNode {
   role: string
   supervisor_id: number | null
   id_dept: number
+  department?: { name: string }
   children: OrgNode[]
 }
 
@@ -133,6 +134,7 @@ export async function getOrgChart() {
       role: true,
       supervisor_id: true,
       id_dept: true,
+      department: { select: { name: true } },
     },
   })
 

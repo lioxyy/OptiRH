@@ -10,6 +10,7 @@ interface OrgNode {
   role: string
   supervisor_id: number | null
   id_dept: number
+  department?: { name: string }
   children: OrgNode[]
 }
 
@@ -39,6 +40,11 @@ function TreeNode({ node, depth = 0 }: { node: OrgNode; depth?: number }) {
           <User className="h-3 w-3 text-muted-foreground" />
         </div>
         <span className="text-sm font-medium">{node.name}</span>
+        {node.department && (
+          <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full bg-muted/50 border border-muted-foreground/20">
+            {node.department.name}
+          </span>
+        )}
         <Badge className={`text-[10px] px-1.5 py-0 h-4 ${roleColor[node.role] || ''}`} variant="outline">
           {node.role}
         </Badge>
