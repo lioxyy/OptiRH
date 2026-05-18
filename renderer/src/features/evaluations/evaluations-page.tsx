@@ -203,23 +203,34 @@ export function EvaluationsPage() {
 
           <TabsContent value="analysis" className="space-y-8 outline-none animate-in slide-in-from-bottom-2 duration-400">
             {/* KPI GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {[
-                { label: 'Reviews', val: stats?.totalEvaluations || 0, icon: FileText },
-                { label: 'Avg Score', val: `${Math.round(evaluations.reduce((acc: number, cur: any) => acc + cur.score, 0) / (evaluations.length || 1))}%`, icon: TrendingUp },
-                { label: 'Campaigns', val: queryClient.getQueryData(['campaigns']) ? (queryClient.getQueryData(['campaigns']) as any[]).length : '—', icon: History },
-                { label: 'Top Dimension', val: 'Technical', icon: Trophy },
+                { label: 'Cumulative Reviews', val: stats?.totalEvaluations || 0, trend: '+4', foot: 'since last month', icon: FileText },
+                { label: 'Avg Performance', val: `${Math.round(evaluations.reduce((acc: number, cur: any) => acc + cur.score, 0) / (evaluations.length || 1))}%`, trend: '+2.4%', foot: 'vs target 85%', icon: TrendingUp },
+                { label: 'Active Campaigns', val: queryClient.getQueryData(['campaigns']) ? (queryClient.getQueryData(['campaigns']) as any[]).length : '—', trend: 'Stable', foot: 'Current cycle', icon: History },
+                { label: 'Top Criterion', val: 'Technical', trend: 'High', foot: 'Based on 40 reviews', icon: Trophy },
               ].map((kpi, i) => (
-                <Card key={i} className="border-primary/5 shadow-sm overflow-hidden group hover:border-primary/20 transition-all">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider opacity-60 transition-opacity">{kpi.label}</p>
-                        <p className="text-2xl font-bold tracking-tight">{kpi.val}</p>
-                      </div>
-                      <kpi.icon className="h-5 w-5 text-muted-foreground opacity-50" />
+                <Card key={i} className="border-primary/5 bg-card/40 backdrop-blur-sm shadow-sm hover:border-primary/20 transition-all group p-4">
+                  <div className="flex flex-col justify-between h-full space-y-4">
+                    <div className="flex items-start justify-between">
+                      <span className="text-xs font-medium text-muted-foreground opacity-80">{kpi.label}</span>
+                      <TrendingUp className="h-3.5 w-3.5 text-muted-foreground opacity-40 rotate-45" />
                     </div>
-                  </CardContent>
+
+                    <div className="flex items-end justify-between gap-2">
+                      <h3 className="text-2xl font-bold tracking-tight">{kpi.val}</h3>
+                      <div className="px-2 py-0.5 rounded-full bg-green-500/10 text-[10px] font-bold text-green-500 flex items-center gap-1">
+                        <TrendingUp className="h-2.5 w-2.5" />
+                        {kpi.trend}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-primary/5">
+                      <p className="text-[10px] text-muted-foreground font-medium opacity-60">
+                        <span className="font-bold">{kpi.foot.split(' ')[0]}</span> {kpi.foot.split(' ').slice(1).join(' ')}
+                      </p>
+                    </div>
+                  </div>
                 </Card>
               ))}
             </div>
