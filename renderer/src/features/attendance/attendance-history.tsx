@@ -41,6 +41,7 @@ export function AttendanceHistory() {
       const res = await api.get('/api/attendance/my-history', { params })
       return res.data.data
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
   // Date formatting helpers

@@ -48,6 +48,8 @@ export function DailyRoster() {
       const res = await api.get('/api/attendance/roster')
       return res.data.data
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10,   // 10 minutes
   })
 
   // Search filter

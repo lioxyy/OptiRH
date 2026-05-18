@@ -123,6 +123,11 @@ model Conge {
   approver    Employee? @relation("CongeApprover", fields: [approved_by], references: [id_emp])
   employee    Employee  @relation("CongeEmployee", fields: [id_emp], references: [id_emp])
   absences    Absence[]
+
+  @@index([date_deb])
+  @@index([date_fin])
+  @@index([status])
+  @@index([id_emp])
 }
 
 model CongeBalance {
@@ -305,6 +310,8 @@ model Massrouf {
   approved_by  Int?
 
   employee     Employee @relation("EmployeeMassrouf", fields: [id_emp], references: [id_emp])
+
+  @@index([id_emp])
 }
 
 model Attendance {
@@ -320,4 +327,5 @@ model Attendance {
   employee      Employee  @relation("EmployeeAttendance", fields: [id_emp], references: [id_emp])
 
   @@unique([id_emp, date])
+  @@index([date])
 }

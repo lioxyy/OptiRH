@@ -43,6 +43,7 @@ export function MassroufPage() {
       const res = await api.get(endpoint)
       return res.data.data
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
   const submitMutation = useMutation({
