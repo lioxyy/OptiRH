@@ -12,6 +12,7 @@ import {
   UserPlusIcon,
   StarIcon,
   BarChart3Icon,
+  GraduationCap,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -80,6 +81,12 @@ const navItems = [
     url: "/dashboard/evaluations",
     icon: StarIcon,
     roles: ["Admin", "Agent"],
+  },
+  {
+    title: "Formations",
+    url: "/dashboard/formations",
+    icon: GraduationCap,
+    roles: ["Admin", "Agent", "Employee"],
   },
   {
     title: "Analytics",

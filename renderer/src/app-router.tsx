@@ -12,6 +12,7 @@ import { TasksPage } from './features/tasks/tasks-page'
 import { RecruitmentPage } from './features/recruitment/recruitment-page'
 import { EvaluationsPage } from './features/evaluations/evaluations-page'
 import { AnalyticsPage } from './features/analytics/analytics-page'
+import { FormationPage } from './features/formation/formation-page'
 
 import { RootLayout } from './components/layout/root-layout'
 
@@ -74,6 +75,10 @@ export function AppRouter() {
                 <EvaluationsPage />
               </RoleGuard>
             }
+          />
+          <Route
+            path="formations"
+            element={<FormationPage />}
           />
           <Route
             path="analytics"

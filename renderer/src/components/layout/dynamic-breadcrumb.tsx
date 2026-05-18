@@ -21,6 +21,7 @@ const routeConfig: Record<string, string> = {
     recruitment: "Recruitment",
     evaluations: "Evaluations",
     analytics: "Analytics",
+    formations: "Formations",
 }
 
 export function DynamicBreadcrumb() {
