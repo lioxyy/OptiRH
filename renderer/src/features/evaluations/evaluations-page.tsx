@@ -121,7 +121,7 @@ export function EvaluationsPage() {
               style={{ width: `${row.original.score}%` }}
             />
           </div>
-          <span className="font-black text-xs min-w-[3ch]">{row.original.score}</span>
+          <span className="font-bold text-xs min-w-[3ch]">{row.original.score}</span>
         </div>
       )
     },
@@ -165,24 +165,23 @@ export function EvaluationsPage() {
   const chartColors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter flex items-center gap-3">
-              Personnel Performance
-              <Badge variant="outline" className="text-[10px] uppercase font-black px-2 py-0.5 border-primary/20 text-primary bg-primary/5">Excellence</Badge>
+            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
+              Performance Evaluations
             </h1>
-            <p className="text-xs font-medium text-muted-foreground mt-1 opacity-70">Auditing and intelligence engine for organizational human capital.</p>
+            <p className="text-xs text-muted-foreground mt-1">Management and analysis of organizational performance reviews.</p>
           </div>
           <div className="flex items-center gap-3">
             {user?.role === 'Admin' && (
-              <Button variant="outline" onClick={() => setShowConfig(true)} className="gap-2 h-10 px-4 border-primary/10 hover:bg-primary/5 hover:text-primary transition-all">
+              <Button variant="outline" onClick={() => setShowConfig(true)} className="gap-2 border-primary/10 hover:bg-primary/5 hover:text-primary transition-all">
                 <Settings2 className="h-4 w-4" />
                 Config
               </Button>
             )}
-            <Button onClick={() => setShowForm(true)} className="gap-2 h-10 px-6 shadow-xl shadow-primary/20 bg-primary hover:scale-[1.02] transition-transform">
+            <Button onClick={() => setShowForm(true)} className="gap-2 bg-primary">
               <Plus className="h-4 w-4" />
               New Evaluation
             </Button>
@@ -211,21 +210,19 @@ export function EvaluationsPage() {
             {/* KPI GRID */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[
-                { label: 'Cumulative Reviews', val: stats?.totalEvaluations || 0, icon: FileText, color: 'text-blue-500' },
-                { label: 'Org Avg Score', val: `${Math.round(evaluations.reduce((acc: number, cur: any) => acc + cur.score, 0) / (evaluations.length || 1))}%`, icon: TrendingUp, color: 'text-green-500' },
-                { label: 'Active Campaigns', val: queryClient.getQueryData(['campaigns']) ? (queryClient.getQueryData(['campaigns']) as any[]).length : '—', icon: History, color: 'text-orange-500' },
+                { label: 'Reviews', val: stats?.totalEvaluations || 0, icon: FileText, color: 'text-blue-500' },
+                { label: 'Avg Score', val: `${Math.round(evaluations.reduce((acc: number, cur: any) => acc + cur.score, 0) / (evaluations.length || 1))}%`, icon: TrendingUp, color: 'text-green-500' },
+                { label: 'Campaigns', val: queryClient.getQueryData(['campaigns']) ? (queryClient.getQueryData(['campaigns']) as any[]).length : '—', icon: History, color: 'text-orange-500' },
                 { label: 'Top Dimension', val: 'Technical', icon: Trophy, color: 'text-purple-500' },
               ].map((kpi, i) => (
                 <Card key={i} className="border-primary/5 shadow-sm overflow-hidden group hover:border-primary/20 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{kpi.label}</p>
-                        <p className="text-3xl font-black tracking-tighter">{kpi.val}</p>
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider opacity-60 transition-opacity">{kpi.label}</p>
+                        <p className="text-2xl font-bold tracking-tight">{kpi.val}</p>
                       </div>
-                      <div className={`h-12 w-12 rounded-2xl bg-muted/50 flex items-center justify-center transition-transform group-hover:scale-110`}>
-                        <kpi.icon className={`h-6 w-6 ${kpi.color} opacity-80`} />
-                      </div>
+                      <kpi.icon className={`h-5 w-5 ${kpi.color} opacity-80`} />
                     </div>
                   </CardContent>
                 </Card>
@@ -251,10 +248,10 @@ export function EvaluationsPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={stats?.averageByDept || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.05} />
-                        <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} fontWeight="black" />
+                        <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} fontWeight="bold" />
                         <YAxis domain={[0, 100]} fontSize={10} axisLine={false} tickLine={false} />
                         <Tooltip
-                          contentStyle={{ borderRadius: '16px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'medium' }}
                           cursor={{ fill: 'currentColor', opacity: 0.03 }}
                         />
                         <Bar dataKey="average" radius={[8, 8, 2, 2]} barSize={45}>
@@ -283,21 +280,18 @@ export function EvaluationsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {stats?.topPerformers?.map((p: any, i: number) => (
-                      <div key={i} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-muted/50 transition-all group border border-transparent hover:border-primary/5">
-                        <div className="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center font-black text-xs shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
+                      <div key={i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-all group border border-transparent">
+                        <div className="h-8 w-8 rounded bg-slate-100 flex items-center justify-center font-bold text-xs group-hover:bg-primary group-hover:text-white transition-colors">
                           {i + 1}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-black tracking-tight">{p.name}</p>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-50">Tier 1 Elite</p>
+                          <p className="text-sm font-bold tracking-tight">{p.name}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium opacity-50">Performance Tier</p>
                         </div>
                         <div className="flex flex-col items-end">
-                          <span className="text-xl font-black text-primary tracking-tighter">{p.score}%</span>
-                          <div className="h-1 w-12 bg-muted rounded-full overflow-hidden">
-                            <div className="h-full bg-primary" style={{ width: `${p.score}%` }} />
-                          </div>
+                          <span className="text-lg font-bold text-primary tracking-tight">{p.score}%</span>
                         </div>
                       </div>
                     ))}
@@ -314,19 +308,15 @@ export function EvaluationsPage() {
           </TabsContent>
 
           <TabsContent value="history" className="outline-none animate-in slide-in-from-bottom-2 duration-400">
-            <Card className="border-primary/5 shadow-xl">
-              <CardContent className="p-0">
-                <GenericDataTable
-                  columns={listColumns}
-                  data={evaluations}
-                  searchOptions={[
-                    { id: "evaluatee", label: "Personnel Name" },
-                    { id: "evaluator", label: "Assessor" },
-                    { id: "type", label: "Category" }
-                  ]}
-                />
-              </CardContent>
-            </Card>
+            <GenericDataTable
+              columns={listColumns}
+              data={evaluations}
+              searchOptions={[
+                { id: "evaluatee", label: "Personnel Name" },
+                { id: "evaluator", label: "Assessor" },
+                { id: "type", label: "Category" }
+              ]}
+            />
           </TabsContent>
         </Tabs>
       </div>

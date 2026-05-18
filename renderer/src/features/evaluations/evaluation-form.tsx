@@ -132,7 +132,7 @@ export function EvaluationForm({ open, onOpenChange }: EvaluationFormProps) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calculator className="h-6 w-6 text-primary" />
+            <Calculator className="h-5 w-5" />
             Performance Evaluation
           </DialogTitle>
           <DialogDescription>Structured assessment with weighted performance metrics.</DialogDescription>
@@ -228,11 +228,11 @@ export function EvaluationForm({ open, onOpenChange }: EvaluationFormProps) {
               {/* SECTION: Scoring */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b pb-2">
-                  <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                    <Target className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-bold uppercase flex items-center gap-2">
+                    <Target className="h-4 w-4" />
                     Performance Scoring
                   </h3>
-                  <div className="px-3 py-1 bg-primary/10 rounded-full text-xs font-bold text-primary">
+                  <div className="text-[10px] font-bold text-primary">
                     Live Total: {calculateLiveScore()}/100
                   </div>
                 </div>
@@ -241,13 +241,13 @@ export function EvaluationForm({ open, onOpenChange }: EvaluationFormProps) {
                   {fields.map((field, index) => {
                     const crit = criteria.find((c: any) => c.id_criteria === field.criteria_id)
                     return (
-                      <div key={field.id} className="grid grid-cols-1 gap-3 p-4 rounded-lg bg-card border border-primary/5 hover:border-primary/20 transition-all group">
+                      <div key={field.id} className="grid grid-cols-1 gap-3 p-4 rounded-lg bg-card border transition-all group">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-bold text-sm text-primary/90">{crit?.name || 'Loading...'}</p>
+                            <p className="font-bold text-sm">{crit?.name || 'Loading...'}</p>
                             <p className="text-xs text-muted-foreground">{crit?.description || 'No description provided.'}</p>
                           </div>
-                          <div className="text-[10px] font-black uppercase bg-muted px-2 py-0.5 rounded">Weight: {crit?.weight}x</div>
+                          <div className="text-[10px] font-bold uppercase bg-muted px-2 py-0.5 rounded">Weight: {crit?.weight}x</div>
                         </div>
 
                         <div className="grid grid-cols-4 gap-4 items-center">
@@ -315,7 +315,7 @@ export function EvaluationForm({ open, onOpenChange }: EvaluationFormProps) {
 
             <div className="flex justify-end gap-3 pt-6 border-t">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Discard Change</Button>
-              <Button type="submit" disabled={mutation.isPending} className="px-8 shadow-lg shadow-primary/20">
+              <Button type="submit" disabled={mutation.isPending} className="px-8 bg-primary">
                 {mutation.isPending ? 'Finalizing...' : 'Commit Evaluation'}
               </Button>
             </div>
