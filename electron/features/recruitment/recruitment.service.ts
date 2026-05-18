@@ -119,6 +119,11 @@ export async function scheduleInterview(data: ScheduleInterviewDTO, actorId: num
       include: { candidat: { select: { name: true } }, agent: { select: { name: true } } },
     })
 
+    await tx.candidat.update({
+      where: { id_cand: data.id_cand },
+      data: { status: 'In Progress' },
+    })
+
     await createNotification(
       tx,
       data.id_agent,
