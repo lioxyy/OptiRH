@@ -88,7 +88,7 @@ export function FormationPage() {
             )
         },
         {
-            id: "date",
+            id: "date_deb",
             accessorKey: "date_deb",
             header: ({ column }) => <DataTableColumnHeader column={column} title="Start Date" />,
             cell: ({ row }) => {
