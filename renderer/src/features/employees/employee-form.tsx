@@ -108,7 +108,9 @@ interface Department {
 interface Employee {
   id_emp: number
   name: string
+  email: string
   role: string
+  date_employment: string
   departments?: { id_dept: number }[]
 }
 
@@ -116,7 +118,7 @@ export function EmployeeForm({
   onSuccess,
   initialData,
 }: {
-  onSuccess?: () => void
+  onSuccess?: (employee: Employee) => void
   initialData?: any
 }) {
   const queryClient = useQueryClient()
@@ -157,10 +159,10 @@ export function EmployeeForm({
     setSubmitting(true)
     try {
       if (data.role === 'Agent') {
-        const deptWithAgent = departments.find(d => 
-          data.id_depts.includes(d.id_dept) && 
-          allEmployees.some(emp => 
-            emp.role === 'Agent' && 
+        const deptWithAgent = departments.find(d =>
+          data.id_depts.includes(d.id_dept) &&
+          allEmployees.some(emp =>
+            emp.role === 'Agent' &&
             emp.departments?.some((ed: any) => ed.id_dept === d.id_dept) &&
             emp.id_emp !== initialData?.id_emp
           )
@@ -187,18 +189,21 @@ export function EmployeeForm({
         return
       }
 
+      let result
       if (initialData?.id_emp) {
-        await api.patch(`/api/employees/${initialData.id_emp}`, payload)
+        const res = await api.patch(`/api/employees/${initialData.id_emp}`, payload)
+        result = res.data.data
         toast.success('Employee updated successfully')
       } else {
-        await api.post('/api/employees', payload)
+        const res = await api.post('/api/employees', payload)
+        result = res.data.data
         toast.success('Employee created successfully')
       }
 
       queryClient.invalidateQueries({ queryKey: ['employees'] })
       queryClient.invalidateQueries({ queryKey: ['departments'] })
-      queryClient.invalidateQueries({ queryKey: ['employee', initialData?.id_emp?.toString()] })
-      onSuccess?.()
+      queryClient.invalidateQueries({ queryKey: ['employee', initialData?.id_emp?.toString() || result?.id_emp?.toString()] })
+      onSuccess?.(result)
     } catch (error: any) {
       const errMsg = error.response?.data?.message || (initialData ? 'Failed to update employee' : 'Failed to create employee')
       toast.error(errMsg)
@@ -375,11 +380,10 @@ export function EmployeeForm({
                         return (
                           <label
                             key={d.id_dept}
-                            className={`flex items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/40 cursor-pointer transition-all duration-150 ${
-                              checked
-                                ? "border-primary bg-primary/5 text-primary font-medium"
-                                : "border-muted text-muted-foreground"
-                            }`}
+                            className={`flex items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm hover:bg-accent/40 cursor-pointer transition-all duration-150 ${checked
+                              ? "border-primary bg-primary/5 text-primary font-medium"
+                              : "border-muted text-muted-foreground"
+                              }`}
                           >
                             <input
                               type="checkbox"

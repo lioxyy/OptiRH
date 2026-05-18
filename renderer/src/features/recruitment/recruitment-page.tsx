@@ -13,9 +13,28 @@ import { CandidateForm } from './candidate-form'
 import { InterviewForm } from './interview-form'
 import { InterviewResultForm } from './interview-result-form'
 import { HireDialog } from './hire-dialog'
-import { Calendar, ClipboardCheck, UserPlus, MoreHorizontal, Plus, Tag, Mail, User } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog'
+import { ContractForm } from '../contracts/contract-form'
+import type { Employee } from '../employees/employees-page'
+import {
+  Calendar,
+  ClipboardCheck,
+  UserPlus,
+  MoreHorizontal,
+  Plus,
+  Tag,
+  Mail,
+  User,
+  ShieldAlert
+} from 'lucide-react'
 import {
   DndContext,
   DragOverlay,
@@ -252,6 +271,10 @@ export function RecruitmentPage() {
   const [resultInterview, setResultInterview] = useState<{ id: number; name: string } | null>(null)
   const [hiringCandidate, setHiringCandidate] = useState<Candidate | null>(null)
 
+  // Mandatory Contract Workflow State
+  const [isContractOpen, setIsContractOpen] = useState(false)
+  const [newlyCreatedEmployee, setNewlyCreatedEmployee] = useState<Employee | null>(null)
+
   const { data: candidates = [], isLoading } = useQuery<Candidate[]>({
     queryKey: ['recruitment'],
     queryFn: async () => {
@@ -308,6 +331,19 @@ export function RecruitmentPage() {
     }
   }
 
+  const handleHire = async (candidate: Candidate) => {
+    if (candidate.status !== 'Accepted') {
+      try {
+        await api.patch(`/api/recruitment/${candidate.id_cand}/status`, { status: 'Accepted' })
+        queryClient.invalidateQueries({ queryKey: ['recruitment'] })
+      } catch {
+        toast.error('Failed to update candidate status')
+        return
+      }
+    }
+    setHiringCandidate(candidate)
+  }
+
   const listColumns = React.useMemo<ColumnDef<Candidate>[]>(() => [
     {
       id: "name",
@@ -347,15 +383,15 @@ export function RecruitmentPage() {
       cell: ({ row }) => (
         <div className="flex justify-end space-x-1">
           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSchedulingCandidate(row.original)}>Schedule</Button>
-          {row.original.status === 'Accepted' && (
-            <Button size="sm" variant="default" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => setHiringCandidate(row.original)}>
+          {(row.original.status === 'Accepted' || row.original.status === 'In Progress') && (
+            <Button size="sm" variant="default" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleHire(row.original)}>
               Hire
             </Button>
           )}
         </div>
       )
     }
-  ], [])
+  ], [handleHire])
 
   if (isLoading) return <div className="p-6">Loading...</div>
 
@@ -411,7 +447,7 @@ export function RecruitmentPage() {
                   const interview = c.entretiens?.find(i => i.status === 'Scheduled')
                   if (interview) setResultInterview({ id: interview.id_entretien, name: c.name })
                 }}
-                onHire={setHiringCandidate}
+                onHire={handleHire}
               />
             ))}
           </div>
@@ -470,13 +506,42 @@ export function RecruitmentPage() {
         <HireDialog
           candidate={hiringCandidate}
           onClose={() => setHiringCandidate(null)}
-          onSuccess={() => {
-            statusMutation.mutate({ id: hiringCandidate.id_cand, status: 'Hired' })
+          onSuccess={(emp) => {
+            setNewlyCreatedEmployee(emp)
+            setIsContractOpen(true)
             queryClient.invalidateQueries({ queryKey: ['recruitment'] })
             queryClient.invalidateQueries({ queryKey: ['employees'] })
           }}
         />
       )}
+
+      <Dialog open={isContractOpen} onOpenChange={setIsContractOpen}>
+        <DialogContent
+          className="max-w-md"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <ShieldAlert className="h-5 w-5 text-primary" />
+              Finalize Contract
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground font-medium">
+              Candidate hired successfully! Please set up their contract to complete onboarding.
+            </p>
+          </DialogHeader>
+          {newlyCreatedEmployee && (
+            <ContractForm
+              initialEmployeeId={newlyCreatedEmployee.id_emp}
+              initialStartDate={newlyCreatedEmployee.date_employment}
+              onClose={() => {
+                setIsContractOpen(false)
+                setNewlyCreatedEmployee(null)
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

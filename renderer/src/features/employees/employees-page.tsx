@@ -18,7 +18,8 @@ import {
 } from '../../components/ui/dialog'
 import { OrgChart } from './org-chart'
 import { EmployeeForm } from './employee-form'
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { ContractForm } from '../contracts/contract-form'
+import { MoreHorizontal, Pencil, Trash2, ShieldAlert } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,12 +30,13 @@ import {
 } from '../../components/ui/dropdown-menu'
 import { toast } from 'sonner'
 
-interface Employee {
+export interface Employee {
   id_emp: number
   name: string
   email: string
   role: string
-  departments?: { name: string }[]
+  date_employment: string
+  departments?: { id_dept: number; name?: string }[]
   supervisor?: { name: string } | null
 }
 
@@ -51,6 +53,10 @@ export function EmployeesPage() {
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+
+  // Mandatory Contract Workflow State
+  const [isContractOpen, setIsContractOpen] = useState(false)
+  const [newlyCreatedEmployee, setNewlyCreatedEmployee] = useState<Employee | null>(null)
 
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
     queryKey: ['employees'],
@@ -156,11 +162,60 @@ export function EmployeesPage() {
                 <DialogHeader>
                   <DialogTitle>Add Employee</DialogTitle>
                 </DialogHeader>
-                <EmployeeForm onSuccess={() => setIsAddOpen(false)} />
+                <EmployeeForm
+                  onSuccess={(emp) => {
+                    setIsAddOpen(false)
+                    setNewlyCreatedEmployee(emp)
+                    setIsContractOpen(true)
+                  }}
+                />
               </DialogContent>
             </Dialog>
           )}
         </div>
+
+        {/* Mandatory Contract Dialog */}
+        <Dialog open={isContractOpen} onOpenChange={setIsContractOpen}>
+          <DialogContent
+            className="max-w-md"
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onEscapeKeyDown={(e) => e.preventDefault()}
+          >
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 text-primary" />
+                Initialize Contract
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground font-medium">
+                New employee created. A contract is mandatory to enable payroll and system access.
+              </p>
+            </DialogHeader>
+            {newlyCreatedEmployee && (
+              <ContractForm
+                initialEmployeeId={newlyCreatedEmployee.id_emp}
+                initialStartDate={newlyCreatedEmployee.date_employment}
+                onClose={() => {
+                  setIsContractOpen(false)
+                  setNewlyCreatedEmployee(null)
+                }}
+              />
+            )}
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <Button
+                variant="link"
+                className="text-[10px] text-muted-foreground hover:text-foreground h-auto p-0"
+                onClick={() => {
+                  if (confirm("Warning: Access and payroll will be disabled for this employee until a contract is added. Continue?")) {
+                    setIsContractOpen(false)
+                    setNewlyCreatedEmployee(null)
+                  }
+                }}
+              >
+                Skip for now (not recommended)
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {user?.role !== 'Employee' && (
           <Tabs value={tab} onValueChange={(v) => setTab(v as 'list' | 'orgchart')} className="w-fit">

@@ -10,7 +10,7 @@ interface HireDialogProps {
         post_applied?: string | null
     }
     onClose: () => void
-    onSuccess: () => void
+    onSuccess: (employee: any) => void
 }
 
 export function HireDialog({ candidate, onClose, onSuccess }: HireDialogProps) {
@@ -42,8 +42,8 @@ export function HireDialog({ candidate, onClose, onSuccess }: HireDialogProps) {
 
                     <EmployeeForm
                         initialData={initialData}
-                        onSuccess={() => {
-                            onSuccess()
+                        onSuccess={(emp) => {
+                            onSuccess(emp)
                             onClose()
                         }}
                     />
