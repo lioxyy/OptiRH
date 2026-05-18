@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from '../../components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import { User, KeyRound } from 'lucide-react'
+import { User, KeyRound, ArrowRight } from 'lucide-react'
 
 const FormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -128,6 +128,7 @@ export function EmployeeForm({
 }) {
   const queryClient = useQueryClient()
   const [submitting, setSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState('personal')
 
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ['departments'],
@@ -195,10 +196,20 @@ export function EmployeeForm({
     }
   }
 
+  const handleContinue = async () => {
+    const fieldsToValidate: (keyof FormData)[] = [
+      'name', 'gender', 'date_birth', 'date_employment', 'role', 'id_dept'
+    ]
+    const isValid = await form.trigger(fieldsToValidate)
+    if (isValid) {
+      setActiveTab('account')
+    }
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Tabs defaultValue="personal" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="personal">
               <User className="mr-2 h-4 w-4" /> Personal Details
@@ -435,9 +446,15 @@ export function EmployeeForm({
           </TabsContent>
         </Tabs>
 
-        <Button type="submit" disabled={submitting} className="w-full">
-          {submitting ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Employee' : 'Create Employee')}
-        </Button>
+        {activeTab === 'personal' ? (
+          <Button type="button" onClick={handleContinue} className="w-full">
+            Continue <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        ) : (
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? (initialData ? 'Update Employee' : 'Create Employee') : 'Create Employee')}
+          </Button>
+        )}
       </form>
     </Form>
   )
