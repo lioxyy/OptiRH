@@ -54,13 +54,18 @@ export function DateRangePicker({
                         )}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-xl shadow-2xl border-none" align="start">
+                <PopoverContent className="w-auto p-2 rounded-xl shadow-2xl border-none bg-background/95 backdrop-blur-md" align="start">
                     <Calendar
                         mode="range"
                         defaultMonth={date?.from}
                         selected={date}
                         onSelect={onDateChange}
                         numberOfMonths={2}
+                        className="p-4"
+                        classNames={{
+                            months: "flex flex-col md:flex-row gap-8",
+                            month: "space-y-4",
+                        }}
                     />
                 </PopoverContent>
             </Popover>
