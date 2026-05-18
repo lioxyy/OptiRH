@@ -128,7 +128,7 @@ router.get('/dashboard/agent', authorize('Admin', 'Agent'), asyncHandler(async (
 
 router.get('/dashboard/unified', asyncHandler(async (req, res) => {
   const actorId = req.user?.id_emp
-  const role = req.user?.role
+  const role = req.user?.role || 'Employee' // Robust fallback
   const id_depts = req.user?.id_depts || []
 
   const dashboard = await AnalyticsService.getUnifiedDashboard(actorId, role, id_depts)

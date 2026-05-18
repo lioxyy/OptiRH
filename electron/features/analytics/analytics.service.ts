@@ -799,10 +799,11 @@ export async function getUnifiedDashboard(actorId: number, role: string = 'Emplo
   const thirtyDaysFromNow = new Date()
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
 
-  // 1. Determine Scope
-  const isAdmin = role === 'Admin'
-  const isAgent = role === 'Agent'
-  const isEmployee = role === 'Employee'
+  // 1. Determine Scope (Case-insensitive)
+  const normalizedRole = role?.toLowerCase()
+  const isAdmin = normalizedRole === 'admin'
+  const isAgent = normalizedRole === 'agent'
+  const isEmployee = normalizedRole === 'employee' || !role
 
   // 2. Fetch KPI Counts with scoping
   const [
