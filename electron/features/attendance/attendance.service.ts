@@ -20,7 +20,8 @@ export async function getOfficeStartTime(): Promise<string> {
 // Get Real-time Today's Attendance Roster for all active employees
 export async function getDailyRoster(deptId?: number) {
   const today = getStartOfDay()
-  
+
+  // 1. Fetch all employees in targeted departments
   const employees = await prisma.employee.findMany({
     where: deptId ? { departments: { some: { id_dept: deptId } } } : {},
     select: {
@@ -29,29 +30,26 @@ export async function getDailyRoster(deptId?: number) {
       email: true,
       role: true,
       departments: { select: { name: true } },
+      // Sub-selects are efficient with the new indices
       attendance_records: {
-        where: { date: today }
+        where: { date: today },
+        take: 1
       },
       conges: {
         where: {
           status: 'Approved',
           date_deb: { lte: today },
           date_fin: { gte: today }
-        }
+        },
+        take: 1
       }
     }
   })
 
+  // 2. Map status with optimized conditions
   return employees.map((emp) => {
     const attendance = emp.attendance_records[0] || null
     const onLeave = emp.conges.length > 0
-
-    let calculatedStatus = 'Absent'
-    if (onLeave) {
-      calculatedStatus = 'On Leave'
-    } else if (attendance) {
-      calculatedStatus = attendance.status
-    }
 
     return {
       id_emp: emp.id_emp,
@@ -59,9 +57,9 @@ export async function getDailyRoster(deptId?: number) {
       email: emp.email,
       role: emp.role,
       departmentName: emp.departments.map(d => d.name).join(', '),
-      attendance,
+      attendance: attendance,
       onLeave,
-      status: calculatedStatus
+      status: onLeave ? 'On Leave' : (attendance ? attendance.status : 'Absent')
     }
   })
 }
@@ -153,7 +151,7 @@ export async function manualOverride(data: {
 }, actorId: number) {
   const employeeId = Number(data.id_emp)
   const targetDate = getStartOfDay(new Date(data.date))
-  
+
   const recordData: any = {
     status: data.status,
     notes: data.notes || null,
@@ -252,7 +250,7 @@ export async function autoGenerateAbsences() {
 // Get personal history for an employee
 export async function getPersonalHistory(employeeId: number, filters: { startDate?: Date; endDate?: Date } = {}) {
   const whereClause: any = { id_emp: employeeId }
-  
+
   if (filters.startDate || filters.endDate) {
     whereClause.date = {}
     if (filters.startDate) whereClause.date.gte = filters.startDate
