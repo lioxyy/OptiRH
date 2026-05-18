@@ -1,13 +1,14 @@
-import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Badge } from '../../components/ui/badge'
+import { Users, Clock, Calendar, TrendingUp, Edit3 } from 'lucide-react'
+import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
+import { ColumnDef } from '@tanstack/react-table'
+import { useState } from 'react'
 import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Search, UserCheck, AlertTriangle, UserX, Users2, CalendarDays, Edit3, TrendingUp } from 'lucide-react'
-import { Skeleton } from '../../components/ui/skeleton'
 import { OverrideModal } from './override-modal'
 
 interface RosterItem {
@@ -27,198 +28,199 @@ interface RosterItem {
   } | null
 }
 
-const STATUS_CONFIG = {
-  Present: { label: 'Present', variant: 'outline' as const, className: 'text-emerald-500/80 border-emerald-500/10 bg-transparent font-medium' },
-  Late: { label: 'Late', variant: 'outline' as const, className: 'text-amber-500/80 border-amber-500/10 bg-transparent font-medium' },
-  'Half-Day': { label: 'Half-Day', variant: 'outline' as const, className: 'text-blue-500/80 border-blue-500/10 bg-transparent font-medium' },
-  Absent: { label: 'Absent', variant: 'outline' as const, className: 'text-destructive/80 border-destructive/10 bg-transparent font-medium' },
-  'On Leave': { label: 'On Leave', variant: 'outline' as const, className: 'text-indigo-500/80 border-indigo-500/10 bg-transparent font-medium' },
-}
-
 export function DailyRoster() {
   const queryClient = useQueryClient()
-  const [searchTerm, setSearchTerm] = useState('')
   const [selectedEmployee, setSelectedEmployee] = useState<{ id_emp: number; name: string } | null>(null)
   const [isOverrideOpen, setIsOverrideOpen] = useState(false)
 
-  // Query live daily attendance roster from backend
-  const { data: roster = [], isLoading } = useQuery<RosterItem[]>({
+  const { data: roster = [] } = useQuery<RosterItem[]>({
     queryKey: ['attendance', 'roster'],
     queryFn: async () => {
       const res = await api.get('/api/attendance/roster')
       return res.data.data
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10,   // 10 minutes
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   })
 
-  // Search filter
-  const filteredRoster = roster.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.departmentName.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  // Columns definition for GenericDataTable
+  const columns: ColumnDef<RosterItem>[] = [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Employee" />,
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span className="font-medium text-foreground">{row.getValue('name')}</span>
+          <span className="text-[10px] text-muted-foreground">{row.original.role}</span>
+        </div>
+      )
+    },
+    {
+      accessorKey: 'departmentName',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Department" />,
+      cell: ({ row }) => <span className="text-muted-foreground text-xs uppercase tracking-tight font-medium">{row.getValue('departmentName') || 'N/A'}</span>
+    },
+    {
+      id: 'clock_in',
+      header: "Clock In",
+      cell: ({ row }) => {
+        const time = row.original.attendance?.clock_in
+        return time ? <span className="font-mono text-xs">{format(new Date(time), 'HH:mm')}</span> : '--:--'
+      }
+    },
+    {
+      id: 'clock_out',
+      header: "Clock Out",
+      cell: ({ row }) => {
+        const time = row.original.attendance?.clock_out
+        return time ? <span className="font-mono text-xs">{format(new Date(time), 'HH:mm')}</span> : '--:--'
+      }
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const status = row.getValue('status') as string
+        const colors: Record<string, string> = {
+          'Present': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+          'Late': 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+          'On Leave': 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
+          'Absent': 'bg-destructive/10 text-destructive border-destructive/20',
+          'Half-Day': 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+        }
+        return (
+          <Badge variant="outline" className={cn("font-medium text-[10px] uppercase", colors[status] || "bg-muted text-muted-foreground")}>
+            {status}
+          </Badge>
+        )
+      }
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="text-right">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 text-[10px] font-bold uppercase rounded-lg text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all gap-2"
+            onClick={() => {
+              setSelectedEmployee({ id_emp: row.original.id_emp, name: row.original.name })
+              setIsOverrideOpen(true)
+            }}
+          >
+            <Edit3 className="h-3 w-3" />
+            Correct
+          </Button>
+        </div>
+      )
+    }
+  ]
 
   // KPI Calculations
-  const totalStaff = roster.length
-  const presentCount = roster.filter((r) => r.status === 'Present' || r.status === 'Late' || r.status === 'Half-Day').length
-  const lateCount = roster.filter((r) => r.status === 'Late').length
-  const absentCount = roster.filter((r) => r.status === 'Absent').length
-  const onLeaveCount = roster.filter((r) => r.status === 'On Leave').length
-
-  const formatTime = (timeStr: string | null | undefined) => {
-    if (!timeStr) return '—'
-    return new Date(timeStr).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
-  const handleOpenOverride = (employee: { id_emp: number; name: string }) => {
-    setSelectedEmployee(employee)
-    setIsOverrideOpen(true)
-  }
+  const total = roster.length
+  const present = roster.filter(e => e.status === 'Present' || e.status === 'Late').length
+  const late = roster.filter(e => e.status === 'Late').length
+  const onLeave = roster.filter(e => e.status === 'On Leave').length
 
   return (
-    <div className="space-y-8">
-      {/* ── KPIs Metric Cards Grid ───────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {[
-          { label: 'Total Staff', val: isLoading ? '...' : totalStaff, trend: 'Stable', foot: 'Total workforce', icon: Users2, color: 'text-foreground' },
-          { label: 'Present', val: isLoading ? '...' : presentCount, trend: '+2', foot: 'Across units', icon: UserCheck, color: 'text-emerald-500/80' },
-          { label: 'Late', val: isLoading ? '...' : lateCount, trend: '-1', foot: 'Today logged', icon: AlertTriangle, color: 'text-amber-500/80' },
-          { label: 'Absent', val: isLoading ? '...' : absentCount, trend: 'Unchanged', foot: 'Unjustified', icon: UserX, color: 'text-destructive/80' },
-          { label: 'On Leave', val: isLoading ? '...' : onLeaveCount, trend: '+1', foot: 'Approved balances', icon: CalendarDays, color: 'text-indigo-500/80' },
-        ].map((kpi, i) => (
-          <Card key={i} className="border-primary/5 bg-card/40 backdrop-blur-sm shadow-sm hover:border-primary/20 transition-all group p-4">
-            <div className="flex flex-col justify-between h-full space-y-4">
-              <div className="flex items-start justify-between">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-80">{kpi.label}</span>
-                <kpi.icon className="h-3.5 w-3.5 text-muted-foreground opacity-40" />
-              </div>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg relative overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Workforce</CardTitle>
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline justify-between">
+              <div className="text-2xl font-bold">{total}</div>
+              <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 text-[10px] py-0 border-0">
+                <TrendingUp className="h-3 w-3 mr-1" /> ACTIVE
+              </Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider font-semibold">Total Employees</p>
+          </CardContent>
+        </Card>
 
-              <div className="flex items-end justify-between gap-2">
-                <h3 className={`text-2xl font-mono font-bold tracking-tight ${kpi.color}`}>{kpi.val}</h3>
-                <div className="flex items-center gap-1.5">
-                  <div className={`px-2 py-0.5 rounded-full bg-emerald-500/10 text-[10px] font-bold text-emerald-500 flex items-center gap-1 border border-emerald-500/10`}>
-                    <TrendingUp className="h-2.5 w-2.5" />
-                    {kpi.trend}
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-primary/5">
-                <p className="text-[9px] text-muted-foreground font-medium opacity-60">
-                  <span className="font-bold">{kpi.foot.split(' ')[0]}</span> {kpi.foot.split(' ').slice(1).join(' ')}
-                </p>
+        <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg relative overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Present</CardTitle>
+            <div className="p-2 bg-emerald-500/10 rounded-lg">
+              <Clock className="h-4 w-4 text-emerald-500" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline justify-between">
+              <div className="text-2xl font-bold text-emerald-500">{present}</div>
+              <div className="text-[10px] font-semibold text-emerald-500/70">
+                {total > 0 ? ((present / total) * 100).toFixed(0) : 0}%
               </div>
             </div>
-          </Card>
-        ))}
+            <div className="w-full bg-emerald-500/10 h-1 rounded-full mt-2">
+              <div className="bg-emerald-500 h-1 rounded-full" style={{ width: `${total > 0 ? (present / total) * 100 : 0}%` }} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg relative overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tardiness</CardTitle>
+            <div className="p-2 bg-amber-500/10 rounded-lg">
+              <Clock className="h-4 w-4 text-amber-500" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline justify-between">
+              <div className="text-2xl font-bold text-amber-500">{late}</div>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider font-semibold">Late arrivals</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg relative overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">On Leave</CardTitle>
+            <div className="p-2 bg-indigo-500/10 rounded-lg">
+              <Calendar className="h-4 w-4 text-indigo-500" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline justify-between">
+              <div className="text-2xl font-bold text-indigo-500">{onLeave}</div>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider font-semibold">Approved requests</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* ── Table Grid with search ──────────────────────────────── */}
-      <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg transition-all hover:border-primary/10">
-        <CardHeader className="pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 bg-muted/50 rounded-xl flex items-center justify-center border border-border/10">
-              <Users2 className="h-5 w-5 text-muted-foreground" />
+      <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg overflow-hidden">
+        <CardHeader className="border-b border-primary/5 bg-muted/20 pb-4">
+          <div className="flex items-center gap-4">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Users className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl font-bold tracking-tight">Roster Renseignements</CardTitle>
-              <CardDescription className="text-xs">Consolidated real-time view of organizational manpower.</CardDescription>
+              <CardTitle className="text-base font-semibold">Daily Roster</CardTitle>
+              <CardDescription className="text-xs">Real-time attendance and leave status for all personnel</CardDescription>
             </div>
-          </div>
-
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground/60" />
-            <Input
-              placeholder="Search employee or dept..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9 text-xs rounded-xl bg-muted/10 border-border/20"
-            />
           </div>
         </CardHeader>
-
-        <CardContent className="p-0 border-t border-border/5">
-          {isLoading ? (
-            <div className="p-4 space-y-3">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-12 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : filteredRoster.length === 0 ? (
-            <div className="text-center py-20 bg-muted/5">
-              <Users2 className="h-8 w-8 text-muted-foreground/20 mx-auto mb-3" />
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">No matching records</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-1">Adjust filters or search terms.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/10">
-                  <TableRow className="border-border/10 hover:bg-transparent">
-                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Employee</TableHead>
-                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Department</TableHead>
-                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Status</TableHead>
-                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Clock In</TableHead>
-                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Clock Out</TableHead>
-                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider">Total Shift</TableHead>
-                    <TableHead className="h-10 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider text-right pr-6">Override</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRoster.map((item) => {
-                    const cfg = STATUS_CONFIG[item.status] || {
-                      label: item.status,
-                      variant: 'outline' as const,
-                      className: '',
-                    }
-                    return (
-                      <TableRow key={item.id_emp} className="border-border/5 hover:bg-muted/5 group transition-all duration-150">
-                        <TableCell className="py-3 px-4">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{item.name}</span>
-                            <span className="text-[10px] text-muted-foreground font-mono opacity-70">{item.email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3 px-4 text-[10px] font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-tight">{item.departmentName}</TableCell>
-                        <TableCell className="py-3 px-4">
-                          <Badge variant={cfg.variant} className={`text-[9px] font-mono py-0 px-2 rounded-full border bg-transparent ${cfg.className}`}>
-                            {cfg.label.toUpperCase()}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-3 px-4 text-sm font-mono font-bold text-foreground">
-                          {formatTime(item.attendance?.clock_in)}
-                        </TableCell>
-                        <TableCell className="py-3 px-4 text-sm font-mono font-bold text-foreground">
-                          {formatTime(item.attendance?.clock_out)}
-                        </TableCell>
-                        <TableCell className="py-3 px-4 text-xs font-mono text-muted-foreground">
-                          {item.attendance?.work_hours ? `${item.attendance.work_hours.toFixed(2)}h` : '—'}
-                        </TableCell>
-                        <TableCell className="py-3 px-4 text-right pr-6">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 text-[10px] font-bold uppercase rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/10 border border-transparent hover:border-border/10 gap-2 px-3"
-                            onClick={() => handleOpenOverride({ id_emp: item.id_emp, name: item.name })}
-                          >
-                            <Edit3 className="h-3 w-3" />
-                            Correct
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+        <CardContent className="p-0">
+          <GenericDataTable
+            columns={columns}
+            data={roster}
+            searchKey="name"
+            searchPlaceholder="Search employees..."
+            searchOptions={[
+              { id: 'name', label: 'Employee Name' },
+              { id: 'departmentName', label: 'Department' }
+            ]}
+          />
         </CardContent>
       </Card>
 
-      {/* ── Manual Override Modal ──────────────────────────────── */}
       {selectedEmployee && (
         <OverrideModal
           employeeId={selectedEmployee.id_emp}
