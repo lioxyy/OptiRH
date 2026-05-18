@@ -68,7 +68,6 @@ const navGroups = [
     items: [
       { title: "Payroll Management", url: "/dashboard/payroll" },
       { title: "Massrouf (Advances)", url: "/dashboard/massrouf" },
-      { title: "Salary Payslips", url: "/dashboard/payslips" },
       { title: "Contract Archive", url: "/dashboard/contracts" },
     ],
   },
