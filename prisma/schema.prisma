@@ -52,6 +52,8 @@ model Employee {
   interviews_conducted Entretien[]
   notifications   Notification[]
   audit_logs      AuditLog[]
+  attendance_records Attendance[]        @relation("EmployeeAttendance")
+  massroufs          Massrouf[]          @relation("EmployeeMassrouf")
 }
 
 model Candidat {
@@ -247,4 +249,36 @@ model AuditLog {
   timestamp    DateTime @default(now())
 
   actor Employee? @relation(fields: [actor_id], references: [id_emp])
+}
+
+model SystemSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model Massrouf {
+  id_massrouf  Int      @id @default(autoincrement())
+  amount       Float
+  date_request DateTime @default(now())
+  status       String   @default("Pending")
+  id_emp       Int
+  approved_by  Int?
+
+  employee     Employee @relation("EmployeeMassrouf", fields: [id_emp], references: [id_emp])
+}
+
+model Attendance {
+  id_attendance Int       @id @default(autoincrement())
+  id_emp        Int
+  date          DateTime
+  clock_in      DateTime?
+  clock_out     DateTime?
+  status        String    @default("Present")
+  work_hours    Float?
+  notes         String?
+
+  employee      Employee  @relation("EmployeeAttendance", fields: [id_emp], references: [id_emp])
+
+  @@unique([id_emp, date])
 }
