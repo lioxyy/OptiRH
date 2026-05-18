@@ -188,7 +188,7 @@ export function EvaluationsPage() {
         </div>
 
         <Tabs defaultValue="analysis" className="space-y-8">
-          <div className="flex items-center justify-between border-b pb-1">
+          <div className="flex items-center justify-between pb-1">
             <TabsList className="bg-transparent h-auto p-0 gap-8">
               <TabsTrigger value="analysis" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-10 px-0 gap-2">
                 <TrendingUp className="h-4 w-4" />
