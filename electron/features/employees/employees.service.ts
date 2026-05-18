@@ -43,6 +43,18 @@ export async function createEmployee(data: CreateEmployeeDTO, actorId: number) {
     const employee = await tx.employee.create({
       data: { ...rest, password_hash },
     })
+
+    if (employee.role === 'Agent') {
+      await tx.department.updateMany({
+        where: { manager_id: employee.id_emp },
+        data: { manager_id: null },
+      })
+      await tx.department.update({
+        where: { id_dept: employee.id_dept },
+        data: { manager_id: employee.id_emp },
+      })
+    }
+
     await writeAuditLog(tx, actorId, 'CREATE', 'Employee', employee.id_emp, employee)
     return employee
   })
@@ -66,6 +78,26 @@ export async function updateEmployee(id: number, data: UpdateEmployeeDTO, reques
       where: { id_emp: id },
       data: updateData,
     })
+
+    if (updated.role === 'Agent') {
+      await tx.department.updateMany({
+        where: {
+          manager_id: updated.id_emp,
+          id_dept: { not: updated.id_dept }
+        },
+        data: { manager_id: null },
+      })
+      await tx.department.update({
+        where: { id_dept: updated.id_dept },
+        data: { manager_id: updated.id_emp },
+      })
+    } else {
+      await tx.department.updateMany({
+        where: { manager_id: updated.id_emp },
+        data: { manager_id: null },
+      })
+    }
+
     await writeAuditLog(tx, requestUser.id_emp, 'UPDATE', 'Employee', id, updated)
     return updated
   })
@@ -76,6 +108,10 @@ export async function deleteEmployee(id: number, actorId: number) {
   if (!employee) throw new AppError('EMPLOYEE_NOT_FOUND', 404)
 
   return prisma.$transaction(async (tx) => {
+    await tx.department.updateMany({
+      where: { manager_id: id },
+      data: { manager_id: null },
+    })
     await tx.employee.delete({ where: { id_emp: id } })
     await writeAuditLog(tx, actorId, 'DELETE', 'Employee', id, employee)
   })

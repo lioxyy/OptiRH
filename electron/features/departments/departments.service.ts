@@ -62,7 +62,7 @@ export async function getDepartmentById(id: number, requestUser: RequestUser) {
   return dept
 }
 
-export async function createDepartment(data: CreateDepartmentDTO, actorId: number) {
+export async function createDepartment(data: CreateDepartmentDTO & { employee_ids?: number[] }, actorId: number) {
   return prisma.$transaction(async (tx) => {
     const existing = await tx.department.findFirst({
       where: { name: { equals: data.name } },
@@ -72,18 +72,61 @@ export async function createDepartment(data: CreateDepartmentDTO, actorId: numbe
       throw new AppError('DEPARTMENT_ALREADY_EXISTS', 409, 'A department with this name already exists')
     }
 
+    const { employee_ids, ...deptData } = data
+
+    let finalManagerId = deptData.manager_id
+    if (employee_ids && employee_ids.length > 0) {
+      const assignedAgents = await tx.employee.findMany({
+        where: {
+          id_emp: { in: employee_ids },
+          role: 'Agent'
+        },
+        select: { id_emp: true }
+      })
+      if (assignedAgents.length > 0) {
+        finalManagerId = assignedAgents[0].id_emp
+      }
+    }
+
+    if (finalManagerId) {
+      await tx.department.updateMany({
+        where: { manager_id: finalManagerId },
+        data: { manager_id: null },
+      })
+    }
+
     const dept = await tx.department.create({
-      data,
+      data: {
+        ...deptData,
+        manager_id: finalManagerId,
+      },
     })
+
+    if (employee_ids && employee_ids.length > 0) {
+      await tx.employee.updateMany({
+        where: { id_emp: { in: employee_ids } },
+        data: { id_dept: dept.id_dept },
+      })
+
+      if (finalManagerId) {
+        await tx.employee.update({
+          where: { id_emp: finalManagerId },
+          data: { id_dept: dept.id_dept },
+        })
+      }
+    }
 
     await writeAuditLog(tx, actorId, 'CREATE', 'Department', dept.id_dept, dept)
     return dept
   })
 }
 
-export async function updateDepartment(id: number, data: UpdateDepartmentDTO, actorId: number) {
+export async function updateDepartment(id: number, data: UpdateDepartmentDTO & { employee_ids?: number[] }, actorId: number) {
   return prisma.$transaction(async (tx) => {
-    const dept = await tx.department.findUnique({ where: { id_dept: id } })
+    const dept = await tx.department.findUnique({
+      where: { id_dept: id },
+      include: { employees: { select: { id_emp: true } } },
+    })
     if (!dept) {
       throw new AppError('DEPARTMENT_NOT_FOUND', 404)
     }
@@ -97,9 +140,76 @@ export async function updateDepartment(id: number, data: UpdateDepartmentDTO, ac
       }
     }
 
+    const { employee_ids, ...deptData } = data
+
+    let finalManagerId = deptData.manager_id !== undefined ? deptData.manager_id : dept.manager_id
+
+    if (employee_ids !== undefined) {
+      const currentEmpIds = dept.employees.map((e) => e.id_emp)
+      const toConnect = employee_ids
+      const toDisconnect = currentEmpIds.filter((empId) => !toConnect.includes(empId))
+
+      const assignedAgents = await tx.employee.findMany({
+        where: {
+          id_emp: { in: toConnect },
+          role: 'Agent'
+        },
+        select: { id_emp: true }
+      })
+
+      if (assignedAgents.length > 0) {
+        finalManagerId = assignedAgents[0].id_emp
+      } else {
+        if (dept.manager_id && toDisconnect.includes(dept.manager_id)) {
+          if (finalManagerId === dept.manager_id) {
+            finalManagerId = null
+          }
+        }
+      }
+
+      if (toDisconnect.length > 0) {
+        const disconnectManagerIds = toDisconnect.filter((empId) => empId === dept.manager_id)
+        if (disconnectManagerIds.length > 0) {
+          if (finalManagerId === dept.manager_id) {
+            finalManagerId = null
+          }
+        }
+
+        await tx.employee.updateMany({
+          where: { id_emp: { in: toDisconnect } },
+          data: { id_dept: 1 },
+        })
+      }
+
+      if (toConnect.length > 0) {
+        await tx.employee.updateMany({
+          where: { id_emp: { in: toConnect } },
+          data: { id_dept: id },
+        })
+      }
+    }
+
+    if (finalManagerId) {
+      await tx.department.updateMany({
+        where: {
+          manager_id: finalManagerId,
+          id_dept: { not: id }
+        },
+        data: { manager_id: null },
+      })
+
+      await tx.employee.update({
+        where: { id_emp: finalManagerId },
+        data: { id_dept: id },
+      })
+    }
+
     const updated = await tx.department.update({
       where: { id_dept: id },
-      data,
+      data: {
+        ...deptData,
+        manager_id: finalManagerId,
+      },
     })
 
     await writeAuditLog(tx, actorId, 'UPDATE', 'Department', id, updated)
