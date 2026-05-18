@@ -14,8 +14,8 @@ export function AttendancePage() {
   if (!isManager) {
     return (
       <div className="space-y-6 max-w-6xl mx-auto p-4 md:p-6 animate-in fade-in duration-300">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Daily Attendance & Pointage
           </h1>
           <p className="text-muted-foreground text-sm">
@@ -41,8 +41,8 @@ export function AttendancePage() {
   /* ── Admin / Agent View ──────────────────────────────────────── */
   return (
     <div className="space-y-6 p-4 md:p-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
+      <div className="flex flex-col gap-1 border-b border-border/10 pb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Attendance Administration Hub
         </h1>
         <p className="text-muted-foreground text-sm">
@@ -50,18 +50,18 @@ export function AttendancePage() {
         </p>
       </div>
 
-      <Tabs defaultValue="roster" className="space-y-4">
-        <TabsList className="bg-muted/60 p-1 rounded-xl">
-          <TabsTrigger value="roster" className="rounded-lg gap-2 text-sm font-medium">
-            <Users className="h-4 w-4" />
+      <Tabs defaultValue="roster" className="space-y-6">
+        <TabsList className="bg-muted/40 p-1 rounded-xl h-11 border border-border/5">
+          <TabsTrigger value="roster" className="rounded-lg gap-2 text-xs font-medium px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <Users className="h-3.5 w-3.5" />
             Today's Roster
           </TabsTrigger>
-          <TabsTrigger value="history" className="rounded-lg gap-2 text-sm font-medium">
-            <CalendarCheck2 className="h-4 w-4" />
+          <TabsTrigger value="history" className="rounded-lg gap-2 text-xs font-medium px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <CalendarCheck2 className="h-3.5 w-3.5" />
             Attendance History
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-lg gap-2 text-sm font-medium">
-            <Settings2 className="h-4 w-4" />
+          <TabsTrigger value="settings" className="rounded-lg gap-2 text-xs font-medium px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <Settings2 className="h-3.5 w-3.5" />
             Attendance Settings
           </TabsTrigger>
         </TabsList>

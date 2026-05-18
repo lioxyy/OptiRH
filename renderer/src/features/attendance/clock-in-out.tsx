@@ -113,127 +113,130 @@ export function ClockInOut() {
     : ''
 
   return (
-    <Card className="border-border/40 bg-card/40 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-border/80">
-      {/* Glow background accent */}
-      <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/10 rounded-full blur-2xl -mr-6 -mt-6 pointer-events-none" />
-
-      <CardHeader className="pb-4">
+    <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg overflow-hidden transition-all duration-300 hover:border-primary/20">
+      <CardHeader className="pb-6">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
-            <Clock className="h-5 w-5 text-teal-400" />
-            Punch Clock
-          </CardTitle>
-          <Badge variant="outline" className="text-xs bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 bg-muted/50 rounded-xl flex items-center justify-center border border-border/10">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold tracking-tight">Punch Clock</CardTitle>
+              <CardDescription className="text-xs">Record your daily office timestamps.</CardDescription>
+            </div>
+          </div>
+          <Badge variant="outline" className="text-[10px] bg-muted/20 border-border/10 rounded-full px-3 py-1 font-bold uppercase tracking-wider">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </Badge>
         </div>
-        <CardDescription>Record your daily office timestamps.</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
         {/* Real-time digital clock */}
-        <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-2xl border border-border/10">
-          <span className="text-3xl font-mono font-extrabold tracking-widest text-foreground">
+        <div className="flex flex-col items-center justify-center p-6 bg-muted/20 rounded-2xl border border-border/5">
+          <span className="text-4xl font-mono font-bold tracking-tight text-foreground">
             {currentTime}
           </span>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
-            Local workstation time
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest mt-2 opacity-70">
+            Workstation Local Time
           </span>
         </div>
 
         {/* State 1: Ready to Clock In */}
         {!isClockedIn && (
           <div className="space-y-4">
-            <div className="text-center p-4 rounded-xl border border-dashed border-border/30 bg-muted/10 space-y-1">
-              <Sun className="h-6 w-6 text-yellow-400 mx-auto animate-pulse" />
-              <p className="text-sm font-semibold mt-2">Ready to Clock In</p>
-              <p className="text-xs text-muted-foreground">You haven't recorded your attendance today.</p>
+            <div className="text-center p-5 rounded-xl border border-dashed border-border/20 bg-muted/5 space-y-1">
+              <Sun className="h-5 w-5 text-muted-foreground/60 mx-auto" />
+              <p className="text-xs font-semibold mt-3">Ready to Clock In</p>
+              <p className="text-[10px] text-muted-foreground">Your attendance hasn't been recorded yet.</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs text-muted-foreground font-medium">Add Optional Notes</label>
+              <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Optional Notes</label>
               <Input
-                placeholder="e.g. Working from annex building..."
+                placeholder="Work location or status..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="h-9 text-sm"
+                className="h-9 text-xs rounded-lg border-border/20 bg-muted/10"
               />
             </div>
 
             <Button
-              className="w-full h-11 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 gap-2"
+              className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-bold rounded-xl shadow-sm transition-all duration-200 gap-2"
               onClick={() => clockInMutation.mutate(notes)}
               disabled={clockInMutation.isPending}
             >
-              <Play className="h-4 w-4 fill-current" />
-              {clockInMutation.isPending ? 'Clocking In...' : 'Clock In Now'}
+              <Play className="h-3.5 w-3.5 fill-current" />
+              {clockInMutation.isPending ? 'Processing...' : 'Clock In Now'}
             </Button>
           </div>
         )}
 
-        {/* State 2: Clocked In (Waiting for Clock Out) */}
+        {/* State 2: Clocked In (Active Shift) */}
         {isClockedIn && !isClockedOut && (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-2">
-              <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
-                <Coffee className="h-4 w-4 animate-bounce" />
+            <div className="p-4 rounded-xl border border-border/20 bg-muted/5 space-y-2">
+              <div className="flex items-center gap-2 text-foreground text-xs font-bold">
+                <Coffee className="h-4 w-4" />
                 Active Shift
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground">
                 Clocked in at <strong className="text-foreground">{punchInTime}</strong> today.
               </p>
               {todayRecord?.status === 'Late' && (
-                <Badge variant="outline" className="text-[10px] text-yellow-600 border-yellow-500/30 bg-yellow-500/5">
-                  Lateness Recorded ⏰
+                <Badge variant="outline" className="text-[9px] text-yellow-500/80 border-yellow-500/20 bg-yellow-500/5 font-mono uppercase">
+                  Lateness Logged
                 </Badge>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs text-muted-foreground font-medium">Add Closing Notes</label>
+              <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Closing Notes</label>
               <Input
-                placeholder="e.g. Successfully finished daily tasks..."
+                placeholder="Remarks before leaving..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="h-9 text-sm"
+                className="h-9 text-xs rounded-lg border-border/20 bg-muted/10"
               />
             </div>
 
             <Button
-              className="w-full h-11 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 gap-2"
+              className="w-full h-11 bg-background border border-border/40 hover:bg-muted/10 text-foreground font-bold rounded-xl shadow-sm transition-all duration-200 gap-2"
               onClick={() => clockOutMutation.mutate(notes)}
               disabled={clockOutMutation.isPending}
             >
-              <Square className="h-4 w-4 fill-current" />
-              {clockOutMutation.isPending ? 'Clocking Out...' : 'Clock Out Now'}
+              <Square className="h-3.5 w-3.5 fill-current" />
+              {clockOutMutation.isPending ? 'Processing...' : 'Clock Out Now'}
             </Button>
           </div>
         )}
 
-        {/* State 3: Clocked Out Completed */}
+        {/* State 3: Completed */}
         {isClockedIn && isClockedOut && (
-          <div className="p-4 rounded-xl border border-teal-500/20 bg-teal-500/5 space-y-3 text-center">
-            <CheckCircle2 className="h-8 w-8 text-teal-400 mx-auto" />
+          <div className="p-5 rounded-xl border border-border/20 bg-muted/5 space-y-4 text-center">
+            <CheckCircle2 className="h-6 w-6 text-muted-foreground mx-auto" />
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">Attendance Logged</p>
-              <p className="text-xs text-muted-foreground">Great job! Your shift is successfully completed.</p>
+              <p className="text-xs font-bold text-foreground uppercase tracking-wider">Attendance Logged</p>
+              <p className="text-[10px] text-muted-foreground">Shift successfully completed for today.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2 text-xs border-t border-border/10">
+            <div className="grid grid-cols-2 gap-4 pt-4 text-[10px] border-t border-border/10">
               <div className="text-left">
-                <span className="text-muted-foreground block">Clock In</span>
-                <strong className="text-foreground">{punchInTime}</strong>
+                <span className="text-muted-foreground uppercase block mb-1">Entry time</span>
+                <strong className="text-foreground text-xs">{punchInTime}</strong>
               </div>
               <div className="text-left">
-                <span className="text-muted-foreground block">Clock Out</span>
-                <strong className="text-foreground">{punchOutTime}</strong>
+                <span className="text-muted-foreground uppercase block mb-1">Exit time</span>
+                <strong className="text-foreground text-xs">{punchOutTime}</strong>
               </div>
             </div>
 
             {todayRecord?.work_hours && (
-              <Badge variant="secondary" className="mt-2 text-xs font-mono">
-                Total Shift Time: {todayRecord.work_hours.toFixed(2)}h
-              </Badge>
+              <div className="pt-2">
+                <Badge variant="secondary" className="text-[10px] font-mono bg-muted/30 border-border/5 px-3 py-1">
+                  Duration: {todayRecord.work_hours.toFixed(2)}h
+                </Badge>
+              </div>
             )}
           </div>
         )}
