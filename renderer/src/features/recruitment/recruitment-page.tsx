@@ -6,14 +6,35 @@ import { useAuth } from '../../context/auth-context'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Card } from '../../components/ui/card'
 import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { CandidateForm } from './candidate-form'
 import { InterviewForm } from './interview-form'
 import { InterviewResultForm } from './interview-result-form'
 import { HireDialog } from './hire-dialog'
-import { Calendar, ClipboardCheck, Star, UserPlus } from 'lucide-react'
+import { Calendar, ClipboardCheck, UserPlus, MoreHorizontal, Plus, Tag, Mail, User } from 'lucide-react'
+import { cn } from '../../lib/utils'
+import { format } from 'date-fns'
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+  defaultDropAnimationSideEffects,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface Interview {
   id_entretien: number
@@ -35,6 +56,13 @@ interface Candidate {
   evaluations?: { score: number }[]
 }
 
+const statusColumns = [
+  { id: 'Pending', label: 'New Apps' },
+  { id: 'In Progress', label: 'Screening' },
+  { id: 'Accepted', label: 'Qualified' },
+  { id: 'Rejected', label: 'Disqualified' },
+] as const
+
 const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   Pending: 'secondary',
   'In Progress': 'default',
@@ -43,11 +71,182 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destr
   Hired: 'default',
 }
 
+function CandidateCard({
+  candidate,
+  isOverlay = false,
+  onSchedule,
+  onResult,
+  onHire
+}: {
+  candidate: Candidate;
+  isOverlay?: boolean;
+  onSchedule: (c: Candidate) => void;
+  onResult: (c: Candidate) => void;
+  onHire: (c: Candidate) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: candidate.id_cand,
+    data: {
+      type: 'Candidate',
+      candidate,
+    },
+  })
+
+  const style = {
+    transition,
+    transform: CSS.Translate.toString(transform),
+  }
+
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="opacity-30 h-[120px] rounded-2xl border-2 border-dashed border-muted-foreground/20 bg-muted/10 mb-3"
+      />
+    )
+  }
+
+  const activeInterview = candidate.entretiens?.find(i => i.status === 'Scheduled')
+  const score = candidate.evaluations?.[0]?.score
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        "group relative p-4 bg-muted/40 dark:bg-[#18181b] border-none hover:bg-muted/60 dark:hover:bg-[#222226] transition-all cursor-grab active:cursor-grabbing rounded-2xl shadow-sm mb-3",
+        isOverlay && "cursor-grabbing shadow-2xl scale-105 ring-2 ring-primary/20 bg-muted/80 dark:bg-[#1e1e21]"
+      )}
+    >
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-1">
+            <p className="font-bold text-[13px] text-foreground/90">{candidate.name}</p>
+            {candidate.post_applied && (
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/80 font-medium">
+                <Tag className="h-3 w-3 opacity-50" />
+                {candidate.post_applied}
+              </div>
+            )}
+          </div>
+          {score !== undefined && (
+            <div className={cn(
+              "px-1.5 py-0.5 rounded text-[10px] font-bold",
+              score >= 70 ? "bg-green-500/10 text-green-500" : score >= 40 ? "bg-orange-500/10 text-orange-500" : "bg-red-500/10 text-red-500"
+            )}>
+              {score}%
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60">
+            <Mail className="h-3 w-3" />
+            {candidate.email}
+          </div>
+          {activeInterview && (
+            <div className="flex items-center gap-2 text-[10px] text-blue-500 font-bold bg-blue-500/10 w-fit px-2 py-0.5 rounded">
+              <Calendar className="h-3 w-3" />
+              {format(new Date(activeInterview.date_heure), 'MMM dd, HH:mm')}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-1 text-[9px] text-muted-foreground/40 font-bold uppercase tracking-tight">
+            <User className="h-2.5 w-2.5" />
+            {candidate.agent?.name || 'Unassigned'}
+          </div>
+          <div className="flex gap-1 no-drag">
+            {candidate.status === 'Pending' && (
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md hover:bg-muted/30" onPointerDown={e => e.stopPropagation()} onClick={() => onSchedule(candidate)}>
+                <UserPlus className="h-3 w-3" />
+              </Button>
+            )}
+            {candidate.status === 'Accepted' && (
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md hover:bg-green-500/20 text-green-600" onPointerDown={e => e.stopPropagation()} onClick={() => onHire(candidate)}>
+                <UserPlus className="h-3 w-3" />
+              </Button>
+            )}
+            {activeInterview && (
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md hover:bg-muted/30" onPointerDown={e => e.stopPropagation()} onClick={() => onResult(candidate)}>
+                <ClipboardCheck className="h-3 w-3" />
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md hover:bg-muted/30" onPointerDown={e => e.stopPropagation()} onClick={() => onSchedule(candidate)}>
+              <Calendar className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function RecruitmentColumn({ status, label, candidates, onSchedule, onResult, onHire }: {
+  status: string;
+  label: string;
+  candidates: Candidate[];
+  onSchedule: (c: Candidate) => void;
+  onResult: (c: Candidate) => void;
+  onHire: (c: Candidate) => void;
+}) {
+  const { setNodeRef } = useSortable({
+    id: status,
+    data: {
+      type: 'Column',
+      status,
+    },
+  })
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between px-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-bold tracking-tight text-foreground/80">{label}</h3>
+          <span className="text-xs text-muted-foreground/40 font-bold ml-1">{candidates.length}</span>
+        </div>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/30 hover:text-foreground">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div
+        ref={setNodeRef}
+        className="flex flex-col min-h-[500px]"
+      >
+        <SortableContext items={candidates.map(c => c.id_cand)} strategy={verticalListSortingStrategy}>
+          {candidates.map((candidate) => (
+            <CandidateCard
+              key={candidate.id_cand}
+              candidate={candidate}
+              onSchedule={onSchedule}
+              onResult={onResult}
+              onHire={onHire}
+            />
+          ))}
+        </SortableContext>
+      </div>
+    </div>
+  )
+}
+
 export function RecruitmentPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [view, setView] = useState<'kanban' | 'list'>('kanban')
+  const [activeCandidate, setActiveCandidate] = useState<Candidate | null>(null)
 
   const [schedulingCandidate, setSchedulingCandidate] = useState<Candidate | null>(null)
   const [resultInterview, setResultInterview] = useState<{ id: number; name: string } | null>(null)
@@ -68,20 +267,52 @@ export function RecruitmentPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recruitment'] }),
   })
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
+  const handleDragStart = (event: DragStartEvent) => {
+    if (event.active.data.current?.type === 'Candidate') {
+      setActiveCandidate(event.active.data.current.candidate)
+    }
+  }
 
-  const columns = [
-    { status: 'Pending', label: 'New Applications' },
-    { status: 'In Progress', label: 'In Review' },
-    { status: 'Accepted', label: 'Accepted' },
-    { status: 'Rejected', label: 'Rejected' },
-  ]
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveCandidate(null)
+    const { active, over } = event
+    if (!over) return
+
+    const activeData = active.data.current
+    const overData = over.data.current
+
+    if (!activeData || activeData.type !== 'Candidate') return
+
+    const candidate = activeData.candidate
+    let newStatus = candidate.status
+
+    if (overData?.type === "Column") {
+      newStatus = overData.status
+    } else if (overData?.type === "Candidate") {
+      newStatus = overData.candidate.status
+    }
+
+    if (newStatus !== candidate.status) {
+      statusMutation.mutate({ id: candidate.id_cand, status: newStatus })
+    }
+  }
 
   const listColumns = React.useMemo<ColumnDef<Candidate>[]>(() => [
     {
       id: "name",
       accessorKey: "name",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Candidate" />,
     },
     {
       id: "email",
@@ -107,140 +338,104 @@ export function RecruitmentPage() {
     {
       id: "date",
       accessorKey: "date_candidature",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-      cell: ({ row }) => new Date(row.original.date_candidature).toLocaleDateString(),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Applied On" />,
+      cell: ({ row }) => format(new Date(row.original.date_candidature), 'MMM dd, yyyy'),
     },
     {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end space-x-1">
-          {row.original.status === 'Pending' && (
-            <Button size="sm" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: row.original.id_cand, status: 'In Progress' })}>Review</Button>
-          )}
-          {row.original.status === 'In Progress' && user?.role === 'Admin' && (
-            <>
-              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: row.original.id_cand, status: 'Accepted' })}>Accept</Button>
-              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: row.original.id_cand, status: 'Rejected' })}>Reject</Button>
-            </>
-          )}
           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSchedulingCandidate(row.original)}>Schedule</Button>
-          {row.original.entretiens?.find(i => i.status === 'Scheduled') && (
-            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
-              const interview = row.original.entretiens!.find(i => i.status === 'Scheduled')!
-              setResultInterview({ id: interview.id_entretien, name: row.original.name })
-            }}>Result</Button>
-          )}
           {row.original.status === 'Accepted' && (
             <Button size="sm" variant="default" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => setHiringCandidate(row.original)}>
-              <UserPlus className="mr-1 h-3 w-3" /> Hire
+              Hire
             </Button>
           )}
         </div>
       )
     }
-  ], [statusMutation, user])
+  ], [])
 
   if (isLoading) return <div className="p-6">Loading...</div>
 
   return (
-    <div>
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Recruitment Pipeline</h1>
-          {user?.role === 'Admin' && (
-            <Button onClick={() => setShowForm(true)}>New Candidate</Button>
-          )}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-extrabold tracking-tight">Recruitment Pipeline</h1>
+          <p className="text-sm text-muted-foreground font-medium">Track and manage candidates through the hiring workflow.</p>
         </div>
+        {user?.role === 'Admin' && (
+          <Button size="sm" onClick={() => setShowForm(true)} className="h-9 px-6 rounded-xl text-xs font-bold shadow-lg">
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> New Candidate
+          </Button>
+        )}
+      </div>
 
+      <div className="flex items-center gap-3 bg-muted/20 p-1 rounded-xl border border-muted-foreground/5 w-fit">
         <Tabs value={view} onValueChange={(v) => setView(v as 'kanban' | 'list')} className="w-fit">
-          <TabsList className="h-9">
-            <TabsTrigger value="kanban" className="h-7 px-4">Kanban</TabsTrigger>
-            <TabsTrigger value="list" className="h-7 px-4">List</TabsTrigger>
+          <TabsList className="h-8 bg-transparent p-0">
+            <TabsTrigger
+              value="kanban"
+              className="h-7 px-4 rounded-lg text-xs font-bold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+            >
+              Kanban View
+            </TabsTrigger>
+            <TabsTrigger
+              value="list"
+              className="h-7 px-4 rounded-lg text-xs font-bold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+            >
+              Table List
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {view === 'kanban' ? (
-        <div className="grid grid-cols-4 gap-4">
-          {columns.map(({ status, label }) => {
-            const columnCandidates = candidates.filter((c) => c.status === status)
-            return (
-              <Card key={status}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center justify-between">
-                    {label}
-                    <Badge variant="secondary">{columnCandidates.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 min-h-[200px]">
-                  {columnCandidates.map((candidate) => (
-                    <Card key={candidate.id_cand} className="p-3">
-                      <div className="space-y-2">
-                        <p className="font-medium text-sm">{candidate.name}</p>
-                        {candidate.post_applied && (
-                          <p className="text-xs text-muted-foreground">{candidate.post_applied}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground">{candidate.agent?.name && `Agent: ${candidate.agent.name}`}</p>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-4">
+            {statusColumns.map((col) => (
+              <RecruitmentColumn
+                key={col.id}
+                status={col.id}
+                label={col.label}
+                candidates={candidates.filter((c) => c.status === col.id)}
+                onSchedule={setSchedulingCandidate}
+                onResult={(c) => {
+                  const interview = c.entretiens?.find(i => i.status === 'Scheduled')
+                  if (interview) setResultInterview({ id: interview.id_entretien, name: c.name })
+                }}
+                onHire={setHiringCandidate}
+              />
+            ))}
+          </div>
 
-                        {/* Interview & Score Info */}
-                        {candidate.entretiens?.some(i => i.status === 'Scheduled') && (
-                          <div className="flex items-center gap-1.5 text-[10px] text-blue-600 font-medium bg-blue-50 p-1 rounded">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(candidate.entretiens.find(i => i.status === 'Scheduled')!.date_heure).toLocaleDateString()}
-                          </div>
-                        )}
-                        {candidate.evaluations && candidate.evaluations.length > 0 && (
-                          <div className="flex items-center gap-1.5 text-[10px] text-amber-600 font-bold bg-amber-50 p-1 rounded">
-                            <Star className="h-3 w-3 fill-amber-600" />
-                            Score: {candidate.evaluations[0].score}/100
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {status === 'Pending' && (
-                            <Button size="sm" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: candidate.id_cand, status: 'In Progress' })}>
-                              Review
-                            </Button>
-                          )}
-                          {status === 'In Progress' && user?.role === 'Admin' && (
-                            <>
-                              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: candidate.id_cand, status: 'Accepted' })}>
-                                Accept
-                              </Button>
-                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: candidate.id_cand, status: 'Rejected' })}>
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                          <Button size="sm" variant="ghost" className="h-7 text-xs flex-1 border border-input hover:bg-accent" onClick={() => setSchedulingCandidate(candidate)}>
-                            <Calendar className="mr-1 h-3 w-3" /> Schedule
-                          </Button>
-                          {candidate.entretiens?.find(i => i.status === 'Scheduled') && (
-                            <Button size="sm" variant="ghost" className="h-7 text-xs flex-1 border border-input hover:bg-accent" onClick={() => {
-                              const interview = candidate.entretiens!.find(i => i.status === 'Scheduled')!
-                              setResultInterview({ id: interview.id_entretien, name: candidate.name })
-                            }}>
-                              <ClipboardCheck className="mr-1 h-3 w-3" /> Result
-                            </Button>
-                          )}
-                          {status === 'Accepted' && (
-                            <Button size="sm" className="h-7 text-xs flex-1 bg-green-600 hover:bg-green-700" onClick={() => setHiringCandidate(candidate)}>
-                              <UserPlus className="mr-1 h-3 w-3" /> Hire
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                  {columnCandidates.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-8">No candidates</p>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+          <DragOverlay dropAnimation={{
+            sideEffects: defaultDropAnimationSideEffects({
+              styles: {
+                active: {
+                  opacity: '0.4',
+                },
+              },
+            }),
+          }}>
+            {activeCandidate ? (
+              <CandidateCard
+                candidate={activeCandidate}
+                isOverlay
+                onSchedule={() => { }}
+                onResult={() => { }}
+                onHire={() => { }}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       ) : (
         <GenericDataTable
           columns={listColumns}
@@ -249,7 +444,6 @@ export function RecruitmentPage() {
             { id: "name", label: "Candidate Name" },
             { id: "email", label: "Email" },
             { id: "position", label: "Position" },
-            { id: "status", label: "Status" }
           ]}
         />
       )}
