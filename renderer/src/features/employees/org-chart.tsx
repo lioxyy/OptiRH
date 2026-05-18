@@ -40,14 +40,14 @@ function TreeNode({ node, depth = 0 }: { node: OrgNode; depth?: number }) {
           <User className="h-3 w-3 text-muted-foreground" />
         </div>
         <span className="text-sm font-medium">{node.name}</span>
+        <Badge className={`text-[10px] px-1.5 py-0 h-4 ${roleColor[node.role] || ''}`} variant="outline">
+          {node.role}
+        </Badge>
         {node.department && (
           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/80 px-2 py-0.5 rounded-sm border border-muted-foreground/10">
             {node.department.name}
           </span>
         )}
-        <Badge className={`text-[10px] px-1.5 py-0 h-4 ${roleColor[node.role] || ''}`} variant="outline">
-          {node.role}
-        </Badge>
       </div>
       {expanded && hasChildren && (
         <div>
