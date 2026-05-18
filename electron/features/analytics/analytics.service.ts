@@ -785,3 +785,102 @@ export async function getEmployeeDashboard(actorId: number) {
   }
 }
 
+
+export async function getUnifiedDashboard(actorId: number) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const endOfToday = new Date(today)
+  endOfToday.setHours(23, 59, 59, 999)
+
+  const thirtyDaysFromNow = new Date()
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+
+  // 1. KPI Counts
+  const [
+    scheduledInterviews,
+    expiringContracts,
+    pendingPayslips,
+    presentPersonnel
+  ] = await Promise.all([
+    prisma.entretien.count({ where: { status: 'Scheduled' } }),
+    prisma.contract.count({
+      where: {
+        status: 'Active',
+        date_fin: { lte: thirtyDaysFromNow, gte: today }
+      }
+    }),
+    prisma.salaire.count({ where: { status: 'Generated' } }),
+    prisma.attendance.count({
+      where: {
+        date: { gte: today, lte: endOfToday },
+        status: 'Present'
+      }
+    })
+  ])
+
+  // 2. Operational Lists
+  const [
+    pendingLeaves,
+    todaysLogs,
+    todaysFormations,
+    myTasks
+  ] = await Promise.all([
+    // Pending Leave Requests
+    prisma.conge.findMany({
+      where: { status: 'Pending' },
+      include: {
+        employee: { select: { name: true, role: true } },
+        leave_type: { select: { name: true } }
+      },
+      orderBy: { date_deb: 'asc' }
+    }),
+
+    // Today's System Logs
+    prisma.auditLog.findMany({
+      where: { timestamp: { gte: today } },
+      include: { actor: { select: { name: true } } },
+      orderBy: { timestamp: 'desc' },
+      take: 10
+    }),
+
+    // Today's scheduled formations
+    prisma.formation.findMany({
+      where: {
+        date_deb: { lte: endOfToday },
+        AND: [
+          {
+            date_deb: {
+              gte: today
+            }
+          }
+        ]
+      },
+      include: { instructor: { select: { name: true } } }
+    }),
+
+    // Current user's pending tasks
+    prisma.task.findMany({
+      where: {
+        assigned_to: actorId,
+        status: { not: 'Done' }
+      },
+      orderBy: { date_fin: 'asc' },
+      take: 10
+    })
+  ])
+
+  return {
+    kpis: {
+      scheduledInterviews,
+      expiringContracts,
+      pendingPayslips,
+      presentPersonnel
+    },
+    tables: {
+      pendingLeaves,
+      todaysLogs,
+      todaysFormations,
+      myTasks
+    }
+  }
+}
