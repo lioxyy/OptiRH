@@ -60,4 +60,9 @@ router.post('/', authorize('Admin', 'Agent'), validate('body', CreateEvaluationS
   res.status(201).json(success(evaluation))
 }))
 
+router.delete('/:id', authorize('Admin'), asyncHandler(async (req, res) => {
+  const result = await EvaluationService.deleteEvaluation(Number(req.params.id), req.user.id_emp)
+  res.json(success(result))
+}))
+
 export default router

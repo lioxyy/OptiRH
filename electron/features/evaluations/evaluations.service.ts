@@ -221,3 +221,26 @@ export async function getLatestBonus(employeeId: number) {
 
   return { bonus_amount: evaluation?.bonus_amount ?? 0 }
 }
+
+export async function deleteEvaluation(id: number, actorId: number) {
+  return prisma.$transaction(async (tx) => {
+    const evaluation = await tx.evaluation.findUnique({
+      where: { id_eval: id },
+      include: { scores: true }
+    })
+    if (!evaluation) throw new AppError('NOT_FOUND', 404, 'Evaluation not found')
+
+    // Delete related scores
+    await tx.evaluationScore.deleteMany({
+      where: { eval_id: id }
+    })
+
+    // Delete evaluation
+    const deleted = await tx.evaluation.delete({
+      where: { id_eval: id }
+    })
+
+    await writeAuditLog(tx, actorId, 'DELETE', 'Evaluation', id, evaluation)
+    return deleted
+  })
+}

@@ -23,8 +23,15 @@ import {
 import { Input } from '../../components/ui/input'
 import { Textarea } from '../../components/ui/textarea'
 import { Button } from '../../components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
-import { X, Calculator, Target } from 'lucide-react'
+import { Calculator, Target } from 'lucide-react'
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from '../../components/ui/dialog'
 
 const EvaluationSchema = z.object({
   type_eval: z.enum(['Employee', 'Candidate']),
@@ -42,10 +49,11 @@ const EvaluationSchema = z.object({
 type EvaluationFormValues = z.infer<typeof EvaluationSchema>
 
 interface EvaluationFormProps {
-  onClose: () => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function EvaluationForm({ onClose }: EvaluationFormProps) {
+export function EvaluationForm({ open, onOpenChange }: EvaluationFormProps) {
   const queryClient = useQueryClient()
   const [selectedType, setSelectedType] = useState<'Employee' | 'Candidate'>('Employee')
 
@@ -96,7 +104,7 @@ export function EvaluationForm({ onClose }: EvaluationFormProps) {
       queryClient.invalidateQueries({ queryKey: ['evaluations'] })
       queryClient.invalidateQueries({ queryKey: ['eval-stats'] })
       toast.success('Evaluation submitted successfully')
-      onClose()
+      onOpenChange(false)
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Failed to submit evaluation')
@@ -120,24 +128,19 @@ export function EvaluationForm({ onClose }: EvaluationFormProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border-primary/20">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-          <div>
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              <Calculator className="h-6 w-6 text-primary" />
-              Performance Evaluation
-            </CardTitle>
-            <CardDescription>Structured assessment with weighted performance metrics.</CardDescription>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calculator className="h-6 w-6 text-primary" />
+            Performance Evaluation
+          </DialogTitle>
+          <DialogDescription>Structured assessment with weighted performance metrics.</DialogDescription>
+        </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-6">
-            <CardContent className="space-y-8">
+            <div className="space-y-8">
               {/* SECTION: Selection */}
               <div className="grid grid-cols-2 gap-6 p-4 bg-muted/30 rounded-xl border border-primary/5">
                 <FormField
@@ -308,17 +311,17 @@ export function EvaluationForm({ onClose }: EvaluationFormProps) {
                   />
                 </div>
               </div>
-            </CardContent>
+            </div>
 
-            <div className="flex justify-end gap-3 p-6 bg-muted/50 border-t sticky bottom-0 rounded-b-2xl">
-              <Button type="button" variant="outline" onClick={onClose}>Discard Change</Button>
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Discard Change</Button>
               <Button type="submit" disabled={mutation.isPending} className="px-8 shadow-lg shadow-primary/20">
                 {mutation.isPending ? 'Finalizing...' : 'Commit Evaluation'}
               </Button>
             </div>
           </form>
         </Form>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
