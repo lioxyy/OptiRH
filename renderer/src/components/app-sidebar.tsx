@@ -7,8 +7,6 @@ import {
   UsersIcon,
   WalletIcon,
   Clock,
-  FileTextIcon,
-  BarChart3Icon,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -35,7 +33,6 @@ const navGroups = [
     roles: ["Admin", "Agent", "Employee"],
     items: [
       { title: "Overview", url: "/dashboard" },
-      { title: "Analytics", url: "/dashboard/analytics" },
       { title: "Audit Logs", url: "/dashboard/logs" },
     ],
   },
