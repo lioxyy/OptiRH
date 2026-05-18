@@ -57,8 +57,8 @@ interface Candidate {
 }
 
 const statusColumns = [
-  { id: 'Pending', label: 'New Apps' },
-  { id: 'In Progress', label: 'Screening' },
+  { id: 'Pending', label: 'Candidates' },
+  { id: 'In Progress', label: 'Scheduled Interviews' },
   { id: 'Accepted', label: 'Qualified' },
   { id: 'Rejected', label: 'Disqualified' },
 ] as const
