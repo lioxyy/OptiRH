@@ -20,7 +20,9 @@ import {
   DollarSign,
   TrendingUp,
   Clock,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  CheckCircle,
+  GraduationCap
 } from 'lucide-react'
 import { Skeleton } from '../../components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -133,6 +135,17 @@ export function AnalyticsPage() {
     queryFn: async () => (await api.get('/api/analytics/recruitment-velocity')).data.data,
   })
 
+  // Phase 6 Queries
+  const { data: taskStats } = useQuery({
+    queryKey: ['analytics', 'task-stats'],
+    queryFn: async () => (await api.get('/api/analytics/task-stats')).data.data,
+  })
+
+  const { data: formationStats } = useQuery({
+    queryKey: ['analytics', 'formation-stats'],
+    queryFn: async () => (await api.get('/api/analytics/formation-stats')).data.data,
+  })
+
   const kpis = [
     { title: 'Total Workforce', value: summary?.total_employees, icon: Users, color: 'text-primary', desc: 'Active personnel' },
     { title: 'Avg Tenure', value: tenureStats ? `${tenureStats.average_months} Mo` : null, icon: Clock, color: 'text-amber-500', desc: 'Organizational loyalty' },
@@ -146,7 +159,7 @@ export function AnalyticsPage() {
     <div className="space-y-8 p-6 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
       <div className="flex flex-col gap-2">
         <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-br from-foreground via-foreground/80 to-foreground/40 bg-clip-text text-transparent">HR Intelligence</h1>
-        <p className="text-muted-foreground text-sm font-medium uppercase tracking-[0.2em] opacity-80">Phase 3: Deep-Dive Absence & Leaves</p>
+        <p className="text-muted-foreground text-sm font-medium uppercase tracking-[0.2em] opacity-80">Full Suite HR Analytics Standardized</p>
       </div>
 
       {/* KPI Section */}
@@ -411,6 +424,56 @@ export function AnalyticsPage() {
                   <p className="text-[9px] text-muted-foreground uppercase">Retention</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Phase 6: Operational Efficiency & Training */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
+            <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-500" /> Operational Velocity
+              </CardTitle>
+              <CardDescription className="text-xs">Task completion rate & Overdue backlog</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[250px] pt-6 flex items-center justify-around gap-4">
+              <div className="w-1/2 h-full flex flex-col justify-center items-center">
+                <div className="text-4xl font-black text-emerald-500 tracking-tighter">
+                  {taskStats?.completion_rate || 0}%
+                </div>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold mt-1">Completion Rate</p>
+              </div>
+              <div className="w-1/2 space-y-4">
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/5">
+                  <p className="text-2xl font-bold text-orange-500">{taskStats?.overdue || 0}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">Overdue Tasks</p>
+                </div>
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/5">
+                  <p className="text-2xl font-bold">{taskStats?.total || 0}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">Total Pipeline</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/5 bg-card/30 backdrop-blur-3xl shadow-xl border border-white/5">
+            <CardHeader className="border-b border-primary/5 bg-primary/[0.02]">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-indigo-500" /> Training Impact
+              </CardTitle>
+              <CardDescription className="text-xs">Monthly enrollment & session attendance</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[250px] pt-6">
+              <ChartContainer config={{}} className="h-full w-full">
+                <BarChart data={formationStats?.enrollment_trend}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
             </CardContent>
           </Card>
         </div>

@@ -507,6 +507,68 @@ export async function getPerformanceTrends() {
   }))
 }
 
+export async function getTaskStats() {
+  const total = await prisma.task.count()
+  const byStatus = await prisma.task.groupBy({
+    by: ['status'],
+    _count: { _all: true }
+  })
+
+  const overdue = await prisma.task.count({
+    where: {
+      date_fin: { lt: new Date() },
+      status: { not: 'Done' }
+    }
+  })
+
+  const priorityDist = await prisma.task.groupBy({
+    by: ['priority'],
+    _count: { _all: true }
+  })
+
+  return {
+    total,
+    overdue,
+    status_distribution: byStatus.map(s => ({ status: s.status, count: s._count._all })),
+    priority_distribution: priorityDist.map(p => ({ priority: p.priority, count: p._count._all })),
+    completion_rate: total > 0
+      ? Math.round((byStatus.find(s => s.status === 'Done')?._count._all || 0) / total * 100)
+      : 0
+  }
+}
+
+export async function getFormationStats() {
+  const totalSessions = await prisma.formation.count()
+  const totalParticipants = await prisma.participationFormation.count()
+
+  const sessions = await prisma.formation.findMany({
+    select: {
+      date_deb: true,
+      id_instructor: true,
+      participations: { select: { id_emp: true } }
+    }
+  })
+
+  const enrollmentByMonth: Record<string, number> = {}
+  const instructors: Record<number, number> = {}
+
+  sessions.forEach(s => {
+    const month = s.date_deb.toISOString().slice(0, 7)
+    enrollmentByMonth[month] = (enrollmentByMonth[month] || 0) + s.participations.length
+    if (s.id_instructor) {
+      instructors[s.id_instructor] = (instructors[s.id_instructor] || 0) + 1
+    }
+  })
+
+  return {
+    total_sessions: totalSessions,
+    total_participants: totalParticipants,
+    enrollment_trend: Object.entries(enrollmentByMonth).map(([month, count]) => ({ month, count })),
+    top_instructors: Object.entries(instructors).map(([id, count]) => ({ id_instructor: Number(id), count })),
+    avg_participants_per_session: totalSessions > 0 ? Number((totalParticipants / totalSessions).toFixed(1)) : 0
+  }
+}
+
 export async function getAdminDashboard(actorId: number) {
   const departments = await prisma.department.findMany({
     select: {
