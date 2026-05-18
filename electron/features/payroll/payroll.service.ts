@@ -5,7 +5,7 @@ import { writeAuditLog } from '../../lib/audit'
 export function getMonthRange(monthYear: string): { startDate: Date; endDate: Date } {
   const parts = monthYear.split('-')
   if (parts.length !== 2) throw new AppError('INVALID_MONTH_YEAR', 400, 'Month-Year must be in MM-YYYY format')
-  
+
   const month = Number(parts[0])
   const year = Number(parts[1])
   if (isNaN(month) || isNaN(year) || month < 1 || month > 12) throw new AppError('INVALID_MONTH_YEAR', 400, 'Invalid month/year')
@@ -29,7 +29,7 @@ export async function generateMonthlyPayroll(employeeId: number, monthYear: stri
   const monthlyMassroufs = await prisma.massrouf.findMany({
     where: { id_emp: employeeId, date_request: { gte: startDate, lte: endDate }, status: 'Approved' }
   })
-  const totalMassroufDeductions = monthlyMassroufs.reduce((sum, item) => sum + item.amount, 0)
+  const totalMassroufDeductions = monthlyMassroufs.reduce((sum: number, item: any) => sum + item.amount, 0)
 
   const absenceDeductions = totalUnjustifiedAbsences * (baseSalary / 30)
   const amountFinal = Math.max(0, baseSalary - absenceDeductions - totalMassroufDeductions) // Negative pay prevention
@@ -115,7 +115,7 @@ export async function generatePayroll(data: {
   const monthlyMassroufs = await prisma.massrouf.findMany({
     where: { id_emp: data.id_emp, date_request: { gte: startDate, lte: endDate }, status: 'Approved' }
   })
-  const totalMassroufDeductions = monthlyMassroufs.reduce((sum, item) => sum + item.amount, 0)
+  const totalMassroufDeductions = monthlyMassroufs.reduce((sum: number, item: any) => sum + item.amount, 0)
 
   const absenceDeductions = unjustifiedAbsencesCount * (baseSalary / 30)
   const amountFinal = Math.max(0, baseSalary - absenceDeductions - totalMassroufDeductions + data.bonus_amount)

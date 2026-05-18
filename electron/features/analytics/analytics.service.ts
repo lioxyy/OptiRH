@@ -174,7 +174,7 @@ export async function getAdminDashboard(actorId: number) {
   const today = new Date()
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
   const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
-  
+
   const [absenceToday, totalEmp] = await Promise.all([
     prisma.absence.count({
       where: { date_absence: { gte: startOfToday, lte: endOfToday } }
@@ -255,7 +255,7 @@ export async function getAgentDashboard(actorId: number) {
     where: {
       status: 'Scheduled',
       date_heure: { gte: new Date(), lte: nextWeek },
-      interviewer_id: actorId
+      id_agent: actorId
     }
   })
 
@@ -263,7 +263,7 @@ export async function getAgentDashboard(actorId: number) {
     where: {
       status: 'Scheduled',
       date_heure: { gte: new Date() },
-      interviewer_id: actorId
+      id_agent: actorId
     },
     orderBy: { date_heure: 'asc' },
     take: 5,
