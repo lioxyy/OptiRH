@@ -7,7 +7,7 @@ import authRouter from './features/auth/auth.router'
 import employeesRouter from './features/employees/employees.router'
 import notificationsRouter from './features/notifications/notifications.router'
 import auditRouter from './features/audit/audit.router'
-import leaveRouter from './features/leave/leave.router'
+import leaveRouter from './features/leaves/leaves.router'
 import contractsRouter from './features/contracts/contracts.router'
 import payrollRouter from './features/payroll/payroll.router'
 import tasksRouter from './features/tasks/tasks.router'
@@ -42,7 +42,7 @@ export function createApp() {
   app.use('/api/employees', employeesRouter)
   app.use('/api/notifications', notificationsRouter)
   app.use('/api/audit', auditRouter)
-  app.use('/api/leave', leaveRouter)
+  app.use('/api/leaves', leaveRouter)
   app.use('/api/contracts', contractsRouter)
   app.use('/api/payroll', payrollRouter)
   app.use('/api/tasks', tasksRouter)
