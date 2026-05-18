@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { toast } from 'sonner'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import {
@@ -27,6 +27,7 @@ const FormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   description: z.string().optional(),
   manager_id: z.coerce.number().optional().nullable(),
+  employee_ids: z.array(z.number()).default([]),
 })
 
 type FormData = z.infer<typeof FormSchema>
@@ -35,6 +36,7 @@ interface Employee {
   id_emp: number
   name: string
   role: string
+  id_dept?: number
 }
 
 export function DepartmentForm({
@@ -46,6 +48,7 @@ export function DepartmentForm({
 }) {
   const queryClient = useQueryClient()
   const [submitting, setSubmitting] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ['employees'],
@@ -60,16 +63,35 @@ export function DepartmentForm({
     (e) => e.role === 'Admin' || e.role === 'Agent'
   )
 
+  const filteredEmployees = employees.filter((emp) =>
+    emp.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
-    defaultValues: initialData
-      ? {
-          name: initialData.name,
-          description: initialData.description ?? '',
-          manager_id: initialData.manager_id,
-        }
-      : { name: '', description: '', manager_id: null },
+    defaultValues: {
+      name: initialData?.name ?? '',
+      description: initialData?.description ?? '',
+      manager_id: initialData?.manager_id ?? null,
+      employee_ids: [],
+    },
   })
+
+  // Sync loaded employees to form checkboxes when in edit mode
+  useEffect(() => {
+    if (employees.length > 0 && initialData?.id_dept) {
+      const deptEmpIds = employees
+        .filter((emp) => emp.id_dept === initialData.id_dept)
+        .map((emp) => emp.id_emp)
+
+      form.reset({
+        name: initialData.name,
+        description: initialData.description ?? '',
+        manager_id: initialData.manager_id ?? null,
+        employee_ids: deptEmpIds,
+      })
+    }
+  }, [employees, initialData, form.reset])
 
   async function onSubmit(data: FormData) {
     setSubmitting(true)
@@ -78,6 +100,7 @@ export function DepartmentForm({
         name: data.name,
         description: data.description || undefined,
         manager_id: data.manager_id ? Number(data.manager_id) : null,
+        employee_ids: data.employee_ids.map(Number),
       }
 
       if (initialData?.id_dept) {
@@ -89,6 +112,7 @@ export function DepartmentForm({
       }
 
       queryClient.invalidateQueries({ queryKey: ['departments'] })
+      queryClient.invalidateQueries({ queryKey: ['employees'] })
       if (initialData?.id_dept) {
         queryClient.invalidateQueries({ queryKey: ['department', initialData.id_dept.toString()] })
       }
@@ -144,7 +168,7 @@ export function DepartmentForm({
               <FormLabel>Manager</FormLabel>
               <Select
                 onValueChange={(val) => field.onChange(val === 'none' ? null : val)}
-                defaultValue={field.value?.toString() ?? 'none'}
+                value={field.value?.toString() ?? 'none'}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -164,6 +188,67 @@ export function DepartmentForm({
             </FormItem>
           )}
         />
+
+        <div className="space-y-2">
+          <FormLabel className="text-sm font-medium">Assign Staff Members</FormLabel>
+          <Input
+            placeholder="Search employees to assign..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-9 text-xs mb-2"
+          />
+          <div className="border rounded-md p-3 max-h-[180px] overflow-y-auto bg-card space-y-1.5">
+            <FormField
+              control={form.control}
+              name="employee_ids"
+              render={({ field }) => {
+                const selectedIds = field.value || []
+                const toggleEmployee = (empId: number) => {
+                  if (selectedIds.includes(empId)) {
+                    field.onChange(selectedIds.filter((id) => id !== empId))
+                  } else {
+                    field.onChange([...selectedIds, empId])
+                  }
+                }
+
+                return (
+                  <>
+                    {filteredEmployees.length > 0 ? (
+                      filteredEmployees.map((emp) => {
+                        const isChecked = selectedIds.includes(emp.id_emp)
+                        return (
+                          <div
+                            key={emp.id_emp}
+                            onClick={() => toggleEmployee(emp.id_emp)}
+                            className={`flex items-center justify-between p-2 rounded-md border cursor-pointer hover:bg-accent/40 transition-colors text-xs ${
+                              isChecked ? 'border-primary bg-primary/5 font-medium' : 'border-border'
+                            }`}
+                          >
+                            <div className="flex flex-col">
+                              <span>{emp.name}</span>
+                              <span className="text-[10px] text-muted-foreground">{emp.role}</span>
+                            </div>
+                            <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all ${
+                              isChecked ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/40'
+                            }`}>
+                              {isChecked && (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-2.5 h-2.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="text-center py-4 text-xs text-muted-foreground italic">No employees found</div>
+                    )}
+                  </>
+                )
+              }}
+            />
+          </div>
+        </div>
 
         <Button type="submit" disabled={submitting} className="w-full">
           {submitting ? 'Saving...' : initialData ? 'Update Department' : 'Create Department'}
