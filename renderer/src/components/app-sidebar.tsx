@@ -14,6 +14,9 @@ import {
   BarChart3Icon,
   Building2,
   GraduationCap,
+  Clock,
+  PiggyBank,
+  Receipt,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -56,8 +59,14 @@ const navItems = [
 
   {
     title: "Leave",
-    url: "/dashboard/leave",
+    url: "/dashboard/leaves",
     icon: CalendarCheckIcon,
+    roles: ["Admin", "Agent", "Employee"],
+  },
+  {
+    title: "Attendance",
+    url: "/dashboard/attendance",
+    icon: Clock,
     roles: ["Admin", "Agent", "Employee"],
   },
   {
@@ -71,6 +80,18 @@ const navItems = [
     url: "/dashboard/payroll",
     icon: WalletIcon,
     roles: ["Admin"],
+  },
+  {
+    title: "Payslips",
+    url: "/dashboard/payslips",
+    icon: Receipt,
+    roles: ["Admin", "Agent", "Employee"],
+  },
+  {
+    title: "Massrouf",
+    url: "/dashboard/massrouf",
+    icon: PiggyBank,
+    roles: ["Admin", "Agent", "Employee"],
   },
   {
     title: "Tasks",

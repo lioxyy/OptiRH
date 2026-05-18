@@ -22,13 +22,13 @@ export async function getDailyRoster(deptId?: number) {
   const today = getStartOfDay()
   
   const employees = await prisma.employee.findMany({
-    where: deptId ? { id_dept: deptId } : {},
+    where: deptId ? { departments: { some: { id_dept: deptId } } } : {},
     select: {
       id_emp: true,
       name: true,
       email: true,
       role: true,
-      department: { select: { name: true } },
+      departments: { select: { name: true } },
       attendance_records: {
         where: { date: today }
       },
@@ -58,7 +58,7 @@ export async function getDailyRoster(deptId?: number) {
       name: emp.name,
       email: emp.email,
       role: emp.role,
-      departmentName: emp.department.name,
+      departmentName: emp.departments.map(d => d.name).join(', '),
       attendance,
       onLeave,
       status: calculatedStatus

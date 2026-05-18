@@ -1194,7 +1194,7 @@ async function runAllTests() {
   await test('My Payslips', 'Payslip record has all required fields for bulletin de paie', async () => {
     const slip = await prisma.salaire.findFirst({
       where: { id_emp: alice.id_emp },
-      include: { employee: { select: { name: true, email: true, role: true, department: { select: { name: true } } } }, contract: true }
+      include: { employee: { select: { name: true, email: true, role: true, departments: { select: { name: true } } } }, contract: true }
     })
     assert(slip !== null, 'Alice must have at least one payslip')
     assert(slip!.id_salaire > 0,           'id_salaire must be a positive integer')
@@ -1414,7 +1414,7 @@ async function runAllTests() {
   await test('My Payslips', 'Each payslip includes employee info (name, role, department)', async () => {
     const slips = await prisma.salaire.findMany({
       where: { id_emp: alice.id_emp },
-      include: { employee: { select: { name: true, role: true, email: true, department: { select: { name: true } } } } }
+      include: { employee: { select: { name: true, role: true, email: true, departments: { select: { name: true } } } } }
     })
     for (const s of slips) {
       assert(s.employee !== null,              'Employee relation must be included')

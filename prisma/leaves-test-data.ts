@@ -81,7 +81,7 @@ async function main() {
       phone: '0555-00-0001',
       date_birth: new Date('1985-03-15'),
       date_employment: new Date('2015-01-01'),
-      id_dept: deptRH.id_dept,
+      departments: { connect: { id_dept: deptRH.id_dept } },
     },
   })
 
@@ -98,7 +98,7 @@ async function main() {
       phone: '0555-00-0002',
       date_birth: new Date('1990-07-22'),
       date_employment: new Date('2018-06-01'),
-      id_dept: deptRH.id_dept,
+      departments: { connect: { id_dept: deptRH.id_dept } },
     },
   })
 
@@ -115,7 +115,7 @@ async function main() {
       phone: '0555-00-0010',
       date_birth: new Date('1995-04-10'),
       date_employment: new Date('2021-03-01'),
-      id_dept: deptIT.id_dept,
+      departments: { connect: { id_dept: deptIT.id_dept } },
       supervisor_id: agent.id_emp,
     },
   })
@@ -133,7 +133,7 @@ async function main() {
       phone: '0555-00-0011',
       date_birth: new Date('1993-11-05'),
       date_employment: new Date('2020-09-01'),
-      id_dept: deptIT.id_dept,
+      departments: { connect: { id_dept: deptIT.id_dept } },
       supervisor_id: agent.id_emp,
     },
   })
@@ -151,7 +151,7 @@ async function main() {
       phone: '0555-00-0012',
       date_birth: new Date('1998-08-20'),
       date_employment: new Date('2023-01-15'),
-      id_dept: deptFIN.id_dept,
+      departments: { connect: { id_dept: deptFIN.id_dept } },
       supervisor_id: admin.id_emp,
     },
   })
@@ -169,7 +169,7 @@ async function main() {
       phone: '0555-00-0013',
       date_birth: new Date('2000-01-30'),
       date_employment: new Date('2026-05-01'),
-      id_dept: deptFIN.id_dept,
+      departments: { connect: { id_dept: deptFIN.id_dept } },
       supervisor_id: admin.id_emp,
     },
   })
@@ -274,7 +274,7 @@ async function main() {
     update: { salaire_base: 150000, type: 'CDI', status: 'Active' },
     create: {
       id_contract: 9901, id_emp: admin.id_emp, type: 'CDI',
-      salaire_base: 150000, start_date: new Date('2015-01-01'), status: 'Active'
+      salaire_base: 150000, date_deb: new Date('2015-01-01'), status: 'Active'
     }
   })
 
@@ -283,7 +283,7 @@ async function main() {
     update: { salaire_base: 85000, type: 'CDI', status: 'Active' },
     create: {
       id_contract: 9902, id_emp: alice.id_emp, type: 'CDI',
-      salaire_base: 85000, start_date: new Date('2021-03-01'), status: 'Active'
+      salaire_base: 85000, date_deb: new Date('2021-03-01'), status: 'Active'
     }
   })
 
@@ -292,7 +292,7 @@ async function main() {
     update: { salaire_base: 110000, type: 'CDI', status: 'Active' },
     create: {
       id_contract: 9903, id_emp: agent.id_emp, type: 'CDI',
-      salaire_base: 110000, start_date: new Date('2018-06-01'), status: 'Active'
+      salaire_base: 110000, date_deb: new Date('2018-06-01'), status: 'Active'
     }
   })
 

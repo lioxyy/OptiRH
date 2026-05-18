@@ -111,7 +111,7 @@ async function main() {
       phone: '0555-00-0001',
       date_birth: new Date('1985-03-15'),
       date_employment: new Date('2015-01-01'),
-      id_dept: deptRH.id_dept,
+      departments: { connect: { id_dept: deptRH.id_dept } },
     },
   })
 
@@ -127,7 +127,7 @@ async function main() {
       phone: '0555-00-0002',
       date_birth: new Date('1990-07-22'),
       date_employment: new Date('2018-06-01'),
-      id_dept: deptRH.id_dept,
+      departments: { connect: { id_dept: deptRH.id_dept } },
     },
   })
 
@@ -143,7 +143,7 @@ async function main() {
       phone: '0555-00-0010',
       date_birth: new Date('1995-04-10'),
       date_employment: new Date('2021-03-01'),
-      id_dept: deptIT.id_dept,
+      departments: { connect: { id_dept: deptIT.id_dept } },
       supervisor_id: agent.id_emp,
     },
   })
@@ -160,7 +160,7 @@ async function main() {
       phone: '0555-00-0011',
       date_birth: new Date('1993-11-05'),
       date_employment: new Date('2020-09-01'),
-      id_dept: deptIT.id_dept,
+      departments: { connect: { id_dept: deptIT.id_dept } },
       supervisor_id: agent.id_emp,
     },
   })
@@ -177,7 +177,7 @@ async function main() {
       phone: '0555-00-0012',
       date_birth: new Date('1998-08-20'),
       date_employment: new Date('2023-01-15'),
-      id_dept: deptFIN.id_dept,
+      departments: { connect: { id_dept: deptFIN.id_dept } },
       supervisor_id: admin.id_emp,
     },
   })
@@ -194,7 +194,7 @@ async function main() {
       phone: '0555-00-0013',
       date_birth: new Date('2000-01-30'),
       date_employment: new Date('2026-05-01'),
-      id_dept: deptFIN.id_dept,
+      departments: { connect: { id_dept: deptFIN.id_dept } },
       supervisor_id: admin.id_emp,
     },
   })
@@ -211,7 +211,7 @@ async function main() {
       phone: '0555-00-0014',
       date_birth: new Date('1996-10-12'),
       date_employment: new Date('2024-02-01'),
-      id_dept: deptIT.id_dept,
+      departments: { connect: { id_dept: deptIT.id_dept } },
       supervisor_id: agent.id_emp,
     },
   })

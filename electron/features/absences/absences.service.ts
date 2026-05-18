@@ -34,7 +34,7 @@ export async function getAbsences(filters: { id_emp?: number; justification_stat
           name: true,
           email: true,
           role: true,
-          department: { select: { name: true } }
+          departments: { select: { name: true } }
         }
       },
       leave_type: true

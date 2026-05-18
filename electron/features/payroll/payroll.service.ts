@@ -81,3 +81,69 @@ export async function validatePayroll(salaireId: number, status: 'Validated' | '
     return updated
   })
 }
+
+export async function getPayslips(user: { id_emp: number; role: string }) {
+  const filters: any = {}
+  if (user.role !== 'Admin' && user.role !== 'Agent') {
+    filters.id_emp = user.id_emp
+  }
+  return getPayrollHistory(filters)
+}
+
+export async function generatePayroll(data: {
+  id_emp: number
+  month_year: string
+  bonus_amount: number
+  absence_deductions: number
+}, actorId: number) {
+  let monthYear = data.month_year
+  if (monthYear.match(/^\d{4}-\d{2}$/)) {
+    const [yyyy, mm] = monthYear.split('-')
+    monthYear = `${mm}-${yyyy}`
+  }
+
+  const contract = await prisma.contract.findFirst({ where: { id_emp: data.id_emp, status: 'Active' } })
+  if (!contract) throw new AppError('CONTRACT_NOT_FOUND', 404, `No active contract found for employee ID ${data.id_emp}`)
+
+  const baseSalary = contract.salaire_base
+  const { startDate, endDate } = getMonthRange(monthYear)
+
+  const unjustifiedAbsencesCount = await prisma.absence.count({
+    where: { id_emp: data.id_emp, date_absence: { gte: startDate, lte: endDate }, is_justified: false }
+  })
+
+  const monthlyMassroufs = await prisma.massrouf.findMany({
+    where: { id_emp: data.id_emp, date_request: { gte: startDate, lte: endDate }, status: 'Approved' }
+  })
+  const totalMassroufDeductions = monthlyMassroufs.reduce((sum, item) => sum + item.amount, 0)
+
+  const absenceDeductions = unjustifiedAbsencesCount * (baseSalary / 30)
+  const amountFinal = Math.max(0, baseSalary - absenceDeductions - totalMassroufDeductions + data.bonus_amount)
+
+  return prisma.$transaction(async (tx) => {
+    const payslip = await tx.salaire.upsert({
+      where: { id_emp_month_year: { id_emp: data.id_emp, month_year: monthYear } },
+      create: {
+        month_year: monthYear,
+        bonus_amount: data.bonus_amount,
+        absence_deductions: absenceDeductions,
+        amount_final: amountFinal,
+        status: 'Generated',
+        id_emp: data.id_emp,
+        id_contract: contract.id_contract
+      },
+      update: {
+        bonus_amount: data.bonus_amount,
+        absence_deductions: absenceDeductions,
+        amount_final: amountFinal
+      }
+    })
+
+    await writeAuditLog(tx, actorId, 'CREATE', 'Salaire', payslip.id_salaire, payslip)
+    return payslip
+  })
+}
+
+export async function updatePayrollStatus(salaireId: number, status: 'Validated' | 'Paid', actorId: number) {
+  return validatePayroll(salaireId, status, actorId)
+}

@@ -56,7 +56,7 @@ export async function createContract(data: {
   })
 }
 
-export async function archiveContract(contractId: number, actorId: number) {
+export async function terminateContract(contractId: number, actorId: number) {
   const contract = await prisma.contract.findUnique({ where: { id_contract: contractId } })
   if (!contract) throw new AppError('CONTRACT_NOT_FOUND', 404, 'Contract not found')
 

@@ -100,9 +100,10 @@ model Contract {
 }
 
 model LeaveType {
-  id_type      Int      @id @default(autoincrement())
-  name         String   @unique
-  default_days Int
+  id_type       Int            @id @default(autoincrement())
+  name          String         @unique
+  default_days  Int
+  is_cumulative Boolean        @default(false)
 
   conges       Conge[]
   absences     Absence[]
@@ -140,14 +141,16 @@ model CongeBalance {
 }
 
 model Absence {
-  id_absence       Int      @id @default(autoincrement())
-  date_absence     DateTime
-  id_type          Int?
-  is_justified     Boolean  @default(false)
+  id_absence        Int        @id @default(autoincrement())
+  date_absence      DateTime
+  id_type           Int?
+  is_justified      Boolean    @default(false)
   justification_doc String?
-  id_emp           Int
-  recorded_by      Int
-  conge_id         Int?
+  justification_status String  @default("None")
+  reject_reason     String?
+  id_emp            Int
+  recorded_by       Int
+  conge_id          Int?
 
   employee    Employee   @relation("AbsenceEmployee", fields: [id_emp], references: [id_emp])
   recorder    Employee   @relation("AbsenceRecorder", fields: [recorded_by], references: [id_emp])

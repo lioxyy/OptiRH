@@ -4,10 +4,13 @@ import { DashboardLayout } from './components/layout/dashboard-layout'
 import { OverviewPage } from './features/overview/overview-page'
 import { EmployeesPage } from './features/employees/employees-page'
 import { EmployeeDetail } from './features/employees/employee-detail'
-import { LeavePage } from './features/leave/leave-page'
+import { LeavePage } from './features/leaves/leave-page'
 import { ContractsPage } from './features/contracts/contracts-page'
 import { RoleGuard } from './components/layout/role-guard'
 import { PayrollPage } from './features/payroll/payroll-page'
+import { PayslipPage } from './features/payroll/payslip-page'
+import { MassroufPage } from './features/massrouf/massrouf-page'
+import { AttendancePage } from './features/attendance/attendance-page'
 import { TasksPage } from './features/tasks/tasks-page'
 import { RecruitmentPage } from './features/recruitment/recruitment-page'
 import { EvaluationsPage } from './features/evaluations/evaluations-page'
@@ -65,6 +68,10 @@ export function AppRouter() {
             element={<LeavePage />}
           />
           <Route
+            path="leaves"
+            element={<LeavePage />}
+          />
+          <Route
             path="contracts"
             element={<ContractsPage />}
           />
@@ -75,6 +82,18 @@ export function AppRouter() {
                 <PayrollPage />
               </RoleGuard>
             }
+          />
+          <Route
+            path="payslips"
+            element={<PayslipPage />}
+          />
+          <Route
+            path="massrouf"
+            element={<MassroufPage />}
+          />
+          <Route
+            path="attendance"
+            element={<AttendancePage />}
           />
           <Route
             path="tasks"
