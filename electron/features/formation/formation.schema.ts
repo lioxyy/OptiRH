@@ -1,10 +1,19 @@
 import { z } from 'zod'
 
+const dateIsTodayOrFuture = (val: string) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const date = new Date(val)
+    return date >= today
+}
+
 const BaseFormationSchema = z.object({
     name: z.string().min(1),
     description: z.string().optional(),
     location: z.string().optional(),
-    date_deb: z.string().min(1),
+    date_deb: z.string().min(1).refine(dateIsTodayOrFuture, {
+        message: "Start date must be today or in the future"
+    }),
     duration_days: z.coerce.number().int().positive(),
     id_instructor: z.coerce.number().int().positive().optional(),
     external_instructor: z.string().optional(),
@@ -22,7 +31,9 @@ export const FormationParamsSchema = z.object({ id: z.coerce.number() })
 export const AssignInstructorSchema = z.object({ id_instructor: z.coerce.number() })
 
 export const ScheduleFormationSchema = z.object({
-    date_deb: z.string().optional(),
+    date_deb: z.string().optional().refine(val => !val || dateIsTodayOrFuture(val), {
+        message: "Start date must be today or in the future"
+    }),
     duration_days: z.coerce.number().optional()
 })
 
