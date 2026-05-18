@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { format } from 'date-fns'
-import { History as HistoryIcon } from 'lucide-react'
+import { History as HistoryIcon, Calendar as CalendarIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { cn } from '@/lib/utils'
-import { DatePickerWithRange } from '../../components/ui/date-range-picker'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { ColumnDef } from '@tanstack/react-table'
+import { Input } from '../../components/ui/input'
 
 interface AttendanceRecord {
   id_attendance: number
@@ -21,15 +21,15 @@ interface AttendanceRecord {
 }
 
 export function AttendanceHistory() {
-  const [startDate, setStartDate] = useState<Date>()
-  const [endDate, setEndDate] = useState<Date>()
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
 
   const { data: history = [] } = useQuery<AttendanceRecord[]>({
     queryKey: ['attendance', 'history', startDate, endDate],
     queryFn: async () => {
       const params: any = {}
-      if (startDate) params.startDate = startDate.toISOString()
-      if (endDate) params.endDate = endDate.toISOString()
+      if (startDate) params.startDate = new Date(startDate).toISOString()
+      if (endDate) params.endDate = new Date(endDate).toISOString()
 
       const res = await api.get('/api/attendance/my-history', { params })
       return res.data.data
@@ -98,7 +98,7 @@ export function AttendanceHistory() {
   return (
     <Card className="border-primary/5 bg-card/40 backdrop-blur-xl shadow-lg overflow-hidden">
       <CardHeader className="border-b border-primary/5 bg-muted/20 pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-primary/10 rounded-lg">
               <HistoryIcon className="h-5 w-5 text-primary" />
@@ -108,12 +108,23 @@ export function AttendanceHistory() {
               <CardDescription className="text-xs">Review your historical clock-in/out records and productivity patterns</CardDescription>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <DatePickerWithRange
-              onChange={(range) => {
-                setStartDate(range?.from)
-                setEndDate(range?.to)
-              }}
+          <div className="flex items-center gap-2 bg-background/50 p-1 rounded-lg border border-primary/5">
+            <div className="flex items-center gap-1 px-2">
+              <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">Range</span>
+            </div>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="h-8 w-[130px] text-[11px] bg-transparent border-0 focus-visible:ring-0"
+            />
+            <span className="text-muted-foreground opacity-30 text-xs">—</span>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="h-8 w-[130px] text-[11px] bg-transparent border-0 focus-visible:ring-0"
             />
           </div>
         </div>
