@@ -202,7 +202,8 @@ export function FormationPage() {
                     data={formations}
                     searchOptions={[
                         { id: "name", label: "Formation Name" },
-                        { id: "instructor", label: "Instructor" }
+                        { id: "instructor", label: "Instructor" },
+                        { id: "date_deb", label: "Start Date" }
                     ]}
                 />
             </div>
