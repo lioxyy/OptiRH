@@ -113,6 +113,7 @@ interface GenericDataTableProps<TData, TValue> {
     searchOptions?: SearchOption[]
     rowSelection?: Record<string, boolean>
     onRowSelectionChange?: (selection: any) => void
+    extraActions?: React.ReactNode
 }
 
 export function GenericDataTable<TData, TValue>({
@@ -122,7 +123,8 @@ export function GenericDataTable<TData, TValue>({
     searchPlaceholder = "Search...",
     searchOptions,
     rowSelection,
-    onRowSelectionChange
+    onRowSelectionChange,
+    extraActions
 }: GenericDataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -206,30 +208,34 @@ export function GenericDataTable<TData, TValue>({
                 ) : (
                     <div className="flex-1" />
                 )}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="ml-auto h-9">
-                            Columns <ChevronDownIcon className="ml-2 h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {table
-                            .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => {
-                                return (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                                    >
-                                        {column.id.replace(/_/g, " ")}
-                                    </DropdownMenuCheckboxItem>
-                                )
-                            })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+
+                <div className="flex items-center gap-2">
+                    {extraActions}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="ml-auto h-9">
+                                Columns <ChevronDownIcon className="ml-2 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {table
+                                .getAllColumns()
+                                .filter((column) => column.getCanHide())
+                                .map((column) => {
+                                    return (
+                                        <DropdownMenuCheckboxItem
+                                            key={column.id}
+                                            className="capitalize"
+                                            checked={column.getIsVisible()}
+                                            onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                                        >
+                                            {column.id.replace(/_/g, " ")}
+                                        </DropdownMenuCheckboxItem>
+                                    )
+                                })}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
 
             {/* TABLE DATA */}

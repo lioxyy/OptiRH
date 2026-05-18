@@ -4,13 +4,14 @@ import { api } from '../../lib/api'
 import { Card } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { Eye, History, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react'
 import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { toast } from 'sonner'
+import { DateRangePicker } from '../../components/ui/date-range-picker'
+import { DateRange } from 'react-day-picker'
 
 interface AuditLog {
   id_log: number
@@ -27,11 +28,11 @@ interface AuditLog {
 }
 
 const ACTION_CONFIG: Record<string, { label: string; className: string; variant: 'default' | 'outline' | 'secondary' | 'destructive' }> = {
-  CREATE:   { label: 'Create',   className: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10 font-semibold', variant: 'outline' },
-  UPDATE:   { label: 'Update',   className: 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/10 font-semibold', variant: 'outline' },
-  DELETE:   { label: 'Delete',   className: 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/10 font-semibold', variant: 'outline' },
-  APPROVE:  { label: 'Approve',  className: 'bg-indigo-500 hover:bg-indigo-600 text-white font-semibold', variant: 'default' },
-  REJECT:   { label: 'Reject',   className: 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/10 font-semibold', variant: 'outline' },
+  CREATE: { label: 'Create', className: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10 font-semibold', variant: 'outline' },
+  UPDATE: { label: 'Update', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/10 font-semibold', variant: 'outline' },
+  DELETE: { label: 'Delete', className: 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/10 font-semibold', variant: 'outline' },
+  APPROVE: { label: 'Approve', className: 'bg-indigo-500 hover:bg-indigo-600 text-white font-semibold', variant: 'default' },
+  REJECT: { label: 'Reject', className: 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/10 font-semibold', variant: 'outline' },
   GENERATE: { label: 'Generate', className: 'bg-violet-600 hover:bg-violet-700 text-white font-semibold', variant: 'default' },
 }
 
@@ -105,19 +106,23 @@ export function LogsPage() {
   const [page, setPage] = useState(1)
   const [limit] = useState(25)
   const [targetModel, setTargetModel] = useState('all')
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [selected, setSelected] = useState<AuditLog | null>(null)
 
   const { data = { data: [], total: 0 }, isLoading } = useQuery<{ data: AuditLog[]; total: number }>({
-    queryKey: ['auditLogs', page, limit, targetModel, fromDate, toDate],
+    queryKey: ['auditLogs', page, limit, targetModel, dateRange?.from, dateRange?.to],
     queryFn: async () => {
       const params = new URLSearchParams()
       params.append('page', String(page))
       params.append('limit', String(limit))
       if (targetModel && targetModel !== 'all') params.append('target_model', targetModel)
-      if (fromDate) params.append('from', new Date(fromDate).toISOString())
-      if (toDate) params.append('to', new Date(toDate).toISOString())
+      if (dateRange?.from) params.append('from', dateRange.from.toISOString())
+      if (dateRange?.to) {
+        // Set to end of day to include the full end date
+        const toDate = new Date(dateRange.to)
+        toDate.setHours(23, 59, 59, 999)
+        params.append('to', toDate.toISOString())
+      }
 
       const res = await api.get(`/api/audit?${params.toString()}`)
       return res.data.data
@@ -195,50 +200,11 @@ export function LogsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold">System Audit Logs</h1>
-          <p className="text-muted-foreground text-sm">
-            Monitor real-time personnel record creations, calculations, and operational history.
-          </p>
-        </div>
-
-        {/* Date and target filters */}
-        <div className="flex flex-wrap items-center gap-2.5 no-print">
-          <Select value={targetModel} onValueChange={(v) => { setTargetModel(v); setPage(1); }}>
-            <SelectTrigger className="w-40 h-9 text-xs">
-              <SelectValue placeholder="All Models" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Models</SelectItem>
-              <SelectItem value="Employee">Employees</SelectItem>
-              <SelectItem value="Department">Departments</SelectItem>
-              <SelectItem value="Contract">Contracts</SelectItem>
-              <SelectItem value="Conge">Leaves (Congés)</SelectItem>
-              <SelectItem value="Absence">Absences</SelectItem>
-              <SelectItem value="Salaire">Payroll (Salaire)</SelectItem>
-              <SelectItem value="Massrouf">Massrouf</SelectItem>
-              <SelectItem value="Task">Tasks</SelectItem>
-              <SelectItem value="Candidat">Candidates</SelectItem>
-              <SelectItem value="Formation">Formations</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Input
-            type="date"
-            placeholder="From Date"
-            value={fromDate}
-            onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
-            className="w-36 h-9 text-xs"
-          />
-          <Input
-            type="date"
-            placeholder="To Date"
-            value={toDate}
-            onChange={(e) => { setToDate(e.target.value); setPage(1); }}
-            className="w-36 h-9 text-xs"
-          />
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold">System Audit Logs</h1>
+        <p className="text-muted-foreground text-sm">
+          Monitor real-time personnel record creations, calculations, and operational history.
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -256,6 +222,33 @@ export function LogsPage() {
                 { id: "action", label: "Action" },
                 { id: "target_model", label: "Model" }
               ]}
+              extraActions={
+                <div className="flex items-center gap-2 no-print mr-2">
+                  <Select value={targetModel} onValueChange={(v) => { setTargetModel(v); setPage(1); }}>
+                    <SelectTrigger className="w-40 h-9 text-xs rounded-lg border-muted-foreground/20 bg-muted/10">
+                      <SelectValue placeholder="All Models" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Models</SelectItem>
+                      <SelectItem value="Employee">Employees</SelectItem>
+                      <SelectItem value="Department">Departments</SelectItem>
+                      <SelectItem value="Contract">Contracts</SelectItem>
+                      <SelectItem value="Conge">Leaves (Congés)</SelectItem>
+                      <SelectItem value="Absence">Absences</SelectItem>
+                      <SelectItem value="Salaire">Payroll (Salaire)</SelectItem>
+                      <SelectItem value="Massrouf">Massrouf</SelectItem>
+                      <SelectItem value="Task">Tasks</SelectItem>
+                      <SelectItem value="Candidat">Candidates</SelectItem>
+                      <SelectItem value="Formation">Formations</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <DateRangePicker
+                    date={dateRange}
+                    onDateChange={(range) => { setDateRange(range); setPage(1); }}
+                  />
+                </div>
+              }
             />
 
             {/* Pagination Controls */}
