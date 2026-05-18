@@ -1,5 +1,4 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
-import { createApp } from './server'
 import { execSync } from 'child_process'
 import * as net from 'net'
 import * as path from 'path'
@@ -78,7 +77,7 @@ async function start() {
 
   const port = await getFreePort()
 
-  const expressApp = createApp()
+  const expressApp = (await import('./server')).createApp()
   await new Promise<void>((resolve) => {
     server = expressApp.listen(port, '127.0.0.1', () => {
       console.log(`[Server] Running on http://127.0.0.1:${port}`)

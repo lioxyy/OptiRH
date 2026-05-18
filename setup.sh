@@ -12,16 +12,9 @@ echo "📦 Installing root dependencies..."
 npm install
 
 # Setup Prisma and SQLite
-echo "🗄️ Setting up database..."
-npx prisma migrate dev --name init
+echo "🗄️ Initializing database..."
+npx prisma migrate dev --name init --skip-seed --skip-generate
+npx prisma generate
 npx prisma db seed
-
-# Install workspace dependencies
-echo "🎨 Installing renderer dependencies..."
-npm install --workspace=renderer
-
-# Install electron dependencies
-echo "⚡ Installing electron dependencies..."
-npm install --workspace=electron
 
 echo "✅ Installation complete! Run ./run.sh to start the app."
