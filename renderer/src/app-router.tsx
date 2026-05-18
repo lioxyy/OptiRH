@@ -74,7 +74,11 @@ export function AppRouter() {
           />
           <Route
             path="contracts"
-            element={<ContractsPage />}
+            element={
+              <RoleGuard roles={['Admin', 'Agent']}>
+                <ContractsPage />
+              </RoleGuard>
+            }
           />
           <Route
             path="payroll"

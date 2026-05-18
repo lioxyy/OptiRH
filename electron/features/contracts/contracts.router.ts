@@ -16,7 +16,23 @@ const router = Router()
 router.use(authenticate)
 
 router.get('/', asyncHandler(async (req, res) => {
-  const contracts = await ContractService.getContracts(req.user)
+  const filters: any = {}
+
+  // If not Admin/Agent, restrict to self
+  if (req.user.role === 'Employee') {
+    filters.id_emp = req.user.id_emp
+  } else {
+    // Admins/Agents can filter by a specific employee if provided
+    if (req.query.id_emp) {
+      filters.id_emp = Number(req.query.id_emp)
+    }
+  }
+
+  if (req.query.status) {
+    filters.status = req.query.status as string
+  }
+
+  const contracts = await ContractService.getContracts(filters)
   res.json(success(contracts))
 }))
 

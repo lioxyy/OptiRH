@@ -2,10 +2,20 @@ import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
 import { writeAuditLog } from '../../lib/audit'
 
+/**
+ * Retrieves contracts based on filters.
+ * Admins/Agents can see all if no id_emp is specified.
+ */
 export async function getContracts(filters: { id_emp?: number; status?: string } = {}) {
   const whereClause: any = {}
-  if (filters.id_emp) whereClause.id_emp = Number(filters.id_emp)
-  if (filters.status) whereClause.status = filters.status
+
+  if (filters.id_emp) {
+    whereClause.id_emp = Number(filters.id_emp)
+  }
+
+  if (filters.status && filters.status !== 'all') {
+    whereClause.status = filters.status
+  }
 
   return prisma.contract.findMany({
     where: whereClause,
@@ -15,7 +25,7 @@ export async function getContracts(filters: { id_emp?: number; status?: string }
           name: true,
           email: true,
           role: true,
-          departments: { select: { name: true } } // Changed from department to departments
+          departments: { select: { name: true } }
         }
       }
     },
