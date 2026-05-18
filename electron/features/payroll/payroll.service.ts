@@ -31,21 +31,34 @@ export async function generateMonthlyPayroll(employeeId: number, monthYear: stri
   })
   const totalMassroufDeductions = monthlyMassroufs.reduce((sum: number, item: any) => sum + item.amount, 0)
 
+  // Fetch bonuses from evaluations for this month
+  const evaluations = await prisma.evaluation.findMany({
+    where: {
+      evaluatee_emp_id: employeeId,
+      date_eval: { gte: startDate, lte: endDate }
+    }
+  })
+  const totalBonus = evaluations.reduce((sum, e) => sum + e.bonus_amount, 0)
+
   const absenceDeductions = totalUnjustifiedAbsences * (baseSalary / 30)
-  const amountFinal = Math.max(0, baseSalary - absenceDeductions - totalMassroufDeductions) // Negative pay prevention
+  const amountFinal = Math.max(0, baseSalary + totalBonus - absenceDeductions - totalMassroufDeductions)
 
   return prisma.salaire.upsert({
     where: { id_emp_month_year: { id_emp: employeeId, month_year: monthYear } },
     create: {
       month_year: monthYear,
-      bonus_amount: 0,
+      bonus_amount: totalBonus,
       absence_deductions: absenceDeductions,
       amount_final: amountFinal,
       status: 'Generated',
       id_emp: employeeId,
       id_contract: contract.id_contract
     },
-    update: { absence_deductions: absenceDeductions, amount_final: amountFinal }
+    update: {
+      bonus_amount: totalBonus,
+      absence_deductions: absenceDeductions,
+      amount_final: amountFinal
+    }
   })
 }
 
@@ -62,7 +75,7 @@ export async function getPayrollHistory(filters: { id_emp?: number; month_year?:
           name: true,
           email: true,
           role: true,
-          departments: { select: { name: true } } // Tailored for many-to-many departments
+          departments: { select: { name: true } }
         }
       },
       contract: true
@@ -93,8 +106,8 @@ export async function getPayslips(user: { id_emp: number; role: string }) {
 export async function generatePayroll(data: {
   id_emp: number
   month_year: string
-  bonus_amount: number
-  absence_deductions: number
+  bonus_amount?: number
+  absence_deductions?: number
 }, actorId: number) {
   let monthYear = data.month_year
   if (monthYear.match(/^\d{4}-\d{2}$/)) {
@@ -117,6 +130,15 @@ export async function generatePayroll(data: {
   })
   const totalMassroufDeductions = monthlyMassroufs.reduce((sum: number, item: any) => sum + item.amount, 0)
 
+  // Automatic bonus calculation from Evaluations
+  const evaluations = await prisma.evaluation.findMany({
+    where: {
+      evaluatee_emp_id: data.id_emp,
+      date_eval: { gte: startDate, lte: endDate }
+    }
+  })
+  const totalBonus = evaluations.reduce((sum, e) => sum + e.bonus_amount, 0)
+
   const absenceDeductions = unjustifiedAbsencesCount * (baseSalary / 30)
 
   // Proration for mid-month hires
@@ -128,14 +150,14 @@ export async function generatePayroll(data: {
     adjustedSalary = (baseSalary / daysInMonth) * daysWorked
   }
 
-  const amountFinal = Math.max(0, adjustedSalary - absenceDeductions - totalMassroufDeductions + data.bonus_amount)
+  const amountFinal = Math.max(0, adjustedSalary + totalBonus - absenceDeductions - totalMassroufDeductions)
 
   return prisma.$transaction(async (tx) => {
     const payslip = await tx.salaire.upsert({
       where: { id_emp_month_year: { id_emp: data.id_emp, month_year: monthYear } },
       create: {
         month_year: monthYear,
-        bonus_amount: data.bonus_amount,
+        bonus_amount: totalBonus,
         absence_deductions: absenceDeductions,
         amount_final: amountFinal,
         status: 'Generated',
@@ -143,7 +165,7 @@ export async function generatePayroll(data: {
         id_contract: contract.id_contract
       },
       update: {
-        bonus_amount: data.bonus_amount,
+        bonus_amount: totalBonus,
         absence_deductions: absenceDeductions,
         amount_final: amountFinal
       }
