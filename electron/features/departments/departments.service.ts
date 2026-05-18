@@ -92,6 +92,14 @@ export async function createDepartment(data: CreateDepartmentDTO & { employee_id
     }
 
     if (finalManagerId) {
+      const managerEmp = await tx.employee.findUnique({
+        where: { id_emp: finalManagerId },
+        select: { role: true }
+      })
+      if (!managerEmp || managerEmp.role !== 'Agent') {
+        throw new AppError('VALIDATION_ERROR', 400, 'Only agents can be department managers')
+      }
+
       await tx.department.updateMany({
         where: { manager_id: finalManagerId },
         data: { manager_id: null },
@@ -197,6 +205,14 @@ export async function updateDepartment(id: number, data: UpdateDepartmentDTO & {
     }
 
     if (finalManagerId) {
+      const managerEmp = await tx.employee.findUnique({
+        where: { id_emp: finalManagerId },
+        select: { role: true }
+      })
+      if (!managerEmp || managerEmp.role !== 'Agent') {
+        throw new AppError('VALIDATION_ERROR', 400, 'Only agents can be department managers')
+      }
+
       await tx.department.updateMany({
         where: {
           manager_id: finalManagerId,
