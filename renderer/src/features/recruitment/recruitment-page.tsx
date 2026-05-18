@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { ColumnDef } from '@tanstack/react-table'
 import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { CandidateForm } from './candidate-form'
+import { InterviewForm } from './interview-form'
+import { InterviewResultForm } from './interview-result-form'
+import { Calendar, ClipboardCheck, Star } from 'lucide-react'
 
 interface Interview {
   id_entretien: number
@@ -28,6 +31,7 @@ interface Candidate {
   date_candidature: string
   agent?: { name: string } | null
   entretiens?: Interview[]
+  evaluations?: { score: number }[]
 }
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
@@ -42,6 +46,9 @@ export function RecruitmentPage() {
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [view, setView] = useState<'kanban' | 'list'>('kanban')
+
+  const [schedulingCandidate, setSchedulingCandidate] = useState<Candidate | null>(null)
+  const [resultInterview, setResultInterview] = useState<{ id: number; name: string } | null>(null)
 
   const { data: candidates = [], isLoading } = useQuery<Candidate[]>({
     queryKey: ['recruitment'],
@@ -114,6 +121,13 @@ export function RecruitmentPage() {
               <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: row.original.id_cand, status: 'Rejected' })}>Reject</Button>
             </>
           )}
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSchedulingCandidate(row.original)}>Schedule</Button>
+          {row.original.entretiens?.find(i => i.status === 'Scheduled') && (
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
+              const interview = row.original.entretiens!.find(i => i.status === 'Scheduled')!
+              setResultInterview({ id: interview.id_entretien, name: row.original.name })
+            }}>Result</Button>
+          )}
         </div>
       )
     }
@@ -160,7 +174,22 @@ export function RecruitmentPage() {
                           <p className="text-xs text-muted-foreground">{candidate.post_applied}</p>
                         )}
                         <p className="text-xs text-muted-foreground">{candidate.agent?.name && `Agent: ${candidate.agent.name}`}</p>
-                        <div className="flex gap-1 pt-1">
+
+                        {/* Interview & Score Info */}
+                        {candidate.entretiens?.some(i => i.status === 'Scheduled') && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-blue-600 font-medium bg-blue-50 p-1 rounded">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(candidate.entretiens.find(i => i.status === 'Scheduled')!.date_heure).toLocaleDateString()}
+                          </div>
+                        )}
+                        {candidate.evaluations && candidate.evaluations.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-amber-600 font-bold bg-amber-50 p-1 rounded">
+                            <Star className="h-3 w-3 fill-amber-600" />
+                            Score: {candidate.evaluations[0].score}/100
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-1 pt-1">
                           {status === 'Pending' && (
                             <Button size="sm" className="h-7 text-xs" onClick={() => statusMutation.mutate({ id: candidate.id_cand, status: 'In Progress' })}>
                               Review
@@ -175,6 +204,17 @@ export function RecruitmentPage() {
                                 Reject
                               </Button>
                             </>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-7 text-xs flex-1 border border-input hover:bg-accent" onClick={() => setSchedulingCandidate(candidate)}>
+                            <Calendar className="mr-1 h-3 w-3" /> Schedule
+                          </Button>
+                          {candidate.entretiens?.find(i => i.status === 'Scheduled') && (
+                            <Button size="sm" variant="ghost" className="h-7 text-xs flex-1 border border-input hover:bg-accent" onClick={() => {
+                              const interview = candidate.entretiens!.find(i => i.status === 'Scheduled')!
+                              setResultInterview({ id: interview.id_entretien, name: candidate.name })
+                            }}>
+                              <ClipboardCheck className="mr-1 h-3 w-3" /> Result
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -202,6 +242,22 @@ export function RecruitmentPage() {
       )}
 
       {showForm && <CandidateForm onClose={() => setShowForm(false)} />}
+
+      {schedulingCandidate && (
+        <InterviewForm
+          candidateId={schedulingCandidate.id_cand}
+          candidateName={schedulingCandidate.name}
+          onClose={() => setSchedulingCandidate(null)}
+        />
+      )}
+
+      {resultInterview && (
+        <InterviewResultForm
+          interviewId={resultInterview.id}
+          candidateName={resultInterview.name}
+          onClose={() => setResultInterview(null)}
+        />
+      )}
     </div>
   )
 }
