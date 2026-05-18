@@ -1,18 +1,11 @@
-import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '../../components/ui/table'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select'
-import { Skeleton } from '../../components/ui/skeleton'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 import { Check, X } from 'lucide-react'
 
 interface LeaveRequest {
@@ -27,9 +20,9 @@ interface LeaveRequest {
 }
 
 const STATUS_CONFIG = {
-  Pending:  { label: 'Pending', variant: 'outline'    as const, className: 'text-yellow-600 border-yellow-400' },
-  Approved: { label: 'Approved',   variant: 'default'    as const, className: '' },
-  Rejected: { label: 'Rejected',     variant: 'secondary'  as const, className: 'text-destructive' },
+  Pending:  { label: 'Pending', variant: 'outline' as const, className: 'text-yellow-600 border-yellow-400' },
+  Approved: { label: 'Approved', variant: 'default' as const, className: '' },
+  Rejected: { label: 'Rejected', variant: 'secondary' as const, className: 'text-destructive' },
 }
 
 function calcDays(start: string, end: string) {
@@ -42,128 +35,119 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-type StatusFilter = 'all' | 'Pending' | 'Approved' | 'Rejected'
-
 export function LeaveRequestsTable() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const [filter, setFilter] = useState<StatusFilter>('all')
   const isManager = user?.role === 'Admin' || user?.role === 'Agent'
 
   const { data: requests = [], isLoading } = useQuery<LeaveRequest[]>({
     queryKey: ['leaves', 'requests'],
     queryFn: async () => {
-      const res = await api.get('/api/leaves/requests')
+      const res = await api.get('/api/leaves')
       return res.data.data
     },
   })
 
   const updateStatus = useMutation({
     mutationFn: ({ id, status }: { id: number; status: 'Approved' | 'Rejected' }) =>
-      api.patch(`/api/leaves/requests/${id}/status`, { status }),
+      api.patch(`/api/leaves/${id}/action`, { action: status.toLowerCase() }),
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['leaves'] })
       toast.success(vars.status === 'Approved' ? 'Request approved' : 'Request rejected')
     },
-    onError: () => toast.error('Update failed'),
+    onError: () => toast.error('Failed to update leave status'),
   })
 
-  const filtered = filter === 'all' ? requests : requests.filter((r) => r.status === filter)
+  if (isLoading) return <div className="py-6 text-sm text-muted-foreground">Loading leaves history...</div>
+
+  const columns: ColumnDef<LeaveRequest>[] = [
+    ...(isManager ? [
+      {
+        id: "employee",
+        accessorFn: (row) => row.employee?.name ?? '—',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Employee" />,
+        cell: ({ row }) => <span className="font-medium">{row.original.employee?.name ?? '—'}</span>
+      }
+    ] : []),
+    {
+      id: "leave_type",
+      accessorFn: (row) => row.leave_type?.name ?? '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Leave Type" />,
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.leave_type?.name}</span>
+    },
+    {
+      id: "date_deb",
+      accessorKey: "date_deb",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Start Date" />,
+      cell: ({ row }) => <span>{formatDate(row.original.date_deb)}</span>
+    },
+    {
+      id: "date_fin",
+      accessorKey: "date_fin",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="End Date" />,
+      cell: ({ row }) => <span>{formatDate(row.original.date_fin)}</span>
+    },
+    {
+      id: "days",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Duration" />,
+      cell: ({ row }) => <span>{calcDays(row.original.date_deb, row.original.date_fin)} days</span>
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const cfg = STATUS_CONFIG[row.original.status]
+        return (
+          <Badge variant={cfg.variant} className={cfg.className}>
+            {cfg.label}
+          </Badge>
+        )
+      }
+    },
+    ...(isManager ? [
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }: { row: { original: LeaveRequest } }) => {
+          const req = row.original
+          if (req.status !== 'Pending') return <span className="text-xs text-muted-foreground">—</span>
+          return (
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="default"
+                className="h-7 px-2"
+                disabled={updateStatus.isPending}
+                onClick={() => updateStatus.mutate({ id: req.id_conge, status: 'Approved' })}
+              >
+                <Check className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 px-2"
+                disabled={updateStatus.isPending}
+                onClick={() => updateStatus.mutate({ id: req.id_conge, status: 'Rejected' })}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )
+        }
+      }
+    ] : [])
+  ]
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-base">
-          {isManager ? 'All Requests' : 'My Requests'}
-        </CardTitle>
-        <Select value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
-          <SelectTrigger className="w-40 h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
-            <SelectItem value="Approved">Approved</SelectItem>
-            <SelectItem value="Rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-      </CardHeader>
-
-      <CardContent className="p-0">
-        {isLoading ? (
-          <div className="p-4 space-y-3">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
-          </div>
-        ) : filtered.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            No requests found.
-          </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {isManager && <TableHead>Employee</TableHead>}
-                <TableHead>Type</TableHead>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
-                <TableHead>Days</TableHead>
-                <TableHead>Status</TableHead>
-                {isManager && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((req) => {
-                const cfg = STATUS_CONFIG[req.status]
-                const days = calcDays(req.date_deb, req.date_fin)
-                return (
-                  <TableRow key={req.id_conge}>
-                    {isManager && (
-                      <TableCell className="font-medium">{req.employee?.name ?? '—'}</TableCell>
-                    )}
-                    <TableCell className="text-muted-foreground">{req.leave_type?.name}</TableCell>
-                    <TableCell>{formatDate(req.date_deb)}</TableCell>
-                    <TableCell>{formatDate(req.date_fin)}</TableCell>
-                    <TableCell>{days} d</TableCell>
-                    <TableCell>
-                      <Badge variant={cfg.variant} className={cfg.className}>
-                        {cfg.label}
-                      </Badge>
-                    </TableCell>
-                    {isManager && (
-                      <TableCell className="text-right space-x-1">
-                        {req.status === 'Pending' ? (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="default"
-                              className="h-7 px-2"
-                              disabled={updateStatus.isPending}
-                              onClick={() => updateStatus.mutate({ id: req.id_conge, status: 'Approved' })}
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-7 px-2"
-                              disabled={updateStatus.isPending}
-                              onClick={() => updateStatus.mutate({ id: req.id_conge, status: 'Rejected' })}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
-                          </>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+    <GenericDataTable
+      columns={columns}
+      data={requests}
+      searchOptions={[
+        ...(isManager ? [{ id: "employee", label: "Employee" }] : []),
+        { id: "leave_type", label: "Leave Type" },
+        { id: "status", label: "Status" }
+      ]}
+    />
   )
 }

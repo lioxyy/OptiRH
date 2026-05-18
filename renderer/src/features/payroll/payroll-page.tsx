@@ -2,15 +2,14 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { toast } from 'sonner'
-import { Wallet, Printer, FileCheck2, Calculator, Users, Search, AlertCircle, FileText, Landmark } from 'lucide-react'
-import { Skeleton } from '../../components/ui/skeleton'
+import { Wallet, Printer, FileCheck2, Calculator, Users, AlertCircle, FileText, Landmark } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 
 interface Employee {
   id_emp: number
@@ -42,9 +41,9 @@ interface PayrollRecord {
 }
 
 const STATUS_CONFIG = {
-  Generated: { label: 'Generated', variant: 'outline' as const, className: 'text-blue-500 border-blue-500/30 bg-blue-500/5 font-semibold' },
-  Validated: { label: 'Validated', variant: 'outline' as const, className: 'text-amber-500 border-amber-500/30 bg-amber-500/5 font-semibold' },
-  Paid: { label: 'Paid', variant: 'default' as const, className: 'bg-emerald-500 hover:bg-emerald-600 text-white font-semibold' },
+  Generated: { label: 'Generated', variant: 'outline' as const, className: 'text-blue-500 border-blue-500/30' },
+  Validated: { label: 'Validated', variant: 'outline' as const, className: 'text-amber-500 border-amber-500/30' },
+  Paid: { label: 'Paid', variant: 'default' as const, className: 'bg-emerald-600 hover:bg-emerald-700 text-white font-semibold' },
 }
 
 export function PayrollPage() {
@@ -52,7 +51,6 @@ export function PayrollPage() {
   const [employeeId, setEmployeeId] = useState('')
   const [targetMonth, setTargetMonth] = useState('05')
   const [targetYear, setTargetYear] = useState('2026')
-  const [searchTerm, setSearchTerm] = useState('')
   const [selectedPayslip, setSelectedPayslip] = useState<PayrollRecord | null>(null)
   const [isPayslipOpen, setIsPayslipOpen] = useState(false)
 
@@ -83,7 +81,7 @@ export function PayrollPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payroll'] })
       setEmployeeId('')
-      toast.success('Monthly payroll sheet generated successfully using the academic deduction formula!')
+      toast.success('Monthly payroll sheet generated successfully!')
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message || 'Could not calculate payroll'
@@ -130,15 +128,93 @@ export function PayrollPage() {
     window.print()
   }
 
-  // Filter history records on client-side
-  const filteredHistory = payHistory.filter((p) =>
-    p.employee?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.month_year.includes(searchTerm)
-  )
+  const columns: ColumnDef<PayrollRecord>[] = [
+    {
+      id: "employee",
+      accessorFn: (row) => row.employee?.name ?? '—',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Employee" />,
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span className="font-semibold text-foreground">{row.original.employee?.name ?? '—'}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">{row.original.employee?.email}</span>
+        </div>
+      )
+    },
+    {
+      id: "month_year",
+      accessorKey: "month_year",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Period" />,
+      cell: ({ row }) => <span className="font-semibold text-muted-foreground">{row.original.month_year}</span>
+    },
+    {
+      id: "amount_final",
+      accessorKey: "amount_final",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Net Salary" />,
+      cell: ({ row }) => <span className="font-bold font-mono">{row.original.amount_final.toLocaleString()} DZD</span>
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const cfg = STATUS_CONFIG[row.original.status] || { label: row.original.status, variant: 'outline' as const, className: '' }
+        return (
+          <Badge variant={cfg.variant} className={cfg.className}>
+            {cfg.label}
+          </Badge>
+        )
+      }
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const p = row.original
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => handleViewPayslip(p)}
+            >
+              View Payslip
+            </Button>
+
+            {p.status === 'Generated' && (
+              <Button
+                size="sm"
+                variant="default"
+                className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white gap-1"
+                onClick={() => transitionMutation.mutate({ id: p.id_salaire, status: 'Validated' })}
+                disabled={transitionMutation.isPending}
+              >
+                <FileCheck2 className="h-3 w-3" />
+                Validate
+              </Button>
+            )}
+
+            {p.status === 'Validated' && (
+              <Button
+                size="sm"
+                variant="default"
+                className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                onClick={() => transitionMutation.mutate({ id: p.id_salaire, status: 'Paid' })}
+                disabled={transitionMutation.isPending}
+              >
+                <Wallet className="h-3 w-3" />
+                Mark Paid
+              </Button>
+            )}
+          </div>
+        )
+      }
+    }
+  ]
 
   return (
-    <div className="space-y-6 p-4 md:p-6 animate-in fade-in duration-300">
-      {/* Print stylesheet hack */}
+    <div className="space-y-6">
+      {/* Print stylesheet */}
       <style>{`
         @media print {
           body * {
@@ -159,23 +235,17 @@ export function PayrollPage() {
         }
       `}</style>
 
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
-          Payroll Administration Hub
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Generate monthly employee salaries, apply academic deductions, and view printable payslips.
-        </p>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Payroll Administration</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Generate payroll form */}
         <div className="lg:col-span-1">
-          <Card className="border-border/40 bg-card/30 backdrop-blur-xl shadow-lg relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-border/60">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+          <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <Calculator className="h-5 w-5 text-blue-400 animate-pulse" />
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Calculator className="h-4.5 w-4.5 text-muted-foreground" />
                 Calculate Salary
               </CardTitle>
               <CardDescription>
@@ -192,7 +262,7 @@ export function PayrollPage() {
                     Target Employee
                   </label>
                   <Select value={employeeId} onValueChange={setEmployeeId}>
-                    <SelectTrigger className="h-10 text-xs rounded-xl border-border/60">
+                    <SelectTrigger className="h-9 text-xs">
                       <SelectValue placeholder="Select Employee..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -210,7 +280,7 @@ export function PayrollPage() {
                   <div className="space-y-2">
                     <label className="text-xs text-muted-foreground font-semibold">Month</label>
                     <Select value={targetMonth} onValueChange={setTargetMonth}>
-                      <SelectTrigger className="h-10 text-xs rounded-xl border-border/60">
+                      <SelectTrigger className="h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -226,7 +296,7 @@ export function PayrollPage() {
                   <div className="space-y-2">
                     <label className="text-xs text-muted-foreground font-semibold">Year</label>
                     <Select value={targetYear} onValueChange={setTargetYear}>
-                      <SelectTrigger className="h-10 text-xs rounded-xl border-border/60">
+                      <SelectTrigger className="h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -241,8 +311,8 @@ export function PayrollPage() {
                 </div>
 
                 {/* Formula warning */}
-                <div className="flex gap-2.5 p-3.5 rounded-xl border border-blue-500/10 bg-blue-500/5 text-[10px] text-muted-foreground leading-normal">
-                  <AlertCircle className="h-4.5 w-4.5 text-blue-400 shrink-0 mt-0.5" />
+                <div className="flex gap-2.5 p-3 rounded-lg bg-muted/40 text-[10px] text-muted-foreground leading-normal border">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
                   <div>
                     <span className="font-semibold text-foreground block mb-0.5">Deduction Service Formula</span>
                     {"$Salaire = Base - (Absences \\times \\frac{Base}{30}) - ApprovedMassroufs$"}
@@ -251,7 +321,7 @@ export function PayrollPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-10 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+                  className="w-full h-9"
                   disabled={generateMutation.isPending}
                 >
                   {generateMutation.isPending ? 'Calculating...' : 'Run Payroll Run'}
@@ -262,130 +332,32 @@ export function PayrollPage() {
         </div>
 
         {/* History of salary sheets */}
-        <div className="lg:col-span-2">
-          <Card className="border-border/40 bg-card/30 backdrop-blur-xl shadow-md">
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 gap-4">
-              <div>
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <Wallet className="h-5 w-5 text-indigo-400" />
-                  Generated Monthly Salaries
-                </CardTitle>
-                <CardDescription>Browse historical payroll results and validate payouts.</CardDescription>
-              </div>
-
-              <div className="relative w-full sm:w-48">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Search Employee..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 h-8 text-xs rounded-lg"
-                />
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-0 border-t border-border/10">
-              {isLoading ? (
-                <div className="p-4 space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-11 w-full rounded-lg" />
-                  ))}
-                </div>
-              ) : filteredHistory.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground text-sm space-y-1">
-                  <Calculator className="h-8 w-8 mx-auto text-muted-foreground/30 mb-1" />
-                  <p className="font-semibold">No salary sheets logged yet.</p>
-                  <p className="text-xs text-muted-foreground/60">Generate salary sheets from the calculation card.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader className="bg-muted/10">
-                      <TableRow className="border-border/10">
-                        <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Employee</TableHead>
-                        <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Period</TableHead>
-                        <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Net Salary</TableHead>
-                        <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground">Status</TableHead>
-                        <TableHead className="py-3 px-4 font-semibold text-xs text-muted-foreground text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredHistory.map((p) => {
-                        const cfg = STATUS_CONFIG[p.status] || {
-                          label: p.status,
-                          variant: 'outline' as const,
-                          className: '',
-                        }
-                        return (
-                          <TableRow key={p.id_salaire} className="border-border/10 hover:bg-muted/5 transition-all duration-150">
-                            <TableCell className="py-3 px-4">
-                              <div className="flex flex-col">
-                                <span className="text-sm font-bold text-foreground">{p.employee?.name ?? '—'}</span>
-                                <span className="text-[10px] text-muted-foreground font-mono">{p.employee?.email}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-3 px-4 text-sm font-semibold text-muted-foreground">{p.month_year}</TableCell>
-                            <TableCell className="py-3 px-4 text-sm font-bold text-foreground font-mono">
-                              {p.amount_final.toLocaleString()} DZD
-                            </TableCell>
-                            <TableCell className="py-3 px-4">
-                              <Badge variant={cfg.variant} className={`text-[10px] py-0.5 px-2 rounded-full border ${cfg.className}`}>
-                                {cfg.label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="py-3 px-4 text-right flex items-center justify-end gap-1.5">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs rounded-lg text-indigo-400 hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20"
-                                onClick={() => handleViewPayslip(p)}
-                              >
-                                View Payslip
-                              </Button>
-
-                              {p.status === 'Generated' && (
-                                <Button
-                                  size="sm"
-                                  className="h-7 text-xs rounded-lg bg-amber-500 hover:bg-amber-600 text-white gap-1"
-                                  onClick={() => transitionMutation.mutate({ id: p.id_salaire, status: 'Validated' })}
-                                  disabled={transitionMutation.isPending}
-                                >
-                                  <FileCheck2 className="h-3 w-3" />
-                                  Validate
-                                </Button>
-                              )}
-
-                              {p.status === 'Validated' && (
-                                <Button
-                                  size="sm"
-                                  className="h-7 text-xs rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white gap-1"
-                                  onClick={() => transitionMutation.mutate({ id: p.id_salaire, status: 'Paid' })}
-                                  disabled={transitionMutation.isPending}
-                                >
-                                  <Wallet className="h-3 w-3" />
-                                  Mark Paid
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <div className="lg:col-span-2 space-y-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => <Card key={i} className="h-14 w-full" />)}
+            </div>
+          ) : (
+            <GenericDataTable
+              columns={columns}
+              data={payHistory}
+              searchOptions={[
+                { id: "employee", label: "Employee" },
+                { id: "month_year", label: "Period" },
+                { id: "status", label: "Status" }
+              ]}
+            />
+          )}
         </div>
       </div>
 
       {/* ── High-Fidelity Payslip (Bulletin de Paie) Modal ───────── */}
       {selectedPayslip && (
         <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>
-          <DialogContent className="max-w-2xl border-none bg-background text-foreground shadow-2xl rounded-2xl overflow-y-auto max-h-[90vh]">
+          <DialogContent className="max-w-2xl border-none bg-background text-foreground shadow-2xl rounded-xl overflow-y-auto max-h-[90vh]">
             <DialogHeader className="no-print pb-2">
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                <FileText className="h-5 w-5 text-indigo-400" />
+              <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground" />
                 Payslip Preview
               </DialogTitle>
               <DialogDescription>Review or print the employee bulletin de paie.</DialogDescription>
@@ -512,13 +484,13 @@ export function PayrollPage() {
             <DialogFooter className="no-print pt-4 border-t border-border/10">
               <Button
                 variant="ghost"
-                className="rounded-lg h-9 text-xs"
+                className="h-9 text-xs"
                 onClick={() => setIsPayslipOpen(false)}
               >
                 Close
               </Button>
               <Button
-                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 text-xs px-4 gap-1.5 shadow-md hover:shadow-lg transition-all duration-200"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white h-9 text-xs px-4 gap-1.5 shadow-sm hover:shadow-md transition-all duration-200"
                 onClick={handlePrint}
               >
                 <Printer className="h-4 w-4" />

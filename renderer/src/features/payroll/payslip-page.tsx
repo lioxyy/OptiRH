@@ -7,12 +7,9 @@ import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
-import { Skeleton } from '../../components/ui/skeleton'
-import {
-  FileText, Printer, TrendingDown, Wallet,
-  Calendar, ReceiptText, BadgeCheck, Clock3, ChevronRight,
-  BarChart3
-} from 'lucide-react'
+import { ReceiptText, Printer, FileText, Landmark } from 'lucide-react'
+import { ColumnDef } from '@tanstack/react-table'
+import { GenericDataTable, DataTableColumnHeader } from '../../components/ui/generic-data-table'
 
 interface PayrollRecord {
   id_salaire: number
@@ -27,7 +24,7 @@ interface PayrollRecord {
     name: string
     email: string
     role: string
-    departments?: { name: string }[] // Adjusted for many-to-many
+    departments?: { name: string }[]
   }
   contract: {
     type: string
@@ -36,19 +33,10 @@ interface PayrollRecord {
 }
 
 const STATUS_CONFIG = {
-  Generated: { label: 'Generated', className: 'text-blue-400 border-blue-500/30 bg-blue-500/5', icon: Clock3 },
-  Validated: { label: 'Validated', className: 'text-amber-400 border-amber-500/30 bg-amber-500/5', icon: BadgeCheck },
-  Paid:      { label: 'Paid',      className: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/5', icon: Wallet },
+  Generated: { label: 'Generated', className: 'text-blue-500 border-blue-500/30' },
+  Validated: { label: 'Validated', className: 'text-amber-500 border-amber-500/30' },
+  Paid:      { label: 'Paid',      className: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5' },
 }
-
-const MONTHS = [
-  { value: '01', label: 'January' }, { value: '02', label: 'February' },
-  { value: '03', label: 'March' },   { value: '04', label: 'April' },
-  { value: '05', label: 'May' },     { value: '06', label: 'June' },
-  { value: '07', label: 'July' },    { value: '08', label: 'August' },
-  { value: '09', label: 'September' },{ value: '10', label: 'October' },
-  { value: '11', label: 'November' },{ value: '12', label: 'December' },
-]
 
 function PayslipModal({ record, open, onClose }: { record: PayrollRecord; open: boolean; onClose: () => void }) {
   const totalDeductions = (record.contract?.salaire_base ?? 0) - record.amount_final
@@ -56,10 +44,10 @@ function PayslipModal({ record, open, onClose }: { record: PayrollRecord; open: 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl border-none bg-background text-foreground shadow-2xl rounded-2xl overflow-y-auto max-h-[92vh]">
+      <DialogContent className="max-w-2xl border-none bg-background text-foreground shadow-2xl rounded-xl overflow-y-auto max-h-[92vh]">
         <DialogHeader className="no-print pb-2">
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <ReceiptText className="h-5 w-5 text-violet-400" />
+          <DialogTitle className="text-lg font-bold flex items-center gap-2">
+            <ReceiptText className="h-5 w-5 text-muted-foreground" />
             Bulletin de Paie — {record.month_year}
           </DialogTitle>
           <DialogDescription>Official payslip for period {record.month_year}</DialogDescription>
@@ -87,7 +75,6 @@ function PayslipModal({ record, open, onClose }: { record: PayrollRecord; open: 
               <span className="text-[9px] uppercase tracking-wider font-extrabold text-gray-400 block">Informations Salarié</span>
               <p className="font-bold text-gray-900 text-sm">{record.employee?.name}</p>
               <p className="text-gray-600 font-medium">{record.employee?.role}</p>
-              {/* Pre-tailored Plural Departments renderer */}
               <p className="text-gray-500">
                 {record.employee?.departments?.map(d => d.name).join(', ') || 'General'}
               </p>
@@ -95,7 +82,7 @@ function PayslipModal({ record, open, onClose }: { record: PayrollRecord; open: 
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-1 font-mono">
               <span className="text-[9px] uppercase tracking-wider font-extrabold text-gray-400 block">Informations Paiement</span>
               <p className="text-gray-700 text-[11px] font-semibold flex items-center gap-1">
-                <span className="inline-block w-3 h-3 bg-gray-400 rounded-sm mr-0.5" />
+                <Landmark className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                 Virement Bancaire
               </p>
               <p className="text-gray-500 text-[10px]">Contrat : {record.contract?.type} — Base : {record.contract?.salaire_base?.toLocaleString()} DZD</p>
@@ -129,14 +116,14 @@ function PayslipModal({ record, open, onClose }: { record: PayrollRecord; open: 
                 <tr className="bg-red-50/30">
                   <td className="py-2.5 px-3 text-gray-700 font-medium">Retenue — Absences Non Justifiées</td>
                   <td className="py-2.5 px-3 text-right font-mono text-gray-300">—</td>
-                  <td className="py-2.5 px-3 text-right font-bold font-mono text-red-600">-{record.absence_deductions.toLocaleString()}</td>
+                  <td className="py-2.5 px-3 text-right font-bold font-mono text-red-600 font-semibold">-{record.absence_deductions.toLocaleString()}</td>
                 </tr>
               )}
               {massroufDeduction > 0.01 && (
                 <tr className="bg-orange-50/30">
                   <td className="py-2.5 px-3 text-gray-700 font-medium">Remboursement Avance (Massrouf)</td>
                   <td className="py-2.5 px-3 text-right font-mono text-gray-300">—</td>
-                  <td className="py-2.5 px-3 text-right font-bold font-mono text-orange-600">-{massroufDeduction.toLocaleString()}</td>
+                  <td className="py-2.5 px-3 text-right font-bold font-mono text-orange-600 font-semibold">-{massroufDeduction.toLocaleString()}</td>
                 </tr>
               )}
             </tbody>
@@ -178,7 +165,7 @@ function PayslipModal({ record, open, onClose }: { record: PayrollRecord; open: 
         <DialogFooter className="no-print pt-4 border-t border-border/10 gap-2">
           <Button variant="ghost" className="rounded-lg h-9 text-xs" onClick={onClose}>Close</Button>
           <Button
-            className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg h-9 text-xs px-4 gap-1.5 shadow-md hover:shadow-lg"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 text-xs px-4 gap-1.5 shadow-sm"
             onClick={() => window.print()}
           >
             <Printer className="h-3.5 w-3.5" />
@@ -221,13 +208,89 @@ export function PayslipPage() {
   const paidCount   = records.filter(r => r.status === 'Paid').length
   const avgSalary   = records.length > 0 ? Math.round(totalNet / records.length) : 0
 
-  const monthName = (my: string) => {
-    const [mm] = my.split('-')
-    return MONTHS.find(m => m.value === mm)?.label ?? my
-  }
+  const columns: ColumnDef<PayrollRecord>[] = [
+    ...(isAdmin ? [
+      {
+        id: "employee",
+        accessorFn: (row) => row.employee?.name ?? '—',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Employee" />,
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <span className="font-semibold text-foreground">{row.original.employee?.name ?? '—'}</span>
+            <span className="text-[10px] text-muted-foreground font-mono">
+              {row.original.employee?.departments?.map(d => d.name).join(', ') || 'General'}
+            </span>
+          </div>
+        )
+      }
+    ] : []),
+    {
+      id: "month_year",
+      accessorKey: "month_year",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Period" />,
+      cell: ({ row }) => <span className="font-semibold text-muted-foreground">{row.original.month_year}</span>
+    },
+    {
+      id: "base_salary",
+      accessorFn: (row) => row.contract?.salaire_base ?? 0,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Base Salary" />,
+      cell: ({ row }) => <span className="font-mono">{row.original.contract?.salaire_base?.toLocaleString()} DZD</span>
+    },
+    {
+      id: "deductions",
+      accessorFn: (row) => (row.contract?.salaire_base ?? 0) - row.amount_final,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Deductions" />,
+      cell: ({ row }) => {
+        const totalDeductions = (row.original.contract?.salaire_base ?? 0) - row.original.amount_final
+        return (
+          <span className={`font-mono ${totalDeductions > 0 ? 'text-rose-500 font-semibold' : 'text-muted-foreground'}`}>
+            {totalDeductions > 0 ? `-${totalDeductions.toLocaleString()} DZD` : '0 DZD'}
+          </span>
+        )
+      }
+    },
+    {
+      id: "amount_final",
+      accessorKey: "amount_final",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Net Salary" />,
+      cell: ({ row }) => <span className="font-bold font-mono text-foreground">{row.original.amount_final.toLocaleString()} DZD</span>
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const cfg = STATUS_CONFIG[row.original.status] || { label: row.original.status, className: '' }
+        return (
+          <Badge variant="outline" className={`text-[10px] py-0.5 px-2 rounded-full border ${cfg.className}`}>
+            {cfg.label}
+          </Badge>
+        )
+      }
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const r = row.original
+        return (
+          <div className="flex items-center justify-end">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => setSelected(r)}
+            >
+              View Payslip
+            </Button>
+          </div>
+        )
+      }
+    }
+  ]
 
   return (
-    <div className="space-y-6 p-4 md:p-6 animate-in fade-in duration-300">
+    <div className="space-y-6">
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -237,17 +300,15 @@ export function PayslipPage() {
         }
       `}</style>
 
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-violet-500 to-purple-500 bg-clip-text text-transparent">
-          My Payslips
-        </h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold">My Payslips</h1>
         <p className="text-muted-foreground text-sm">Consult your salary breakdown and payment history.</p>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center no-print">
         {isAdmin && (
           <Select value={filterEmpId} onValueChange={setFilterEmpId}>
-            <SelectTrigger className="h-9 text-xs rounded-xl w-48 border-border/60">
+            <SelectTrigger className="h-9 text-xs w-48">
               <SelectValue placeholder="All Employees" />
             </SelectTrigger>
             <SelectContent>
@@ -259,7 +320,7 @@ export function PayslipPage() {
           </Select>
         )}
         <Select value={filterYear} onValueChange={setFilterYear}>
-          <SelectTrigger className="h-9 text-xs rounded-xl w-32 border-border/60">
+          <SelectTrigger className="h-9 text-xs w-32">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -272,118 +333,37 @@ export function PayslipPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Net Paid', value: `${totalNet.toLocaleString()} DZD`, icon: Wallet, color: 'from-violet-500/20 to-purple-500/10', iconColor: 'text-violet-400' },
-          { label: 'Avg Monthly Salary', value: `${avgSalary.toLocaleString()} DZD`, icon: BarChart3, color: 'from-blue-500/20 to-indigo-500/10', iconColor: 'text-blue-400' },
-          { label: 'Total Deductions', value: totalDeduct > 0 ? `-${totalDeduct.toLocaleString()} DZD` : '0 DZD', icon: TrendingDown, color: 'from-rose-500/20 to-red-500/10', iconColor: 'text-rose-400' },
-          { label: 'Paid Payslips', value: `${paidCount} / ${records.length}`, icon: BadgeCheck, color: 'from-emerald-500/20 to-teal-500/10', iconColor: 'text-emerald-400' },
+          { label: 'Total Net Paid', value: `${totalNet.toLocaleString()} DZD` },
+          { label: 'Avg Monthly Salary', value: `${avgSalary.toLocaleString()} DZD` },
+          { label: 'Total Deductions', value: totalDeduct > 0 ? `-${totalDeduct.toLocaleString()} DZD` : '0 DZD' },
+          { label: 'Paid Payslips', value: `${paidCount} / ${records.length}` },
         ].map((kpi) => (
-          <Card key={kpi.label} className="border-border/40 bg-card/30 backdrop-blur-xl relative overflow-hidden shadow-sm hover:shadow-md transition-all">
-            <div className={`absolute inset-0 bg-gradient-to-br ${kpi.color} opacity-60 pointer-events-none`} />
-            <CardContent className="p-4 relative flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-background/60 border border-border/30">
-                <kpi.icon className={`h-4 w-4 ${kpi.iconColor}`} />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{kpi.label}</p>
-                <p className="text-lg font-black text-foreground leading-tight">{kpi.value}</p>
-              </div>
+          <Card key={kpi.label}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{kpi.label}</p>
+              <p className="text-xl font-bold text-foreground mt-1">{kpi.value}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="border-border/40 bg-card/30 backdrop-blur-xl shadow-md">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-violet-400" />
-            Salary History — {filterYear}
-          </CardTitle>
-          <CardDescription>Click any row to view the full bulletin de paie.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0 border-t border-border/10">
-          {isLoading ? (
-            <div className="p-4 space-y-3">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
-            </div>
-          ) : records.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground text-sm space-y-2">
-              <FileText className="h-10 w-10 mx-auto text-muted-foreground/20" />
-              <p className="font-semibold">No payslips found for {filterYear}</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border/10">
-              {records.map((record) => {
-                const cfg = STATUS_CONFIG[record.status] ?? STATUS_CONFIG.Generated
-                const StatusIcon = cfg.icon
-                const deductionTotal = (record.contract?.salaire_base ?? 0) - record.amount_final
-                const deductPct = record.contract?.salaire_base > 0 ? Math.round((deductionTotal / record.contract.salaire_base) * 100) : 0
-
-                return (
-                  <div
-                    key={record.id_salaire}
-                    className="flex items-center gap-4 px-5 py-4 hover:bg-muted/5 cursor-pointer transition-all group"
-                    onClick={() => setSelected(record)}
-                  >
-                    <div className="w-16 flex-shrink-0 text-center">
-                      <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-2">
-                        <p className="text-[9px] font-bold text-violet-400 uppercase tracking-wider">
-                          {record.month_year.split('-')[0]}
-                        </p>
-                        <p className="text-xs font-black text-foreground leading-none">
-                          {monthName(record.month_year).slice(0, 3)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {isAdmin && (
-                      <div className="w-32 flex-shrink-0">
-                        <p className="text-xs font-bold text-foreground truncate">{record.employee?.name}</p>
-                        {/* Pre-tailored Plural Departments renderer */}
-                        <p className="text-[10px] text-muted-foreground">
-                          {record.employee?.departments?.map(d => d.name).join(', ') || '—'}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex-1 space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span>Base: {record.contract?.salaire_base?.toLocaleString()} DZD</span>
-                        {deductionTotal > 0 && (
-                          <span className="text-rose-400 flex items-center gap-0.5">
-                            <TrendingDown className="h-3 w-3" />
-                            -{deductionTotal.toLocaleString()} DZD ({deductPct}%)
-                          </span>
-                        )}
-                      </div>
-                      <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-violet-500 to-purple-400 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.max(10, 100 - deductPct)}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="text-right w-32 flex-shrink-0">
-                      <p className="text-base font-black text-foreground font-mono">
-                        {record.amount_final.toLocaleString()}
-                        <span className="text-[10px] font-normal text-muted-foreground ml-1">DZD</span>
-                      </p>
-                    </div>
-
-                    <div className="flex-shrink-0">
-                      <Badge variant="outline" className={`text-[10px] px-2 py-0.5 rounded-full border flex items-center gap-1 ${cfg.className}`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {cfg.label}
-                      </Badge>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors flex-shrink-0" />
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Card key={i} className="h-14 w-full" />)}
+          </div>
+        ) : (
+          <GenericDataTable
+            columns={columns}
+            data={records}
+            searchOptions={[
+              ...(isAdmin ? [{ id: "employee", label: "Employee" }] : []),
+              { id: "month_year", label: "Period" },
+              { id: "status", label: "Status" }
+            ]}
+          />
+        )}
+      </div>
 
       {selected && <PayslipModal record={selected} open={!!selected} onClose={() => setSelected(null)} />}
     </div>
