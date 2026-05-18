@@ -282,8 +282,8 @@ export function AnalyticsPage() {
                 <div className="h-24 w-24">
                   <ResponsiveContainer>
                     <PieChart>
-                      <Pie data={rolePayroll} cx="50%" cy="50%" innerRadius={25} outerRadius={35} dataKey="value">
-                        {rolePayroll?.map((_e: any, i: number) => <Cell key={i} fill={`hsl(var(--chart-${i + 1}))`} />)}
+                      <Pie data={rolePayroll} cx="50%" cy="50%" innerRadius={25} outerRadius={35} dataKey="average">
+                        {rolePayroll?.map((_e: { role: string, average: number }, i: number) => <Cell key={i} fill={`hsl(var(--chart-${i + 1}))`} />)}
                       </Pie>
                     </PieChart>
                   </ResponsiveContainer>

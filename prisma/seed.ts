@@ -186,16 +186,11 @@ async function main() {
     })
   }
 
-  // 10. Massroufs (Advances)
-  for (let i = 0; i < 5; i++) {
-    await prisma.massrouf.create({
-      data: {
-        id_emp: employees[i].id_emp,
-        date_request: new Date(),
-        amount: 5000,
-        status: 'Approved',
-        approved_by: employees[0].id_emp
-      }
+  // 11. Department Managers
+  for (let i = 0; i < allDepts.length; i++) {
+    await prisma.department.update({
+      where: { id_dept: allDepts[i].id_dept },
+      data: { manager_id: employees[i % employees.length].id_emp }
     })
   }
 
