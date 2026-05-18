@@ -786,7 +786,11 @@ export async function getEmployeeDashboard(actorId: number) {
 }
 
 
-export async function getUnifiedDashboard(actorId: number) {
+/**
+ * Unified operational dashboard providing a single source of truth for
+ * system-wide or role-scoped operations.
+ */
+export async function getUnifiedDashboard(actorId: number, role: string = 'Employee', id_depts: number[] = []) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const endOfToday = new Date(today)
@@ -795,67 +799,85 @@ export async function getUnifiedDashboard(actorId: number) {
   const thirtyDaysFromNow = new Date()
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
 
-  // 1. KPI Counts
+  // 1. Determine Scope
+  const isAdmin = role === 'Admin'
+  const isAgent = role === 'Agent'
+  const isEmployee = role === 'Employee'
+
+  // 2. Fetch KPI Counts with scoping
   const [
     scheduledInterviews,
     expiringContracts,
     pendingPayslips,
     presentPersonnel
   ] = await Promise.all([
-    prisma.entretien.count({ where: { status: 'Scheduled' } }),
-    prisma.contract.count({
+    // Interviews: Admins see all, Agents see theirs, Employees see 0
+    isEmployee ? Promise.resolve(0) : prisma.entretien.count({
       where: {
-        status: 'Active',
-        date_fin: { lte: thirtyDaysFromNow, gte: today }
+        status: 'Scheduled',
+        ...(isAgent && { id_agent: actorId })
       }
     }),
-    prisma.salaire.count({ where: { status: 'Generated' } }),
-    prisma.attendance.count({
+
+    // Expiring Contracts: Admin/Agent only
+    isEmployee ? Promise.resolve(0) : prisma.contract.count({
+      where: {
+        status: 'Active',
+        date_fin: { lte: thirtyDaysFromNow, gte: today },
+        ...(isAgent && { employee: { departments: { some: { id_dept: { in: id_depts } } } } })
+      }
+    }),
+
+    // Pending Payslips: Admin only
+    isAdmin ? prisma.salaire.count({ where: { status: 'Generated' } }) : Promise.resolve(0),
+
+    // Present Personnel: Admin/Agent see counts, Employees see 0
+    isEmployee ? Promise.resolve(0) : prisma.attendance.count({
       where: {
         date: { gte: today, lte: endOfToday },
-        status: 'Present'
+        status: 'Present',
+        ...(isAgent && { employee: { departments: { some: { id_dept: { in: id_depts } } } } })
       }
     })
   ])
 
-  // 2. Operational Lists
+  // 3. Fetch Operational Lists with scoping
   const [
     pendingLeaves,
     todaysLogs,
     todaysFormations,
     myTasks
   ] = await Promise.all([
-    // Pending Leave Requests
-    prisma.conge.findMany({
-      where: { status: 'Pending' },
+    // Pending Leave Requests: Admin/Agent see theirs
+    isEmployee ? Promise.resolve([]) : prisma.conge.findMany({
+      where: {
+        status: 'Pending',
+        ...(isAgent && { employee: { departments: { some: { id_dept: { in: id_depts } } } } })
+      },
       include: {
         employee: { select: { name: true, role: true } },
         leave_type: { select: { name: true } }
       },
-      orderBy: { date_deb: 'asc' }
+      orderBy: { date_deb: 'asc' },
+      take: 10
     }),
 
-    // Today's System Logs
-    prisma.auditLog.findMany({
+    // Today's System Logs: Admin only (Agents could see theirs, but usually Admin only)
+    isAdmin ? prisma.auditLog.findMany({
       where: { timestamp: { gte: today } },
       include: { actor: { select: { name: true } } },
       orderBy: { timestamp: 'desc' },
       take: 10
-    }),
+    }) : Promise.resolve([]),
 
-    // Today's scheduled formations
+    // Today's scheduled formations: All see (filtered by role?) 
+    // Actually formations are generally public knowledge in a company
     prisma.formation.findMany({
       where: {
-        date_deb: { lte: endOfToday },
-        AND: [
-          {
-            date_deb: {
-              gte: today
-            }
-          }
-        ]
+        date_deb: { lte: endOfToday, gte: today }
       },
-      include: { instructor: { select: { name: true } } }
+      include: { instructor: { select: { name: true } } },
+      take: 5
     }),
 
     // Current user's pending tasks

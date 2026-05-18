@@ -126,9 +126,12 @@ router.get('/dashboard/agent', authorize('Admin', 'Agent'), asyncHandler(async (
   res.json(success(data))
 }))
 
-router.get('/dashboard/unified', authorize('Admin', 'Agent'), asyncHandler(async (req, res) => {
+router.get('/dashboard/unified', asyncHandler(async (req, res) => {
   const actorId = req.user?.id_emp
-  const dashboard = await AnalyticsService.getUnifiedDashboard(actorId)
+  const role = req.user?.role
+  const id_depts = req.user?.id_depts || []
+
+  const dashboard = await AnalyticsService.getUnifiedDashboard(actorId, role, id_depts)
   res.json(success(dashboard))
 }))
 
