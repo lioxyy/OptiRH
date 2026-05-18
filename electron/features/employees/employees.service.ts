@@ -1,7 +1,7 @@
 import { prisma } from '../../db/client'
 import { AppError } from '../../lib/errors'
 import { writeAuditLog } from '../../lib/audit'
-import type { CreateEmployeeDTO, UpdateEmployeeDTO, CreateDepartmentDTO, UpdateDepartmentDTO } from './employees.types'
+import type { CreateEmployeeDTO, UpdateEmployeeDTO } from './employees.types'
 import type { RequestUser } from '../../middleware/authenticate'
 import bcrypt from 'bcryptjs'
 
@@ -95,20 +95,6 @@ export async function getMe(employeeId: number) {
   return employee
 }
 
-export async function getDepartments(requestUser: RequestUser) {
-  if (requestUser.role === 'Employee') throw new AppError('FORBIDDEN', 403)
-  return prisma.department.findMany()
-}
-
-export async function createDepartment(data: CreateDepartmentDTO) {
-  return prisma.department.create({ data })
-}
-
-export async function updateDepartment(id: number, data: UpdateDepartmentDTO) {
-  const dept = await prisma.department.findUnique({ where: { id_dept: id } })
-  if (!dept) throw new AppError('DEPARTMENT_NOT_FOUND', 404)
-  return prisma.department.update({ where: { id_dept: id }, data })
-}
 
 interface OrgNode {
   id_emp: number
