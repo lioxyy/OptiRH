@@ -188,9 +188,8 @@ export function DepartmentForm({
             </FormItem>
           )}
         />
-
         <div className="space-y-2">
-          <FormLabel className="text-sm font-medium">Assign Staff Members</FormLabel>
+          <label className="text-sm font-medium">Assign Staff Members</label>
           <Input
             placeholder="Search employees to assign..."
             value={searchTerm}
