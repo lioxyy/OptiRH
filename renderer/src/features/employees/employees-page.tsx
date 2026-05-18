@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth-context'
 import { Link } from 'react-router-dom'
@@ -18,6 +18,16 @@ import {
 } from '../../components/ui/dialog'
 import { OrgChart } from './org-chart'
 import { EmployeeForm } from './employee-form'
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../components/ui/dropdown-menu'
+import { toast } from 'sonner'
 
 interface Employee {
   id_emp: number
@@ -37,8 +47,11 @@ const roleVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
 
 export function EmployeesPage() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [tab, setTab] = useState<'list' | 'orgchart'>('list')
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
 
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
     queryKey: ['employees'],
@@ -47,6 +60,17 @@ export function EmployeesPage() {
       return res.data.data
     },
   })
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this employee?')) return
+    try {
+      await api.delete(`/api/employees/${id}`)
+      queryClient.invalidateQueries({ queryKey: ['employees'] })
+      toast.success('Employee deleted')
+    } catch {
+      toast.error('Failed to delete employee')
+    }
+  }
 
   if (isLoading) return <div className="p-6">Loading...</div>
 
@@ -84,6 +108,39 @@ export function EmployeesPage() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Supervisor" />,
       cell: ({ row }) => <span className="text-muted-foreground">{row.original.supervisor?.name ?? '—'}</span>,
     },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const employee = row.original
+        if (user?.role !== 'Admin') return null
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => {
+                setEditingEmployee(employee)
+                setIsEditOpen(true)
+              }}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleDelete(employee.id_emp)} className="text-destructive font-medium">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
   ]
 
   return (
@@ -96,7 +153,7 @@ export function EmployeesPage() {
               <DialogTrigger asChild>
                 <Button>Add Employee</Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh]">
+              <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
                   <DialogTitle>Add Employee</DialogTitle>
                 </DialogHeader>
@@ -115,6 +172,23 @@ export function EmployeesPage() {
           </Tabs>
         )}
       </div>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Edit Employee</DialogTitle>
+          </DialogHeader>
+          {editingEmployee && (
+            <EmployeeForm
+              initialData={editingEmployee}
+              onSuccess={() => {
+                setIsEditOpen(false)
+                setEditingEmployee(null)
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {tab === 'orgchart' ? (
         <Card>

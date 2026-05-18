@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+const PasswordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[0-9]/, 'Password must contain at least one numeric value')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+
 const BaseEmployeeSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
@@ -11,10 +16,11 @@ const BaseEmployeeSchema = z.object({
   role: z.enum(['Admin', 'Agent', 'Employee']),
   id_dept: z.number().int().positive(),
   supervisor_id: z.number().int().positive().optional(),
-  password: z.string().min(6),
 })
 
-export const CreateEmployeeSchema = BaseEmployeeSchema.superRefine((data, ctx) => {
+export const CreateEmployeeSchema = BaseEmployeeSchema.extend({
+  password: PasswordSchema,
+}).superRefine((data, ctx) => {
   const birthDate = new Date(data.date_birth)
   const employmentDate = new Date(data.date_employment)
   const today = new Date()
@@ -60,7 +66,9 @@ export const CreateEmployeeSchema = BaseEmployeeSchema.superRefine((data, ctx) =
   }
 })
 
-export const UpdateEmployeeSchema = BaseEmployeeSchema.partial()
+export const UpdateEmployeeSchema = BaseEmployeeSchema.extend({
+  password: PasswordSchema.optional(),
+}).partial()
 
 export const EmployeeParamsSchema = z.object({
   id: z.coerce.number().int().positive(),
